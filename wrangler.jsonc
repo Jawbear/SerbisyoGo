@@ -1,0 +1,10 @@
+{
+  "name": "serbisyogo",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./out",
+    "html_handling": "force-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

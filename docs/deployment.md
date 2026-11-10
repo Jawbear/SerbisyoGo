@@ -26,6 +26,16 @@ Only these variables belong in the browser build:
 
 Never supply a service-role/secret key to the web build. Static export means server-side Next headers do not apply; configure `X-Content-Type-Options: nosniff`, an appropriate CSP, frame restrictions, `Referrer-Policy`, and `Permissions-Policy` at the actual host. Review CSP against your chosen Supabase and map origins.
 
+## Cloudflare Worker with static assets
+
+If the Cloudflare Git import created a **Worker** instead of Pages, keep it: the tracked `wrangler.jsonc` deploys the Next.js static export directly, without a Worker script or Next.js server. Keep build command `npm run build`, deploy command `npx wrangler deploy --config wrangler.jsonc`, project name `serbisyogo`, and root `/`. The assets directory is `out`; directory indexes preserve trailing-slash routes and unknown routes serve the exported 404 page.
+
+In Cloudflare's **Settings → Build → Build variables and secrets**, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` using the public values from your local environment. Set `NEXT_PUBLIC_SITE_URL` to the actual HTTPS Worker/custom-domain URL when it is assigned, and rebuild after changing these variables. Remove `NEXT_PUBLIC_BASE_PATH` for deployment at the domain root; do not copy `/SerbisyoGo` from the GitHub preview. Runtime-only Worker variables do not configure a previously compiled browser bundle. Never copy `SUPABASE_SECRET_KEY`, service-role keys, test credentials, or `.env.local` into the build/deployment configuration.
+
+After deployment, configure Supabase's Site URL and exact `/auth/callback/` redirect for that actual host, update Edge `ALLOWED_ORIGINS` with the host's origin, and deploy the updated `files` function for private avatar access. Keep `http://localhost:3000` in the allowlist only while needed for development. Do not treat successful asset deployment as successful authentication/storage integration testing. Wrangler deployment was not executed from this restricted environment.
+
+Official reference: https://developers.cloudflare.com/workers/static-assets/
+
 ## Supabase project
 
 Do this first in a disposable local project, then a staging project. No commands were run against a remote project in this task.

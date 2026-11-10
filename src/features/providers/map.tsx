@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Satellite } from 'lucide-react';
+import { Map as MapIcon, Satellite } from 'lucide-react';
 import { config } from '@/lib/config';
 export function ServiceMap({
   position,
@@ -15,10 +15,9 @@ export function ServiceMap({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
+  const [view, setView] = useState<'street' | 'satellite'>('street');
   const latitude = position?.latitude;
   const longitude = position?.longitude;
-  // Open the public town center rather than sending private booking coordinates.
-  const satelliteUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${config.mapDefault.latitude}%2C${config.mapDefault.longitude}&zoom=15&basemap=satellite`;
   useEffect(() => {
     let cancelled = false;
     let map: import('leaflet').Map | undefined;
@@ -55,13 +54,14 @@ export function ServiceMap({
     };
   }, [latitude, longitude]);
   return <div className="map-frame">
-    <div ref={ref} className="map-canvas" role="img" aria-label={position ? 'Light street map showing the provider’s last shared location' : `Light street map of ${config.mapDefault.label}`} />
-    {error && <div className="map-fallback"><p>{error}</p></div>}
-    <a className="map-satellite-link" href={satelliteUrl} target="_blank" rel="noopener noreferrer" aria-label="View Bunawan satellite imagery in Google Maps (opens in a new tab)">
-      <Satellite size={18} aria-hidden="true" />
-      <span>Satellite view<small>Opens Google Maps</small></span>
-      <ExternalLink size={14} aria-hidden="true" />
-    </a>
-    <div className="map-caption">{caption}</div>
+    <div ref={ref} className="map-canvas" style={{ visibility: view === 'street' ? 'visible' : 'hidden' }} aria-hidden={view !== 'street'} role="img" aria-label={position ? 'Light street map showing the provider’s last shared location' : `Light street map of ${config.mapDefault.label}`} />
+    {view === 'satellite' && config.googleMapsEmbedUrl && <iframe className="map-satellite-embed" src={config.googleMapsEmbedUrl} title="Google Maps satellite imagery of Bunawan, Agusan del Sur" loading="lazy" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />}
+    {error && view === 'street' && <div className="map-fallback"><p>{error}</p></div>}
+    <div className="map-view-switch" role="group" aria-label="Map view">
+      <button type="button" aria-pressed={view === 'street'} onClick={() => setView('street')}><MapIcon size={16} aria-hidden="true" />Street</button>
+      <button type="button" aria-pressed={view === 'satellite'} disabled={!config.googleMapsEmbedUrl} title={config.googleMapsEmbedUrl ? 'View Bunawan satellite imagery inside this page' : 'Satellite imagery is not available yet'} onClick={() => setView('satellite')}><Satellite size={16} aria-hidden="true" />Satellite</button>
+      {!config.googleMapsEmbedUrl && <small>Satellite unavailable</small>}
+    </div>
+    <div className="map-caption">{view === 'street' ? caption : 'Bunawan, Agusan del Sur · Recorded satellite imagery. Shared provider locations are shown in Street view.'}</div>
   </div>;
 }

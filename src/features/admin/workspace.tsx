@@ -616,13 +616,13 @@ function Reports({
       }}>Bookings grouped by creation date in Asia/Manila. “Completed” is their current recorded status.</p>{report.daily.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={report.daily}><CartesianGrid stroke="var(--border)" vertical={false} /><XAxis dataKey="day" stroke="var(--muted)" tick={{
               fontSize: 10
             }} /><YAxis stroke="var(--muted)" allowDecimals={false} /><Tooltip contentStyle={{
-              background: '#17221b',
+              background: 'var(--panel)',
               border: '1px solid var(--border)',
               borderRadius: 8
             }} /><Area type="monotone" dataKey="bookings" stroke="var(--green)" fill="var(--soft)" /><Area type="monotone" dataKey="completed" stroke="var(--accent)" fill="transparent" /></AreaChart></ResponsiveContainer></div> : <Empty title="No bookings in this date range" />}<ExportButton rows={report.daily} name="booking-activity" /></Card><div className="grid-2"><Card><h2>Booking status distribution</h2>{report.status.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={report.status}><CartesianGrid stroke="var(--border)" vertical={false} /><XAxis dataKey="status" stroke="var(--muted)" tick={{
                 fontSize: 9
               }} /><YAxis stroke="var(--muted)" allowDecimals={false} /><Tooltip contentStyle={{
-                background: '#17221b',
+                background: 'var(--panel)',
                 border: '1px solid var(--border)'
               }} /><Bar dataKey="count" fill="var(--green)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <Empty title="No status data" />}</Card><Card><h2>Settlement definitions</h2><dl className="definition-list"><div><dt>Authorized paid volume</dt><dd>{money(report.paid_volume_centavos)}</dd></div><div><dt>Recorded platform fees</dt><dd>{money(report.platform_fees_centavos)}</dd></div></dl><p className="small muted" style={{
           marginTop: 24

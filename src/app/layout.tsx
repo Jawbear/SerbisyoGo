@@ -9,7 +9,12 @@ import 'leaflet/dist/leaflet.css';
 import './globals.css';
 import { SessionProvider } from '@/components/session';
 import { Shell } from '@/components/shell';
+import { config } from '@/lib/config';
 export const metadata: Metadata = {
+  icons: {
+    icon: { url: `${config.basePath}/brand/logo.png`, type: 'image/png' },
+    apple: { url: `${config.basePath}/brand/logo.png`, type: 'image/png' }
+  },
   title: {
     default: 'SerbisyoGo — Your home. In good hands.',
     template: '%s | SerbisyoGo'

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { config } from '@/lib/config';
 export function ServiceMap({
   position,
-  caption = 'Location is shared only for an active authorized booking.'
+  caption = 'Bunawan, Agusan del Sur. Location is shared only for an active authorized booking.'
 }: {
   position?: {
     latitude: number;
@@ -22,10 +22,10 @@ export function ServiceMap({
     void import('leaflet').then(L => {
       if (cancelled || !ref.current) return;
       const hasPosition = latitude !== undefined && longitude !== undefined;
-      const center: [number, number] = hasPosition ? [latitude, longitude] : [14.5547, 121.0244];
+      const center: [number, number] = hasPosition ? [latitude, longitude] : [config.mapDefault.latitude, config.mapDefault.longitude];
       map = L.map(ref.current, {
         scrollWheelZoom: false
-      }).setView(center, hasPosition ? 16 : 14);
+      }).setView(center, hasPosition ? 16 : config.mapDefault.zoom);
       const attribution = config.mapAttribution.replace(/[<>"']/g, '');
       const attributionUrl = /^https:\/\//.test(config.mapAttributionUrl) ? config.mapAttributionUrl : 'https://www.openstreetmap.org/copyright';
       const tile = L.tileLayer(config.mapTiles, {
@@ -51,5 +51,5 @@ export function ServiceMap({
       map?.remove();
     };
   }, [latitude, longitude]);
-  return <div className="map-frame"><div ref={ref} className="map-canvas" role="img" aria-label="Light street map showing service area or shared provider location" />{error && <div className="map-fallback"><p>{error}</p></div>}<div className="map-caption">{caption}</div></div>;
+  return <div className="map-frame"><div ref={ref} className="map-canvas" role="img" aria-label={position ? 'Light street map showing the provider’s last shared location' : `Light street map of ${config.mapDefault.label}`} />{error && <div className="map-fallback"><p>{error}</p></div>}<div className="map-caption">{caption}</div></div>;
 }

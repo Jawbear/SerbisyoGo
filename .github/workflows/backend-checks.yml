@@ -1,0 +1,28 @@
+name: Local Supabase security checks
+on:
+  pull_request:
+    paths: ['supabase/**', 'tests/**', 'scripts/**', 'src/lib/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx supabase start
+      - run: npx supabase db reset
+      - run: npm run test:db
+      - run: npm run db:types
+      - name: Deno type check Edge Functions
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
+      - name: Stop local backend
+        if: always()
+        run: npx supabase stop --no-backup

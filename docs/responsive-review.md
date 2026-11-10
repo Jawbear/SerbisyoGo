@@ -44,3 +44,9 @@ E2E_BROWSER_CHANNEL=chrome npm run test:e2e -- tests/e2e/public.spec.ts tests/e2
 The existing workflow suite in `tests/e2e/workflows.spec.ts` intentionally requires an isolated local Supabase environment, its own local seed, and `TEST_*` settings. Do not point it at a live production database. Run SQL tests using `npm run test:db` after starting/resetting local Supabase, or run the repository's backend-check workflow against its disposable local instance.
 
 Before a real launch, prioritize completing backend integration/negative-access tests, verification-email delivery, production-compatible hosting, approved pricing/terms/privacy copy, and actual-device review. GitHub Pages remains an unconfigured public preview.
+
+## Visitor navigation and readability follow-up
+
+Anonymous visitors now see a public header for finding professionals, browsing services, provider applications, support and sign-in. Private workspace entries appear after authentication; the protected admin layout remains separate. Mobile navigation still supports Escape, focus restoration, Home navigation and account actions. This navigation change does not replace route guards or database authorization.
+
+The homepage now orders the hero/search, service categories, featured professionals, how-it-works section, provider invitation and app details. Phone category previews are compact two-column tiles; the full services page retains descriptions. Provider descriptions, navigation labels and supporting text are larger, with more space between major sections. Existing brand assets and forest/ivory/sage/gold tokens remain unchanged. Public layouts are centered to a readable maximum width.

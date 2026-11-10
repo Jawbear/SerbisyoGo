@@ -2,13 +2,15 @@
 
 ## Executed here
 
+Visitor-layout follow-up: anonymous visitors now have discovery navigation, signed-in users retain workspace navigation, categories precede featured providers, and phone category tiles use a compact two-column layout. Supporting text was enlarged. TypeScript, full lint, 16 Node tests and the static export pass. Desktop/mobile screenshots were reviewed. Browser checks cover 320–1920px and the 700/1100/1101/1280px navigation boundaries, using controlled backend responses. Overlapping test runs caused one trace-output filesystem failure; affected mobile cases were rerun sequentially in a separate output directory. This is UI verification, not a new hosted backend certification.
+
 Latest profile-photo/theme follow-up: 20 desktop public/responsive/photo UI cases passed with intercepted backend responses, followed by all 6 customer/provider/admin photo cases passing in desktop and touch emulation. Photo previews, replacement, unsupported-type rejection and account widths of 320/375/768/1440px were checked. Fifteen Node tests, TypeScript, full lint and an isolated static build also passed. Real Storage authorization tests were added to the local-only workflow suite but remain unrun; deploy the updated `files` Edge Function before hosted testing.
 
 The forest/ivory/sage/gold palette and serif/sans typography were visually inspected on desktop/mobile screenshots. Contrast checks passed for body text (14.65:1), secondary text (8.51:1), primary button text (8.95:1), gold text (7.65:1), and input borders (3.53:1), against their designated surfaces. These checks cover the specified pairs, not a full WCAG audit.
 
 | Check | Result | Scope |
 | --- | --- | --- |
-| `npm test` | **15 passed, 0 failed** | Domain rules, development-target safeguards, stable fixture identity, request timeout/cancellation |
+| `npm test` | **16 passed, 0 failed** | Domain rules, development-target safeguards, stable fixture identity, safe credential-update plans, request timeout/cancellation |
 | Public/responsive browser checks | **34 distinct cases passed across full run and targeted reruns** | Installed Chrome desktop and touch emulation; 320–1920px, intercepted backend responses. See responsive-review.md for exact scope and corrected failures |
 | Dependency installation / lock generation | **Completed by the user** | Installed dependencies are now available locally; resolved `package-lock.json` generated |
 | `npm run typecheck` | **Passed** | Current application and tests; extracted archives/generated artifacts excluded, Edge Functions checked separately |

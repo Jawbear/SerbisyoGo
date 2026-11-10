@@ -28,6 +28,14 @@ Never supply a service-role/secret key to the web build. Static export means ser
 
 ## Cloudflare Worker with static assets
 
+The account subdomain was changed from the owner's personal name to `sg-team`. The intended canonical address is now `https://serbisyogo.sg-team.workers.dev`. Set Cloudflare's **build** variable `NEXT_PUBLIC_SITE_URL` to that address and rebuild; the local `.env.local` should continue using `http://localhost:3000` for development. In Supabase Auth set the Site URL to the new address and allow `https://serbisyogo.sg-team.workers.dev/auth/callback/`; remove the old personal-domain callback while retaining the localhost callback if still used. Update Edge Function CORS from the owner terminal:
+
+```sh
+npx supabase secrets set --project-ref qkopbbxmeqqzomrawltf ALLOWED_ORIGINS=http://localhost:3000,https://serbisyogo.sg-team.workers.dev
+```
+
+Check login, email verification/recovery, QR download-page links and photo uploads on the new hostname. This changes frontend origins, not Supabase user IDs or stored data. The agent has not independently verified the live hostname or changed dashboard settings.
+
 If the Cloudflare Git import created a **Worker** instead of Pages, keep it: the tracked `wrangler.jsonc` deploys the Next.js static export directly, without a Worker script or Next.js server. Keep build command `npm run build`, deploy command `npx wrangler deploy --config wrangler.jsonc`, project name `serbisyogo`, and root `/`. The assets directory is `out`; directory indexes preserve trailing-slash routes and unknown routes serve the exported 404 page.
 
 In Cloudflare's **Settings → Build → Build variables and secrets**, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` using the public values from your local environment. Set `NEXT_PUBLIC_SITE_URL` to the actual HTTPS Worker/custom-domain URL when it is assigned, and rebuild after changing these variables. Remove `NEXT_PUBLIC_BASE_PATH` for deployment at the domain root; do not copy `/SerbisyoGo` from the GitHub preview. Runtime-only Worker variables do not configure a previously compiled browser bundle. Never copy `SUPABASE_SECRET_KEY`, service-role keys, test credentials, or `.env.local` into the build/deployment configuration.

@@ -74,11 +74,14 @@ async function main() {
     users.push(...data.users);
     if (data.users.length < 1000) break;
   }
+  const fixtureUser = name => users.find(candidate => candidate.id === saved.accounts[name]?.id) ||
+    users.find(candidate => candidate.app_metadata?.development_fixture === marker && candidate.app_metadata?.development_account === name) ||
+    users.find(candidate => candidate.email === `dev-${name.toLowerCase()}@serbisyogo.example.test`);
   const naturalProfiles = process.argv.includes('--natural-profiles');
   if (process.argv.includes('--rename-names') || naturalProfiles) {
     // Validate every target before updating anything; never match arbitrary real accounts.
     const targets = [['admin', administratorName], ...providerNames.map((name, i) => [`provider${i + 1}`, name])].map(([accountName, fullName]) => {
-      const user = users.find(candidate => candidate.email === `dev-${accountName}@serbisyogo.example.test`);
+      const user = fixtureUser(accountName);
       if (!user || user.app_metadata?.development_fixture !== marker) throw new Error(`Expected development account ${accountName} was not found; no rename started.`);
       return { user, accountName, fullName };
     });
@@ -101,16 +104,16 @@ async function main() {
   }
   async function account(name, fullName, role) {
     const email = `dev-${name.toLowerCase()}@serbisyogo.example.test`;
-    let user = users.find(candidate => candidate.email === email);
+    let user = fixtureUser(name);
     if (user && user.app_metadata?.development_fixture !== marker) throw new Error(`Reserved fixture email ${email} belongs to an unrelated account; refusing to change it.`);
     if (!user) {
       const password = randomBytes(24).toString('base64url');
-      const created = await check(db.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: fullName }, app_metadata: { development_fixture: marker } }));
+      const created = await check(db.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: fullName }, app_metadata: { development_fixture: marker, development_account: name } }));
       user = created.user;
       saved.accounts[name] = { id: user.id, email, password, role };
       await persist(); // Save each credential before dependent work, including partial runs.
     } else if (!saved.accounts[name]) {
-      saved.accounts[name] = { id: user.id, email, role, note: 'Existing password retained. Use your previous private credential file.' };
+      saved.accounts[name] = { id: user.id, email: user.email, role, note: 'Existing password retained. Use your previous private credential file.' };
       await persist();
     }
     const roleRow = await check(db.from('role_assignments').select('role').eq('user_id', user.id).single());

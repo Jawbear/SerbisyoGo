@@ -1,0 +1,60 @@
+@media screen {
+  /* Readable supporting text across public and authenticated workspaces. */
+  .small { font-size: 13px; }
+  .nav-item { font-size: 13px; line-height: 1.5; }
+  .provider-top h3 { font-size: 16px; }
+  .provider-top p, .provider-card > p { font-size: 13px; line-height: 1.7; }
+  .provider-bottom .button, .button.compact { font-size: 12px; }
+  .provider-bottom .eyebrow, .page-identity .eyebrow { font-size: 10px; }
+  .badge { font-size: 11px; }
+  table { font-size: 13px; }
+  th { font-size: 11px; }
+  td .muted { font-size: 12px; }
+  .category-card p, .step-card p, .section-heading p { font-size: 14px; }
+  .trust-row { font-size: 12px; }
+  .hero-copy > p { font-size: 15px; }
+  .hero-search .field > span { font-size: 11px; }
+  .hero-search input, .hero-search select { font-size: 14px; }
+  .hero-search .button { font-size: 13px; }
+  .section-heading { margin-top: 48px; margin-bottom: 24px; }
+  .grid-3 { gap: 24px; }
+  .provider-card { padding: 24px; }
+  .public-shell .workspace { margin-left: 0; }
+  .public-shell .main-content { max-width: 1280px; }
+  .public-shell footer { max-width: 1280px; margin-inline: auto; }
+  .public-header { min-height: 80px; height: auto; gap: 24px; padding-inline: max(24px, calc((100vw - 1216px) / 2)); }
+  .public-header > .brand { margin-right: auto; flex-shrink: 0; }
+  .public-desktop-nav { display: flex; align-items: center; gap: 20px; }
+  .public-desktop-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; }
+  .public-desktop-nav a:hover, .public-desktop-nav a[aria-current=page] { color: var(--text); border-bottom-color: var(--accent); text-decoration: none; }
+  .public-header .header-actions { gap: 16px; max-width: none; }
+  .public-header .header-actions .button { min-width: 0; min-height: 44px; }
+  .public-header .download-nav { font-size: 12px; }
+  .public-header .account-link { font-size: 13px; }
+  .public-shell .hero { margin-top: 12px; }
+  .category-grid-preview .category-card { gap: 12px; }
+}
+
+@media screen and (max-width: 1100px) {
+  .public-header { gap: 16px; padding-inline: 24px; }
+  .public-desktop-nav, .public-header .download-nav, .public-header .account-link { display: none; }
+}
+
+@media screen and (max-width: 700px) {
+  .hero-search input, .hero-search select { font-size: 16px; }
+  .public-header { gap: 8px; min-height: 72px; padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
+  .public-header .brand { gap: 8px; font-size: 15px; }
+  .public-header .brand img { width: 30px; height: 30px; }
+  .public-header .header-actions { gap: 8px; }
+  .public-header .header-actions .button { font-size: 12px; padding-inline: 12px; }
+  .public-shell .main-content { padding-top: 16px; }
+  .section-heading { margin-top: 36px; margin-bottom: 20px; }
+  .section-heading a { font-size: 12px; }
+  .grid-3 { gap: 16px; }
+  .provider-card { padding: 20px; }
+  .category-grid-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .category-grid-preview .category-card { padding: 16px; gap: 12px; }
+  .category-grid-preview .category-card h2 { font-size: 17px; }
+  .category-grid-preview .category-card p { display: none; }
+  .category-grid-preview .category-card .small { font-size: 12px; }
+}

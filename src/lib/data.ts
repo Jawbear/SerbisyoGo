@@ -97,7 +97,7 @@ export async function list<T = Record<string, unknown>>(table: string, filters: 
     }).range(offset, offset + 499);
     for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
     if (dates) query = query.gte('created_at', dates.from).lt('created_at', dates.to);
-    const batch = await result(query);
+    const batch = (await result(query)) ?? [];
     rows.push(...(batch as T[]));
     if (batch.length < 500) break;
     if (offset >= 49500) throw new Error('Too many records. Narrow the date range.');

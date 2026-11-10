@@ -43,20 +43,21 @@ export function Messages() {
       status: string;
     }>('bookings')
   }), !!session.user);
-  const selected = q.data?.conversations.find(c => c.id === params.get('conversation') || c.booking_id === params.get('booking')) || q.data?.conversations[0];
-  const booking = q.data?.bookings.find(b => b.id === selected?.booking_id);
+  const data = q.data;
+  const selected = data?.conversations.find(c => c.id === params.get('conversation') || c.booking_id === params.get('booking')) || data?.conversations[0];
+  const booking = data?.bookings.find(b => b.id === selected?.booking_id);
   const selectedId = selected?.id;
   useEffect(() => {
     if (selectedId) void rpc('mark_read', {
       p_conversation: selectedId
     }).catch(() => {});
-  }, [selectedId, q.data?.messages.length]);
-  return <><PageHeading title="A conversation, close at hand." description="Only you and your assigned service professional can read your booking conversation." /><RealtimeRefresh tables={['messages', 'bookings']} /><QueryState {...q}>{q.data?.conversations.length ? <div className="chat-layout"><aside className="chat-sidebar" aria-label="Booking conversations">{q.data.conversations.map(c => {
-            const b = q.data.bookings.find(b => b.id === c.booking_id);
-            const read = q.data.members.find(m => m.conversation_id === c.id)?.last_read_at || '';
-            const unread = q.data.messages.filter(m => m.conversation_id === c.id && m.sender_id !== session.user?.id && m.created_at > read).length;
+  }, [selectedId, data?.messages.length]);
+  return <><PageHeading title="A conversation, close at hand." description="Only you and your assigned service professional can read your booking conversation." /><RealtimeRefresh tables={['messages', 'bookings']} /><QueryState {...q}>{data?.conversations.length ? <div className="chat-layout"><aside className="chat-sidebar" aria-label="Booking conversations">{data.conversations.map(c => {
+            const b = data.bookings.find(b => b.id === c.booking_id);
+            const read = data.members.find(m => m.conversation_id === c.id)?.last_read_at || '';
+            const unread = data.messages.filter(m => m.conversation_id === c.id && m.sender_id !== session.user?.id && m.created_at > read).length;
             return <Link key={c.id} className={selectedId === c.id ? 'active' : ''} href={`/messages/?conversation=${c.id}`}><strong>{b?.service_title || 'Service conversation'}</strong><p className="small muted">{b?.reference}</p>{unread > 0 && selectedId !== c.id && <Badge>{unread + ' unread'}</Badge>}</Link>;
-          })}</aside><section className="chat-main"><div className="chat-heading row between"><div><strong>{booking?.service_title}</strong><p className="small muted">{booking?.reference}</p></div><Link href={`/bookings/detail/?id=${selected?.booking_id}`}>Booking details →</Link></div><div className="message-list" aria-live="polite" aria-label="Messages">{q.data.messages.filter(m => m.conversation_id === selectedId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => <article key={m.id} className={`message-bubble ${m.sender_id === session.user?.id ? 'own' : ''}`}><span className="eyebrow">{m.sender_id === session.user?.id ? 'You' : 'Booking participant'}</span><p>{m.body}</p><small>{manilaDate(m.created_at)}</small></article>)}{!q.data.messages.some(m => m.conversation_id === selectedId) && <Empty title="Start the conversation" description="Share the details that will help your professional prepare." />}</div><div className="chat-form"><MutationForm submit="Send message" success="Message sent." onSubmit={async () => {
+          })}</aside><section className="chat-main"><div className="chat-heading row between"><div><strong>{booking?.service_title}</strong><p className="small muted">{booking?.reference}</p></div><Link href={`/bookings/detail/?id=${selected?.booking_id}`}>Booking details →</Link></div><div className="message-list" aria-live="polite" aria-label="Messages">{data.messages.filter(m => m.conversation_id === selectedId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => <article key={m.id} className={`message-bubble ${m.sender_id === session.user?.id ? 'own' : ''}`}><span className="eyebrow">{m.sender_id === session.user?.id ? 'You' : 'Booking participant'}</span><p>{m.body}</p><small>{manilaDate(m.created_at)}</small></article>)}{!data.messages.some(m => m.conversation_id === selectedId) && <Empty title="Start the conversation" description="Share the details that will help your professional prepare." />}</div><div className="chat-form"><MutationForm submit="Send message" success="Message sent." onSubmit={async () => {
               if (!selectedId) throw new Error('Choose a conversation');
               await rpc('send_message', {
                 p_conversation: selectedId,

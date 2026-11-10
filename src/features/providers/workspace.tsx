@@ -80,6 +80,7 @@ export function ProviderProfileEditor() {
   }), !!s.user);
   const p = q.data?.profile;
   const pending = q.data?.applications.find(a => a.status === 'pending');
+  const categories = q.data?.categories ?? [];
   return <><PageHeading eyebrow="Offer your skills" title={p ? 'Your professional profile' : 'Join your local service community.'} description="Complete your profile, services, availability and private verification documents. Applications stay pending until an administrator reviews them." /><QueryState {...q}>{p && <div className="row" style={{
         marginBottom: 24
       }}><Badge>{String(p.status)}</Badge><ButtonLink href="/provider/availability/" secondary>Set availability</ButtonLink>{q.data?.applications[0]?.reason ? <Notice>Review feedback: {String(q.data.applications[0].reason)}</Notice> : null}</div>}<div className="grid-2"><div className="stack"><Card><h2>Public profile application</h2>{pending ? <Notice>Your application is waiting for review. You can still complete services, availability and verification documents below.</Notice> : <MutationForm submit={p ? 'Submit profile changes for review' : 'Submit provider application'} success="Application submitted. Complete services, availability and verification documents next." onSubmit={async f => {
@@ -100,7 +101,7 @@ export function ProviderProfileEditor() {
             }}><UploadForm kind="verification" /></div></Card>}</div><div className="stack">{p ? <><Card><h2>Your services</h2><div className="stack">{q.data?.services.map(service => <div key={service.id} style={{
                   borderBottom: '1px solid var(--border)',
                   paddingBottom: 20
-                }}><h3>{service.title}</h3><p className="small muted">{money(service.rate_centavos)} • {service.pricing_mode} • {service.duration_minutes} minutes</p><ServiceForm categories={q.data.categories} service={service} /></div>)}</div></Card><Card><h2>Add a service</h2><ServiceForm categories={q.data?.categories || []} /></Card></> : <Card><h2>Your onboarding checklist</h2><ol className="stack small"><li>Submit a public profile application.</li><li>Add service categories and your rates.</li><li>Choose service areas and weekly availability.</li><li>Upload private verification documents.</li><li>Wait for an administrator’s recorded review.</li></ol></Card>}</div></div></QueryState></>;
+                }}><h3>{service.title}</h3><p className="small muted">{money(service.rate_centavos)} • {service.pricing_mode} • {service.duration_minutes} minutes</p><ServiceForm categories={categories} service={service} /></div>)}</div></Card><Card><h2>Add a service</h2><ServiceForm categories={categories} /></Card></> : <Card><h2>Your onboarding checklist</h2><ol className="stack small"><li>Submit a public profile application.</li><li>Add service categories and your rates.</li><li>Choose service areas and weekly availability.</li><li>Upload private verification documents.</li><li>Wait for an administrator’s recorded review.</li></ol></Card>}</div></div></QueryState></>;
 }
 function ServiceForm({
   categories,

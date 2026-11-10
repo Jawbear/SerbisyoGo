@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ExternalLink, Satellite } from 'lucide-react';
 import { config } from '@/lib/config';
 export function ServiceMap({
   position,
@@ -16,6 +17,8 @@ export function ServiceMap({
   const [error, setError] = useState('');
   const latitude = position?.latitude;
   const longitude = position?.longitude;
+  // Open the public town center rather than sending private booking coordinates.
+  const satelliteUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${config.mapDefault.latitude}%2C${config.mapDefault.longitude}&zoom=15&basemap=satellite`;
   useEffect(() => {
     let cancelled = false;
     let map: import('leaflet').Map | undefined;
@@ -51,5 +54,14 @@ export function ServiceMap({
       map?.remove();
     };
   }, [latitude, longitude]);
-  return <div className="map-frame"><div ref={ref} className="map-canvas" role="img" aria-label={position ? 'Light street map showing the provider’s last shared location' : `Light street map of ${config.mapDefault.label}`} />{error && <div className="map-fallback"><p>{error}</p></div>}<div className="map-caption">{caption}</div></div>;
+  return <div className="map-frame">
+    <div ref={ref} className="map-canvas" role="img" aria-label={position ? 'Light street map showing the provider’s last shared location' : `Light street map of ${config.mapDefault.label}`} />
+    {error && <div className="map-fallback"><p>{error}</p></div>}
+    <a className="map-satellite-link" href={satelliteUrl} target="_blank" rel="noopener noreferrer" aria-label="View Bunawan satellite imagery in Google Maps (opens in a new tab)">
+      <Satellite size={18} aria-hidden="true" />
+      <span>Satellite view<small>Opens Google Maps</small></span>
+      <ExternalLink size={14} aria-hidden="true" />
+    </a>
+    <div className="map-caption">{caption}</div>
+  </div>;
 }

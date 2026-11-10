@@ -4,7 +4,8 @@
 
 | Check | Result | Scope |
 | --- | --- | --- |
-| `npm test` | **11 passed, 0 failed** | Integer money/rounding, transitions, Philippine phone format, redirect boundaries, file validation, review eligibility, interval overlap, CSV formula escaping, honest cash checkout, malformed and valid binary manifest parsing |
+| `npm test` | **15 passed, 0 failed** | Domain rules, development-target safeguards, stable fixture identity, request timeout/cancellation |
+| Public/responsive browser checks | **34 distinct cases passed across full run and targeted reruns** | Installed Chrome desktop and touch emulation; 320–1920px, intercepted backend responses. See responsive-review.md for exact scope and corrected failures |
 | Dependency installation / lock generation | **Completed by the user** | Installed dependencies are now available locally; resolved `package-lock.json` generated |
 | `npm run typecheck` | **Passed** | Current application and tests; extracted archives/generated artifacts excluded, Edge Functions checked separately |
 | `npm run lint` | **Passed, 0 errors and 0 warnings** | Full project ESLint configuration |
@@ -24,7 +25,8 @@ The first domain run found a trailing-slash mismatch in the safe redirect fallba
 | `npm run test:db` | Supabase CLI, Docker and Postgres not installed/configured here | **Unrun** |
 | Official database type introspection | No running local Supabase | **Unrun**; migration-derived snapshot committed and clearly labeled |
 | Edge Function type/runtime and RLS/storage integration checks | No local backend, runtime or project credentials | **Unrun** |
-| `npm run test:e2e` | No configured backend or validated browser runtime; dependencies are now installed | **Unrun** |
+| Authenticated backend workflow browser suite | No isolated local Supabase/test environment; public UI browser tests now run in installed Chrome | **Unrun** for real backend workflows |
+| Hosted development read-only smoke check | `npm run check:development -- --development-project qkopbbxmeqqzomrawltf` stopped with `fetch failed` | **Blocked by network**, not passed |
 | In-app desktop/mobile visual check | Browser connection failed before navigation because the environment's sandbox metadata was unavailable | **Unrun** |
 | Real APK verification/publication/download | No APK supplied; no local backend | **Unrun**; no fake package or release created |
 

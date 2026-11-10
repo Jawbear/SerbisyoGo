@@ -65,6 +65,7 @@ export function SessionProvider({
           setUser(null);
           setProfile(null);
           setRole('');
+          setError('');
           return;
         }
         const context = await rpc<{
@@ -77,7 +78,12 @@ export function SessionProvider({
         setRole(context?.role || '');
         setError('');
       } catch (e) {
-        if (alive) setError(e instanceof Error ? e.message : 'Account unavailable');
+        if (alive) {
+          setUser(null);
+          setProfile(null);
+          setRole('');
+          setError(e instanceof Error ? e.message : 'Account unavailable');
+        }
       } finally {
         if (alive) setLoading(false);
       }

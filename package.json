@@ -9,13 +9,15 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.ts",
+    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts",
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:types": "node scripts/generate-types.mjs",
     "seed:demo": "node --env-file=.env.local scripts/seed-demo.mjs",
+    "seed:development": "node --env-file=.env.local scripts/seed-development.mjs",
+    "check:development": "node --env-file=.env.local scripts/check-development.mjs",
     "admin:provision": "node --env-file=.env.local scripts/provision-admin.mjs"
   },
   "dependencies": {

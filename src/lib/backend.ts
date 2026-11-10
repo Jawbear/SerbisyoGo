@@ -2,7 +2,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { backendConfigured, config } from './config';
+import { fetchWithTimeout } from './http';
 export const db = backendConfigured ? createClient(config.supabaseUrl, config.supabaseKey, {
+  global: { fetch: fetchWithTimeout },
   auth: {
     flowType: 'pkce',
     persistSession: true,
@@ -34,7 +36,7 @@ export async function edge<T>(name: string, body?: FormData, query = ''): Promis
       session
     }
   } = await client.auth.getSession();
-  const res = await fetch(`${config.supabaseUrl}/functions/v1/${name}${query}`, {
+  const res = await fetchWithTimeout(`${config.supabaseUrl}/functions/v1/${name}${query}`, {
     method: body ? 'POST' : 'GET',
     headers: {
       apikey: config.supabaseKey,
@@ -43,7 +45,7 @@ export async function edge<T>(name: string, body?: FormData, query = ''): Promis
       } : {})
     },
     body
-  });
+  }, body ? 120000 : 15000);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;

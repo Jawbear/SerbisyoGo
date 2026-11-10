@@ -251,7 +251,8 @@ export function QueryState({
   error: string;
   children: ReactNode;
 }) {
-  return loading ? <Skeleton /> : error ? <Notice error>{error}</Notice> : <>{children}</>;
+  const { refresh } = useSession();
+  return loading ? <Skeleton /> : error ? <div className="stack"><Notice error>{error}</Notice><button type="button" className="button secondary" onClick={refresh}>Try again</button></div> : <>{children}</>;
 }
 export function RealtimeRefresh({
   tables,
@@ -337,7 +338,7 @@ export function DataTable<T extends Record<string, unknown>>({
   return <div className="data-table"><div className="table-toolbar"><label className="search-input"><Search size={16} /><input aria-label={searchLabel} placeholder={`${searchLabel}…`} value={search} onChange={e => {
           setSearch(e.target.value);
           setPage(1);
-        }} /></label><span className="muted small">{filtered.length} records</span></div><div className="table-scroll"><table><thead><tr>{columns.map(c => <th key={c.key} aria-sort={sort === c.key ? descending ? 'descending' : 'ascending' : 'none'}><button onClick={() => {
+        }} /></label><span className="muted small">{filtered.length} records</span></div><div className="table-scroll" role="region" aria-label="Scrollable records" tabIndex={0}><table><thead><tr>{columns.map(c => <th key={c.key} aria-sort={sort === c.key ? descending ? 'descending' : 'ascending' : 'none'}><button onClick={() => {
                 setSort(c.key);
                 setDescending(sort === c.key ? !descending : false);
               }}>{c.label} {sort === c.key ? descending ? '↓' : '↑' : ''}</button></th>)}{actions && <th>Action</th>}</tr></thead><tbody>{slice.map((r, i) => <tr key={String(r.id || i)}>{columns.map(c => <td key={c.key}>{c.render ? c.render(r) : String(r[c.key] ?? '—')}</td>)}{actions && <td>{actions(r)}</td>}</tr>)}</tbody></table></div>{!slice.length && <Empty title="No matching records" description="Try changing the search or filters." />}<div className="pagination"><span className="muted small">Page {current} of {pages}</span><button className="button secondary compact" disabled={current <= 1} onClick={() => setPage(current - 1)}>Previous</button><button className="button secondary compact" disabled={current >= pages} onClick={() => setPage(current + 1)}>Next</button></div></div>;
@@ -372,10 +373,18 @@ export function Dialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     d?.showModal();
-    return () => d?.close();
+    return () => {
+      d?.close();
+      document.body.style.overflow = previousOverflow;
+      requestAnimationFrame(() => { if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }); });
+    };
   }, []);
-  return <dialog ref={ref} onCancel={onClose}><div className="dialog-heading"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="Close dialog"><X size={20} /></button></div>{children}</dialog>;
+  return <dialog ref={ref} aria-labelledby={titleId} onCancel={onClose}><div className="dialog-heading"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label="Close dialog"><X size={20} /></button></div>{children}</dialog>;
 }

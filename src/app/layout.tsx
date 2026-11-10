@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import '@fontsource/plus-jakarta-sans/400.css';
 import '@fontsource/plus-jakarta-sans/500.css';
@@ -7,9 +7,11 @@ import '@fontsource/plus-jakarta-sans/700.css';
 import '@fontsource/plus-jakarta-sans/800.css';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
+import './responsive.css';
 import { SessionProvider } from '@/components/session';
 import { Shell } from '@/components/shell';
 import { config } from '@/lib/config';
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#0A100D' };
 export const metadata: Metadata = {
   icons: {
     icon: { url: `${config.basePath}/brand/logo.png`, type: 'image/png' },

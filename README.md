@@ -4,7 +4,7 @@ A Next.js App Router / TypeScript / Tailwind website with a customer experience,
 
 ## Current validation status
 
-The implementation is reviewable source, **not a verified production deployment**. After dependencies were installed, all 11 domain tests, TypeScript, full ESLint and the static production build passed locally, including the `/SerbisyoGo` Pages path. Database/RLS, browser, Edge and real-APK integration checks remain unrun. See [validation report](docs/validation.md).
+The implementation is reviewable source, **not a verified production deployment**. Fifteen Node tests, TypeScript, full ESLint and the static production build pass locally, including the `/SerbisyoGo` Pages path. Browser UI checks passed across six viewport widths using controlled backend responses. Live database/RLS, authenticated workflow, Edge and real-APK integration checks remain unverified. See the [responsive review](docs/responsive-review.md) and [validation report](docs/validation.md).
 
 ## Hosting: GitHub and Supabase
 
@@ -80,6 +80,16 @@ The separate script refuses non-local hosts. It creates two customers, two appro
 
 Without backend credentials the public catalog uses clearly labeled fictional previews. Private actions show a setup state and do not save to localStorage. `/preview/` provides a screen directory and sample workspace records. Supabase Auth's own token persistence is separate from business-data storage.
 
+## Hosted development sample data
+
+For an explicitly designated **development project only**, `npm run seed:development -- --development-project YOUR_PROJECT_REF` creates 5 customers, 5 approved providers, 5 pending applications and a private development administrator, plus 6 categories, 10 services, 35 bookings (5 per status), 35 conversations, 70 messages, 5 invoices/reviews/payout requests/refund requests/support cases/announcements and related availability, addresses, notifications and audit entries. All identities, reviews, settlements and prices are fictional. No APK, private verification document, live GPS, charge or bank transfer is invented.
+
+Set the server-only `SUPABASE_SECRET_KEY` privately in ignored `.env.local` before running. This must be a secret/service-role key, never the publishable key. Keep it out of GitHub, chat, screenshots and all `NEXT_PUBLIC_*` variables. The script checks the exact hosted project reference and creates records through the owner-controlled API. Existing real records are not deleted. Existing active pricing is retained; if none exists, development-only settings use a PHP 50 fee and 10% commission. These values are examples, not approved business policy.
+
+Random sample login credentials are saved only in ignored `.cache/development-users.json`, including after each account creation. Keep that file private. Fictional `.test` email addresses cannot receive messages; these fixture accounts are confirmed through the admin API for development login only. Existing non-fixture accounts are never reused, and a rerun inserts missing fixture records while preserving edits and append-only history. It is not a single transaction: on error, fix the reported issue and rerun to resume. Do not delete sample Auth users individually because related history is retained. Prefer a fresh disposable development project when starting over.
+
+Preview counts without connecting: `npm run seed:development -- --plan`. The hosted seed has not been executed or integration-validated by the agent without credentials. Remove the local secret key after seeding. The deployed GitHub Pages preview remains disconnected from this database.
+
 ## Main routes
 
 All 20 prototype views and 12 admin views are mapped in [routes.json](docs/routes.json) and `/preview/`. Supporting routes include account recovery, auth callbacks, provider onboarding/profile/services, availability, notifications and booking details. Related links preserve record IDs through query parameters.
@@ -134,3 +144,7 @@ Domain tests use Node's TypeScript stripping and run without installed dependenc
 The main [SERBISYOGO Figma file](https://www.figma.com/design/h3Lkpwb6xxLVgn8jzuP0js/SERBISYOGO?node-id=0-1) supplied the dark workspace structure, 216px sidebar, 72px header, Plus Jakarta Sans, tokens and card/forms proportions. The original 34px logo and technician image were recovered as exact rendered assets from that file in `public/brand/`. No substitute logo was invented. The secondary file was access-restricted, and final browser comparison was blocked; no pixel-perfect claim is made. No pitch deck existed in the empty repository. Neither Figma file was modified.
 
 See [Android shared-backend contract](docs/android-backend.md), [security notes](docs/security.md), [deployment](docs/deployment.md), and [validation results](docs/validation.md). Final operator-approved terms/privacy wording, business pricing policy, SMTP sender, real payment/payout integrations if desired, production tile configuration, actual Supabase credentials and the future APK remain setup inputs.
+
+To apply the owner's supplied display names to existing development accounts without reseeding, run `npm run seed:development -- --development-project YOUR_PROJECT_REF --rename-names`. It renames only the five approved fixture providers and fixture administrator, verifies protected development metadata first, and preserves their IDs, login credentials, roles and related history. Customer and pending-provider sample names remain unchanged. Restart the session or sign out/in if an old display name remains cached.
+
+Use `--natural-profiles` instead of `--rename-names` to also replace development wording in the five approved providers' headlines, bios and seeded service titles. It preserves prices, historical booking snapshots and fixture metadata. Development disclosure remains in the seed documentation and seeded announcement.

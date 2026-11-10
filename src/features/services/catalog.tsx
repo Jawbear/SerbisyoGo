@@ -68,11 +68,11 @@ export function Find() {
   const [search, setSearch] = useState(params.get('q') || ''),
     [city, setCity] = useState(params.get('city') || ''),
     [category, setCategory] = useState(params.get('category') || ''),
-    [max, setMax] = useState(''),
-    [rating, setRating] = useState('0'),
-    [view, setView] = useState('map'),
-    [sort, setSort] = useState('rating'),
-    [page, setPage] = useState(1);
+    [max, setMax] = useState(params.get('max') || ''),
+    [rating, setRating] = useState(params.get('rating') || '0'),
+    [view, setView] = useState(params.get('view') === 'list' ? 'list' : 'map'),
+    [sort, setSort] = useState(params.get('sort') === 'price' ? 'price' : 'rating'),
+    [page, setPage] = useState(Math.max(1, Number(params.get('page')) || 1));
   const query = useQuery('find-catalog', async () => backendConfigured ? {
     providers: await list<Provider>('public_providers'),
     services: await list<Service>('provider_services'),
@@ -90,7 +90,12 @@ export function Find() {
     for (const [k, v] of Object.entries({
       q: search,
       city,
-      category
+      category,
+      max,
+      rating,
+      view,
+      sort,
+      page: '1'
     })) {
       if (v) {
         url.searchParams.set(k, v);
@@ -101,6 +106,12 @@ export function Find() {
     window.history.replaceState(null, '', url);
     setPage(1);
   }
+  function changePage(next: number) {
+    setPage(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(next));
+    window.history.replaceState(null, '', url);
+  }
   return <><PageHeading title="Find a professional" description="Compare local expertise and choose the right person for your home." /><form className="filters" onSubmit={e => {
       e.preventDefault();
       syncFilters();
@@ -109,9 +120,9 @@ export function Find() {
         setPage(1);
       }} /><Select label="Minimum rating" value={rating} onChange={e => setRating(e.target.value)}><option value="0">Any rating</option><option value="4">4+ stars</option><option value="4.5">4.5+ stars</option></Select><Select label="Sort by" value={sort} onChange={e => setSort(e.target.value)}><option value="rating">Highest rated</option><option value="price">Lowest starting price</option></Select><div className="row" style={{
         marginLeft: 'auto'
-      }}><button className={`button ${view === 'map' ? '' : 'secondary'} compact`} onClick={() => setView('map')}>List & map</button><button className={`button ${view === 'list' ? '' : 'secondary'} compact`} onClick={() => setView('list')}>List only</button></div></div><QueryState {...query}><div className={`find-layout ${view === 'list' ? 'list-only' : ''}`}><div><p className="small muted" style={{
+      }}><button className={`button ${view === 'map' ? '' : 'secondary'} compact`} aria-pressed={view === 'map'} onClick={() => setView('map')}>List & map</button><button className={`button ${view === 'list' ? '' : 'secondary'} compact`} aria-pressed={view === 'list'} onClick={() => setView('list')}>List only</button></div></div><QueryState {...query}><div className={`find-layout ${view === 'list' ? 'list-only' : ''}`}><div><p className="small muted" style={{
             marginBottom: 16
-          }}>{providers.length} matching professionals {backendConfigured ? '' : '• fictional development examples'}</p><div className={view === 'list' ? 'grid-3' : 'find-list'}>{providers.slice((current - 1) * 6, current * 6).map(p => <ProviderCard key={p.id} provider={p} />)}</div>{!providers.length && <Empty title="No professionals found" description="Try a different service, city or price range." />}<div className="pagination"><span className="small muted">Page {current} of {pages}</span><button className="button secondary compact" disabled={current <= 1} onClick={() => setPage(current - 1)}>Previous</button><button className="button secondary compact" disabled={current >= pages} onClick={() => setPage(current + 1)}>Next</button></div></div>{view === 'map' && <ServiceMap caption="Bunawan, Agusan del Sur service-area overview. Provider positions and arrival estimates are shown only when explicitly shared during an active job." />}</div></QueryState></>;
+          }}>{providers.length} matching professionals {backendConfigured ? '' : '• fictional development examples'}</p><div className={view === 'list' ? 'grid-3' : 'find-list'}>{providers.slice((current - 1) * 6, current * 6).map(p => <ProviderCard key={p.id} provider={p} />)}</div>{!providers.length && <Empty title="No professionals found" description="Try a different service, city or price range." />}<div className="pagination"><span className="small muted">Page {current} of {pages}</span><button className="button secondary compact" disabled={current <= 1} onClick={() => changePage(current - 1)}>Previous</button><button className="button secondary compact" disabled={current >= pages} onClick={() => changePage(current + 1)}>Next</button></div></div>{view === 'map' && <ServiceMap caption="Bunawan, Agusan del Sur service-area overview. Provider positions and arrival estimates are shown only when explicitly shared during an active job." />}</div></QueryState></>;
 }
 export function ProviderProfile() {
   const id = useSearchParams().get('id') || '';

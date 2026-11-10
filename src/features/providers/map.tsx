@@ -14,14 +14,18 @@ export function ServiceMap({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
+  const latitude = position?.latitude;
+  const longitude = position?.longitude;
   useEffect(() => {
     let cancelled = false;
     let map: import('leaflet').Map | undefined;
     void import('leaflet').then(L => {
       if (cancelled || !ref.current) return;
+      const hasPosition = latitude !== undefined && longitude !== undefined;
+      const center: [number, number] = hasPosition ? [latitude, longitude] : [14.5547, 121.0244];
       map = L.map(ref.current, {
         scrollWheelZoom: false
-      }).setView(position ? [position.latitude, position.longitude] : [14.5547, 121.0244], position ? 16 : 14);
+      }).setView(center, hasPosition ? 16 : 14);
       const attribution = config.mapAttribution.replace(/[<>"']/g, '');
       const attributionUrl = /^https:\/\//.test(config.mapAttributionUrl) ? config.mapAttributionUrl : 'https://www.openstreetmap.org/copyright';
       const tile = L.tileLayer(config.mapTiles, {
@@ -33,7 +37,7 @@ export function ServiceMap({
         if (++errors > 3) setError('Map tiles are unavailable. Booking status and service details remain available.');
       });
       tile.on('tileload', () => setError(''));
-      if (position) L.marker([position.latitude, position.longitude], {
+      if (hasPosition) L.marker(center, {
         icon: L.divIcon({
           className: 'provider-marker',
           html: '<div class="map-pin"></div>',
@@ -46,6 +50,6 @@ export function ServiceMap({
       cancelled = true;
       map?.remove();
     };
-  }, [position?.latitude, position?.longitude]);
+  }, [latitude, longitude]);
   return <div className="map-frame"><div ref={ref} className="map-canvas" role="img" aria-label="Light street map showing service area or shared provider location" />{error && <div className="map-fallback"><p>{error}</p></div>}<div className="map-caption">{caption}</div></div>;
 }

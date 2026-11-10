@@ -3,6 +3,7 @@
 import { AvailabilityPreview } from '@/features/providers/availability-preview';
 import { AnnouncementFeed } from '@/features/admin/announcements';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Zap, Droplets, Hammer, Plug, Wind, Wrench, ArrowRight, ShieldCheck, CalendarDays, Check, MapPin, UserRound, Search, Smartphone } from 'lucide-react';
@@ -27,7 +28,7 @@ export function Avatar({
   provider: Provider;
 }) {
   const [failed, setFailed] = useState(false);
-  return provider.avatar_path && backendConfigured && !failed ? <img className="avatar" width="64" height="64" src={avatarUrl(provider.id)} onError={() => setFailed(true)} alt="" /> : <div className="avatar"><UserRound size={28} /></div>;
+  return provider.avatar_path && backendConfigured && !failed ? <Image unoptimized className="avatar" width={64} height={64} src={avatarUrl(provider.id)} onError={() => setFailed(true)} alt="" /> : <div className="avatar"><UserRound size={28} /></div>;
 }
 export function ProviderCard({
   provider
@@ -56,7 +57,7 @@ export function Landing() {
   });
   return <><section className="hero"><div className="hero-copy"><Badge>✓ Local providers • Clear service details</Badge><h1>Your home.<br /><em>In good hands.</em></h1><p>Find local repair experts you can trust. Compare profiles, choose your schedule, and keep every home service in one place.</p><form action={`${config.basePath}/find/`} className="hero-search"><Select label="Service type" name="category"><option value="">Choose a service</option>{(query.data?.categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select><Field label="City / location" name="city" placeholder="Makati City" /><button className="button">Find available pros <ArrowRight size={14} /></button></form><div className="trust-row"><span>✓ Profiles & reviews</span><span>✓ Booking status updates</span><span>✓ Service history</span></div><div className="row" style={{
           marginTop: 24
-        }}><Link className="small" href="/download/">Download Android app →</Link></div></div><div className="hero-image"><img src={`${config.basePath}/brand/hero.png`} alt="Home service technician equipped for a repair visit" width="487" height="393" /><div className="floating-note"><ShieldCheck size={24} /><div><strong>Choose with confidence</strong><span className="muted">Reviewed provider applications</span></div></div><div className="floating-note bottom"><CalendarDays size={24} /><div><strong>Home care, on your schedule</strong><span className="muted">Book and track in one place</span></div></div></div></section><AnnouncementFeed /><QueryState {...query}><div className="section-heading"><div><h2>Local skills. A reliable helping hand.</h2><p>{backendConfigured ? 'Explore approved service professionals.' : 'Illustrative professionals for development preview.'}</p></div><Link href="/find/">View all pros →</Link></div><div className="grid-3">{query.data?.providers.slice(0, 3).map(p => <ProviderCard key={p.id} provider={p} />)}</div>{!query.data?.providers.length && <Empty title="Professionals are joining soon" description="Approved professionals will appear here as the community grows." />}<div className="section-heading"><div><h2>What needs attention at home?</h2><p>A little help for the jobs that matter.</p></div><Link href="/services/">All services →</Link></div><CategoryGrid categories={query.data?.categories} /></QueryState><div className="section-heading"><h2>Home care, made straightforward.</h2></div><div className="grid-3">{[['Find your professional', 'Compare services, profiles and customer feedback.'], ['Choose your schedule', 'Describe the task and request an available appointment.'], ['Keep everything together', 'Message your provider, track progress and review the work.']].map(([title, body], i) => <Card key={title}><div className="step-card"><span className="step-number">0{i + 1}</span><div><h3>{title}</h3><p>{body}</p></div></div></Card>)}</div><div className="cta-panel"><div><h2>Put your skills to work in your community.</h2><p>Apply as a local service professional. Applications are reviewed before activation.</p></div><ButtonLink href="/provider/apply/">Become a provider <ArrowRight size={16} /></ButtonLink></div><div className="cta-panel"><div className="row"><Smartphone size={36} /><div><h2>SerbisyoGo, wherever home is.</h2><p>The Android app is on its way. Your website account will work with the future app.</p></div></div><ButtonLink href="/download/" secondary>Android app details</ButtonLink></div></>;
+        }}><Link className="small" href="/download/">Download Android app →</Link></div></div><div className="hero-image"><Image unoptimized preload src={`${config.basePath}/brand/hero.png`} alt="Home service technician equipped for a repair visit" width={487} height={393} /><div className="floating-note"><ShieldCheck size={24} /><div><strong>Choose with confidence</strong><span className="muted">Reviewed provider applications</span></div></div><div className="floating-note bottom"><CalendarDays size={24} /><div><strong>Home care, on your schedule</strong><span className="muted">Book and track in one place</span></div></div></div></section><AnnouncementFeed /><QueryState {...query}><div className="section-heading"><div><h2>Local skills. A reliable helping hand.</h2><p>{backendConfigured ? 'Explore approved service professionals.' : 'Illustrative professionals for development preview.'}</p></div><Link href="/find/">View all pros →</Link></div><div className="grid-3">{query.data?.providers.slice(0, 3).map(p => <ProviderCard key={p.id} provider={p} />)}</div>{!query.data?.providers.length && <Empty title="Professionals are joining soon" description="Approved professionals will appear here as the community grows." />}<div className="section-heading"><div><h2>What needs attention at home?</h2><p>A little help for the jobs that matter.</p></div><Link href="/services/">All services →</Link></div><CategoryGrid categories={query.data?.categories} /></QueryState><div className="section-heading"><h2>Home care, made straightforward.</h2></div><div className="grid-3">{[['Find your professional', 'Compare services, profiles and customer feedback.'], ['Choose your schedule', 'Describe the task and request an available appointment.'], ['Keep everything together', 'Message your provider, track progress and review the work.']].map(([title, body], i) => <Card key={title}><div className="step-card"><span className="step-number">0{i + 1}</span><div><h3>{title}</h3><p>{body}</p></div></div></Card>)}</div><div className="cta-panel"><div><h2>Put your skills to work in your community.</h2><p>Apply as a local service professional. Applications are reviewed before activation.</p></div><ButtonLink href="/provider/apply/">Become a provider <ArrowRight size={16} /></ButtonLink></div><div className="cta-panel"><div className="row"><Smartphone size={36} /><div><h2>SerbisyoGo, wherever home is.</h2><p>The Android app is on its way. Your website account will work with the future app.</p></div></div><ButtonLink href="/download/" secondary>Android app details</ButtonLink></div></>;
 }
 export function Services() {
   const q = useQuery('categories', async () => backendConfigured ? list<typeof demoCategories[number]>('categories') : demoCategories);
@@ -90,7 +91,13 @@ export function Find() {
       q: search,
       city,
       category
-    })) v ? url.searchParams.set(k, v) : url.searchParams.delete(k);
+    })) {
+      if (v) {
+        url.searchParams.set(k, v);
+      } else {
+        url.searchParams.delete(k);
+      }
+    }
     window.history.replaceState(null, '', url);
     setPage(1);
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 import { Download, Smartphone, ArrowRight } from 'lucide-react';
 import { backendConfigured, config } from '@/lib/config';
@@ -37,7 +38,7 @@ export function DownloadPage() {
               window.location.assign(data.url);
             }}><Download size={18} />Download APK</ActionButton><p className="small muted">If a link expires, select Download APK again to request a fresh link.</p></> : <><Badge>Coming soon</Badge><h1 style={{
               marginTop: 16
-            }}>Our Android app is on its way.</h1><p className="muted">An official APK has not been published yet. You can already find professionals and manage your services on the website.</p><ButtonLink href="/find/">Keep using the website <ArrowRight size={16} /></ButtonLink></>}</div><div className="download-qr">{qr && <img src={qr} className="qr" width="180" height="180" alt={`QR code linking to ${canonical}`} />}<p className="small muted" style={{
+            }}>Our Android app is on its way.</h1><p className="muted">An official APK has not been published yet. You can already find professionals and manage your services on the website.</p><ButtonLink href="/find/">Keep using the website <ArrowRight size={16} /></ButtonLink></>}</div><div className="download-qr">{qr && <Image unoptimized src={qr} className="qr" width={180} height={180} alt={`QR code linking to ${canonical}`} />}<p className="small muted" style={{
             marginTop: 12,
             textAlign: 'center'
           }}>Scan to open this page</p>{qrError && <Notice error>{qrError}</Notice>}{config.siteUrl.includes('localhost') && <p className="small muted" style={{

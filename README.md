@@ -4,7 +4,7 @@ A Next.js App Router / TypeScript / Tailwind website with a customer experience,
 
 ## Current validation status
 
-The implementation is reviewable source, **not a verified production deployment**. This environment blocked npm downloads with `EACCES`, has no Supabase CLI/Postgres/Docker, and the in-app browser connection failed before navigation. Domain tests and an offline TypeScript/TSX syntax pass ran; build, full TypeScript/lint, database/RLS, browser, Edge and real-APK tests remain unrun. See [validation report](docs/validation.md).
+The implementation is reviewable source, **not a verified production deployment**. After dependencies were installed, all 11 domain tests, TypeScript, full ESLint and the static production build passed locally, including the `/SerbisyoGo` Pages path. Database/RLS, browser, Edge and real-APK integration checks remain unrun. See [validation report](docs/validation.md).
 
 ## Hosting: GitHub and Supabase
 
@@ -20,7 +20,7 @@ Requirements: Node 22.19+, npm, Docker Desktop for local Supabase, and an enviro
 npm install
 ```
 
-Copy `.env.example` to `.env.local`. Keep `.env.local` and `.cache/` private. No secrets belong in `NEXT_PUBLIC_*` variables. Once installation succeeds, commit the resulting `package-lock.json`; subsequent environments should use `npm ci`. A lockfile could not be generated in this restricted session.
+Copy `.env.example` to `.env.local`. Keep `.env.local` and `.cache/` private. No secrets belong in `NEXT_PUBLIC_*` variables. Commit `package-lock.json` with dependency changes; subsequent environments should use `npm ci`. Extracted source archives under `handoff/` are excluded from application checks and must not be uploaded as a second application.
 
 ```sh
 npm run db:start

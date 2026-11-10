@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type FormEvent } from 'react';
 import { CheckCircle2, AlertCircle, LoaderCircle, Search, ArrowRight, Inbox, X } from 'lucide-react';
 import { backendConfigured } from '@/lib/config';
 import { useSession } from './session';
@@ -207,34 +207,39 @@ export function useQuery<T>(key: string, loader: () => Promise<T>, enabled = tru
   const {
     revision
   } = useSession();
-  const [data, setData] = useState<T | null>(null),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState('');
+  const request = useMemo(() => ({ key, revision, enabled }), [key, revision, enabled]);
+  const [settled, setSettled] = useState<{
+    request: typeof request;
+    data: T | null;
+    error: string;
+  } | null>(null);
   useEffect(() => {
+    if (!request.enabled) return;
     let alive = true;
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError('');
-    void loader().then(value => {
-      if (alive) setData(value);
-    }).catch(e => {
-      if (alive) setError(e instanceof Error ? e.message : 'Unable to load data');
-    }).finally(() => {
-      if (alive) setLoading(false);
-    });
+    void Promise.resolve().then(loader).then(
+      value => {
+        if (alive) setSettled({ request, data: value, error: '' });
+      },
+      error => {
+        if (alive) setSettled({
+          request,
+          data: null,
+          error: error instanceof Error ? error.message : 'Unable to load data'
+        });
+      }
+    );
     return () => {
       alive = false;
     };
-    // Loader is selected by the stable query key, which includes every query input.
+    // Callers include every query input in key. Loader identity may change on render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, revision, enabled]);
+  }, [request]);
+  const isCurrent = settled?.request === request;
+  const isSameKey = settled?.request.key === key;
   return {
-    data,
-    loading,
-    error
+    data: enabled && isSameKey ? settled?.data ?? null : null,
+    loading: enabled && !isCurrent,
+    error: enabled && isCurrent ? settled?.error ?? '' : ''
   };
 }
 export function QueryState({

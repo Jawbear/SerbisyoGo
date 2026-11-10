@@ -47,7 +47,11 @@ export function BookingList({
         }}><h2>{dashboard ? 'Your service records' : 'Service bookings'}</h2><Select label="Booking status" value={status} onChange={e => {
             setStatus(e.target.value);
             const url = new URL(window.location.href);
-            e.target.value ? url.searchParams.set('status', e.target.value) : url.searchParams.delete('status');
+            if (e.target.value) {
+              url.searchParams.set('status', e.target.value);
+            } else {
+              url.searchParams.delete('status');
+            }
             window.history.replaceState(null, '', url);
           }}><option value="">All statuses</option>{['requested', 'confirmed', 'en_route', 'in_progress', 'completed', 'cancelled', 'declined'].map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}</Select></div><DataTable rows={rows as unknown as Record<string, unknown>[]} columns={[{
           key: 'service_title',

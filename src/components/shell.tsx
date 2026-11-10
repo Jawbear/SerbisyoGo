@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Home, Search, CalendarDays, MessageSquare, Receipt, LifeBuoy, Settings, BriefcaseBusiness, Download, Menu, ArrowUpRight, LayoutDashboard, Users, ShieldCheck, Wallet, CreditCard, ChartNoAxesCombined, Megaphone, Layers, LogOut, Bell } from 'lucide-react';
@@ -10,7 +11,7 @@ import { ActionButton, ButtonLink, Dialog } from './ui';
 const publicNav = [['/', 'Overview', Home], ['/find/', 'Find a professional', Search], ['/services/', 'Service categories', Layers], ['/bookings/', 'My bookings', CalendarDays], ['/messages/', 'Messages', MessageSquare], ['/bookings/?view=invoices', 'Invoices', Receipt], ['/support/', 'Help & support', LifeBuoy], ['/account/', 'Account settings', Settings], ['/provider/', 'Provider portal', BriefcaseBusiness]] as const;
 export const adminNav = [['/admin/', 'Operations dashboard', LayoutDashboard], ['/admin/providers/', 'Providers & verification', ShieldCheck], ['/admin/customers/', 'Customers', Users], ['/admin/bookings/', 'Bookings', CalendarDays], ['/admin/services/', 'Services & pricing', Layers], ['/admin/payouts/', 'Commissions & payouts', Wallet], ['/admin/transactions/', 'Transactions', CreditCard], ['/admin/reports/', 'Reports & analytics', ChartNoAxesCombined], ['/admin/complaints/', 'Complaints & safety', LifeBuoy], ['/admin/announcements/', 'Announcements', Megaphone], ['/admin/settings/', 'Settings & audit logs', Settings]] as const;
 export function Brand() {
-  return <Link href="/" className="brand"><img width="34" height="34" src={`${config.basePath}/brand/logo.png`} alt="" /><span>SerbisyoGo</span></Link>;
+  return <Link href="/" className="brand"><Image unoptimized width={34} height={34} src={`${config.basePath}/brand/logo.png`} alt="" /><span>SerbisyoGo</span></Link>;
 }
 export function Shell({
   children

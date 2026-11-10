@@ -613,18 +613,18 @@ function Reports({
   if (!report) return null;
   return <><Card><h2>Booking activity</h2><p className="small muted" style={{
         marginBottom: 20
-      }}>Bookings grouped by creation date in Asia/Manila. “Completed” is their current recorded status.</p>{report.daily.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={report.daily}><CartesianGrid stroke="#2a3a2f" vertical={false} /><XAxis dataKey="day" stroke="#a7b6aa" tick={{
+      }}>Bookings grouped by creation date in Asia/Manila. “Completed” is their current recorded status.</p>{report.daily.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={report.daily}><CartesianGrid stroke="var(--border)" vertical={false} /><XAxis dataKey="day" stroke="var(--muted)" tick={{
               fontSize: 10
-            }} /><YAxis stroke="#a7b6aa" allowDecimals={false} /><Tooltip contentStyle={{
+            }} /><YAxis stroke="var(--muted)" allowDecimals={false} /><Tooltip contentStyle={{
               background: '#17221b',
-              border: '1px solid #2a3a2f',
+              border: '1px solid var(--border)',
               borderRadius: 8
-            }} /><Area type="monotone" dataKey="bookings" stroke="#8be36b" fill="#203925" /><Area type="monotone" dataKey="completed" stroke="#e8c66a" fill="transparent" /></AreaChart></ResponsiveContainer></div> : <Empty title="No bookings in this date range" />}<ExportButton rows={report.daily} name="booking-activity" /></Card><div className="grid-2"><Card><h2>Booking status distribution</h2>{report.status.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={report.status}><CartesianGrid stroke="#2a3a2f" vertical={false} /><XAxis dataKey="status" stroke="#a7b6aa" tick={{
+            }} /><Area type="monotone" dataKey="bookings" stroke="var(--green)" fill="var(--soft)" /><Area type="monotone" dataKey="completed" stroke="var(--accent)" fill="transparent" /></AreaChart></ResponsiveContainer></div> : <Empty title="No bookings in this date range" />}<ExportButton rows={report.daily} name="booking-activity" /></Card><div className="grid-2"><Card><h2>Booking status distribution</h2>{report.status.length ? <div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={report.status}><CartesianGrid stroke="var(--border)" vertical={false} /><XAxis dataKey="status" stroke="var(--muted)" tick={{
                 fontSize: 9
-              }} /><YAxis stroke="#a7b6aa" allowDecimals={false} /><Tooltip contentStyle={{
+              }} /><YAxis stroke="var(--muted)" allowDecimals={false} /><Tooltip contentStyle={{
                 background: '#17221b',
-                border: '1px solid #2a3a2f'
-              }} /><Bar dataKey="count" fill="#8be36b" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <Empty title="No status data" />}</Card><Card><h2>Settlement definitions</h2><dl className="definition-list"><div><dt>Authorized paid volume</dt><dd>{money(report.paid_volume_centavos)}</dd></div><div><dt>Recorded platform fees</dt><dd>{money(report.platform_fees_centavos)}</dd></div></dl><p className="small muted" style={{
+                border: '1px solid var(--border)'
+              }} /><Bar dataKey="count" fill="var(--green)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <Empty title="No status data" />}</Card><Card><h2>Settlement definitions</h2><dl className="definition-list"><div><dt>Authorized paid volume</dt><dd>{money(report.paid_volume_centavos)}</dd></div><div><dt>Recorded platform fees</dt><dd>{money(report.platform_fees_centavos)}</dd></div></dl><p className="small muted" style={{
           marginTop: 24
         }}>Paid volume includes authorized paid records whose settlement time falls in the selected date range. Platform fees use the commission ledger’s creation time. Recorded refunds mark ledger entries as reversed and exclude them. Neither figure proves a bank transfer, cash remittance or tax revenue recognition.</p></Card></div></>;
 }

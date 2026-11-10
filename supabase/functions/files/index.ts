@@ -14,6 +14,16 @@ Deno.serve(async req=>{
    return new Response(null,{status:302,headers:{...headers,Location:signed.signedUrl,'Cache-Control':'no-store'}});
  }
  const {user,privileged,identity}=await authorize(req);
+ if(req.method==='GET'&&url.searchParams.has('my_avatar')){
+   const profile=unwrap(await user.from('profiles').select('avatar_path').eq('id',identity.id).single());
+   const path=profile?.avatar_path;
+   if(!path)return json({url:null,expires_in:60},headers);
+   if(!path.startsWith(`${identity.id}/avatar/`))return json({error:'Avatar unavailable'},headers,404);
+   const file=unwrap(await user.from('files').select('id').eq('owner_id',identity.id).eq('kind','avatar').eq('bucket','avatars').eq('path',path).maybeSingle());
+   if(!file)return json({error:'Avatar unavailable'},headers,404);
+   const signed=unwrap(await privileged.storage.from('avatars').createSignedUrl(path,60));
+   return json({url:signed.signedUrl,expires_in:60},headers);
+ }
  if(req.method==='GET'){
    const id=url.searchParams.get('id');if(!id)return json({error:'File ID required'},headers,400);
    const f=unwrap(await user.from('files').select('*').eq('id',id).maybeSingle());

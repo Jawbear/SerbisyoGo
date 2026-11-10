@@ -50,6 +50,6 @@ export async function edge<T>(name: string, body?: FormData, query = ''): Promis
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
-export function avatarUrl(providerId: string) {
-  return `${config.supabaseUrl}/functions/v1/files?avatar=${encodeURIComponent(providerId)}`;
+export function avatarUrl(providerId: string, version = '') {
+  return `${config.supabaseUrl}/functions/v1/files?avatar=${encodeURIComponent(providerId)}&v=${encodeURIComponent(version)}`;
 }

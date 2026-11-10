@@ -27,8 +27,11 @@ export function Avatar({
 }: {
   provider: Provider;
 }) {
+  return <ProviderAvatarImage key={`${provider.id}-${provider.avatar_path}`} provider={provider} />;
+}
+function ProviderAvatarImage({ provider }: { provider: Provider }) {
   const [failed, setFailed] = useState(false);
-  return provider.avatar_path && backendConfigured && !failed ? <Image unoptimized className="avatar" width={64} height={64} src={avatarUrl(provider.id)} onError={() => setFailed(true)} alt="" /> : <div className="avatar"><UserRound size={28} /></div>;
+  return provider.avatar_path && backendConfigured && !failed ? <Image unoptimized className="avatar" width={64} height={64} src={avatarUrl(provider.id, provider.avatar_path)} onError={() => setFailed(true)} alt="" /> : <div className="avatar"><UserRound size={28} /></div>;
 }
 export function ProviderCard({
   provider

@@ -58,6 +58,21 @@ test('private verification uploads require ownership for signed file access',asy
  const own=await fetch(`${url}/functions/v1/files?id=${file.id}`,{headers:{apikey:key!,Authorization:`Bearer ${session!.access_token}`}});expect(own.ok).toBe(true);
  for(const who of ['providerB','customerA','customerB']){const outsider=await signed(who);const {data:{session:s}}=await outsider.auth.getSession();expect((await outsider.from('files').select('*').eq('id',file.id)).data).toEqual([]);const denied=await fetch(`${url}/functions/v1/files?id=${file.id}`,{headers:{apikey:key!,Authorization:`Bearer ${s!.access_token}`}});expect(denied.status).toBe(404);}
 });
+
+test('customers, providers and admins upload their own private avatars',async()=>{
+ const bytes=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=','base64'));
+ for(const who of ['customerA','providerA','admin']){
+  const owner=await signed(who);const {data:{session}}=await owner.auth.getSession();
+  const headers={apikey:key!,Authorization:`Bearer ${session!.access_token}`};
+  const form=new FormData();form.set('kind','avatar');form.set('file',new File([bytes.buffer],'avatar.png',{type:'image/png'}));
+  const uploaded=await fetch(`${url}/functions/v1/files`,{method:'POST',headers,body:form});const file=await uploaded.json();expect(uploaded.ok,JSON.stringify(file)).toBe(true);
+  const own=await fetch(`${url}/functions/v1/files?my_avatar=1`,{headers});expect(own.ok).toBe(true);const link=await own.json();expect(link.url).toContain('/storage/v1/object/sign/avatars/');
+  const outsider=await signed('customerB');const {data:{session:other}}=await outsider.auth.getSession();
+  const denied=await fetch(`${url}/functions/v1/files?id=${file.id}`,{headers:{apikey:key!,Authorization:`Bearer ${other!.access_token}`}});expect(denied.status).toBe(404);
+  expect((await outsider.storage.from('avatars').download(file.path)).error).toBeTruthy();
+  const publicAvatar=await fetch(`${url}/functions/v1/files?avatar=${fixtures.accounts[who].id}`,{redirect:'manual',headers:{apikey:key!}});expect(publicAvatar.status).toBe(who==='providerA'?302:404);
+ }
+});
 test('registration verifies an actual configured Supabase email link',async({page,request})=>{
  test.skip(!process.env.TEST_INBOX_URL,'Requires the local Inbucket test inbox API; never use a real mailbox.');
  const local='registration.'+Date.now()+'.'+Math.random().toString(16).slice(2);const email=local+'@example.test';const password=crypto.randomUUID()+crypto.randomUUID();

@@ -8,7 +8,7 @@ import { list } from '@/lib/data';
 import { rpc, requireDb, result } from '@/lib/backend';
 import { addressSchema, profileSchema } from '@/lib/schemas';
 import { manilaDate } from '@/lib/domain';
-import { UploadForm } from '@/features/support/files';
+import { ProfilePhotoEditor } from './profile-photo';
 export function Account() {
   const s = useSession();
   const q = useQuery('addresses-' + s.user?.id, () => list('addresses', {
@@ -30,7 +30,7 @@ export function Account() {
                 booking_notifications?: boolean;
               })?.booking_notifications !== false} /><span>Booking status notifications in my account</span></label></MutationForm></Card><Card><h2>Profile photo</h2><p className="small muted" style={{
             marginBottom: 20
-          }}>A provider’s avatar is public when their profile is approved. Other account avatars remain private.</p><UploadForm kind="avatar" /></Card><Card><h2>Security</h2><p className="muted small" style={{
+          }}>A provider’s avatar is public when their profile is approved. Other account avatars remain private.</p><ProfilePhotoEditor /></Card><Card><h2>Security</h2><p className="muted small" style={{
             marginBottom: 20
           }}>Use a strong password. Verification and recovery links are sent to your account email.</p><div className="row"><ButtonLink href="/forgot-password/" secondary>Reset password</ButtonLink><ActionButton secondary action={s.signOut}>Sign out</ActionButton></div><p className="small muted" style={{
             marginTop: 20

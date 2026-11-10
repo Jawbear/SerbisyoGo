@@ -2,6 +2,10 @@
 
 ## Executed here
 
+Latest profile-photo/theme follow-up: 20 desktop public/responsive/photo UI cases passed with intercepted backend responses, followed by all 6 customer/provider/admin photo cases passing in desktop and touch emulation. Photo previews, replacement, unsupported-type rejection and account widths of 320/375/768/1440px were checked. Fifteen Node tests, TypeScript, full lint and an isolated static build also passed. Real Storage authorization tests were added to the local-only workflow suite but remain unrun; deploy the updated `files` Edge Function before hosted testing.
+
+The forest/ivory/sage/gold palette and serif/sans typography were visually inspected on desktop/mobile screenshots. Contrast checks passed for body text (14.65:1), secondary text (8.51:1), primary button text (8.95:1), gold text (7.65:1), and input borders (3.53:1), against their designated surfaces. These checks cover the specified pairs, not a full WCAG audit.
+
 | Check | Result | Scope |
 | --- | --- | --- |
 | `npm test` | **15 passed, 0 failed** | Domain rules, development-target safeguards, stable fixture identity, request timeout/cancellation |

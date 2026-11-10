@@ -117,6 +117,20 @@ Postgres Changes subscriptions rely on source-table RLS. Messages, notifications
 
 Admin reads require the protected role through RLS; all mutations go through explicitly authorized functions. Account restrictions retain reason history. Provider profile changes wait for review. Internal case notes and customer-visible replies use separate tables. Important admin mutations write an append-only audit trail that excludes private file contents, passwords and keys. Admin tables support search, sorting, pagination, filtering and CSV export. Date scopes/metric definitions are shown alongside reports.
 
+## Profile photos and visual theme
+
+All active customers, providers and administrators can open `/account/` (also available from their header avatar or mobile menu) to choose, preview, save and replace a profile photo. Supported formats are JPG, PNG and WebP, up to 5 MB. Browser validation provides immediate feedback; the authenticated `files` Edge Function separately validates ownership, content type, extension, size and file signature. Customers and administrators use owner-only short-lived signed URLs. Only active approved providers have public avatar access; public catalog images refresh after a replacement. No public bucket or browser Storage write grants are required.
+
+Deploy the updated endpoint before testing profile photo display on a configured project:
+
+```sh
+npx supabase functions deploy files --project-ref YOUR_PROJECT_REFERENCE
+```
+
+The owner-photo endpoint is `GET /functions/v1/files?my_avatar=1` with the user's bearer token and public API key. It derives ownership from the verified session and returns `{url, expires_in}` (or a null URL when no photo exists); a supplied user ID cannot select another account's private photo. Photo URLs refresh while the page remains open. Existing private file access and approved-provider public avatars retain their authorization checks. Actual backend upload/ownership tests are in the isolated local workflow suite; mocked browser tests do not establish that a hosted Storage deployment is verified.
+
+`src/app/theme.css` centralizes the forest/ivory/sage/gold palette and typography. Editorial headings use system Georgia serif fallbacks; application controls, body text, navigation, tables and numeric data retain the locally installed Plus Jakarta Sans. No external font service, new logo or image replacement was introduced. Responsive rules continue in `src/app/responsive.css`; map tiles remain light.
+
 ## Android APK releases
 
 Use `/admin/settings/` to upload an **actual developer-supplied APK** and matching metadata. The Edge Function checks the ZIP entries, parses Android binary manifest version/minimum SDK, computes SHA-256, uploads to a versioned private path, reads it back, and verifies the stored bytes. Version name/code and minimum Android version must match the manifest. Draft notes can be edited; artifacts are not overwritten.

@@ -32,20 +32,20 @@ jobs:
           deno-version: v2.x
       - run: node scripts/report-ci-command.mjs deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
       - name: Prepare isolated browser test configuration
-        run: node scripts/prepare-local-integration.mjs
+        run: node scripts/report-ci-command.mjs node scripts/prepare-local-integration.mjs
       - name: Install browser and system dependencies
         run: npx playwright install --with-deps chromium
       - name: Serve local Edge Functions
         run: |
           npx supabase functions serve --env-file .cache/edge-test.env > .cache/edge-test.log 2>&1 &
-          node scripts/wait-for-local-edge.mjs
+          node scripts/report-ci-command.mjs node scripts/wait-for-local-edge.mjs
       - name: Run persisted workflows on desktop and mobile
         shell: bash
         run: |
           failed=0
           for project in desktop mobile; do
             npx supabase db reset
-            node scripts/seed-demo.mjs
+            node scripts/report-ci-command.mjs node scripts/seed-demo.mjs
             if ! node scripts/report-ci-command.mjs npx playwright test tests/e2e/workflows.spec.ts --project="$project" --reporter=line --trace=off --output=".cache/integration-$project"; then
               failed=1
             fi

@@ -1,5 +1,5 @@
 import {unzipSync} from 'npm:fflate@0.8.2';
-import {authorize,clients,cors,json,limitedFile,unwrap} from '../_shared/http.ts';
+import {authorize,clients,cors,json,limitedFile,unwrap,requireData} from '../_shared/http.ts';
 import {validateUpload} from '../../../src/lib/domain.ts';
 import {readAndroidManifest,androidVersions} from '../../../src/lib/apk.ts';
 Deno.serve(async req=>{
@@ -12,7 +12,7 @@ Deno.serve(async req=>{
    if(!r)return json({error:'Android app coming soon'},headers,404);
    const artifact=await privileged.storage.from('android-releases').info(r.artifact_path);
    if(artifact.error||Number(artifact.data.size)!==Number(r.byte_size))return json({error:'This download is temporarily unavailable. Please try again later.'},headers,503);
-   const signed=unwrap(await privileged.storage.from('android-releases').createSignedUrl(r.artifact_path,60,{download:`SERBISYOGO-${r.version_name}.apk`}));
+   const signed=requireData(await privileged.storage.from('android-releases').createSignedUrl(r.artifact_path,60,{download:`SERBISYOGO-${r.version_name}.apk`}));
    return json({url:signed.signedUrl,expires_in:60},headers);
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
@@ -38,7 +38,7 @@ Deno.serve(async req=>{
  const release=unwrap(await user.rpc('create_release_draft',{p_version_name:version,p_version_code:code,p_min_android:minimum,p_notes:notes}));
  unwrap(await privileged.storage.from('android-releases').upload(release.artifact_path,bytes,{contentType:'application/vnd.android.package-archive',upsert:false}));
  // Read it back: never trust upload metadata or a browser-provided checksum.
- const stored=unwrap(await privileged.storage.from('android-releases').download(release.artifact_path));
+ const stored=requireData(await privileged.storage.from('android-releases').download(release.artifact_path));
  const saved=new Uint8Array(await stored.arrayBuffer());const savedHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',saved))).map(x=>x.toString(16).padStart(2,'0')).join('');
  if(savedHash!==checksum||saved.length!==bytes.length)throw new Error('Stored artifact verification failed. Draft remains unpublished.');
  unwrap(await privileged.from('app_releases').update({byte_size:saved.length,sha256:checksum,verified_at:new Date().toISOString()}).eq('id',release.id).eq('status','draft'));

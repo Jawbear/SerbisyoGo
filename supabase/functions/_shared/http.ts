@@ -25,6 +25,11 @@ export async function authorize(req:Request,admin=false) {
   return {...c,identity:user};
 }
 export function unwrap<T>(result:{data:T;error:{message:string}|null}) {if(result.error)throw new Error(result.error.message);return result.data;}
+export function requireData<T>(result:{data:T;error:{message:string}|null}):NonNullable<T> {
+  const data=unwrap(result);
+  if(data===null||data===undefined)throw new Error('The storage operation returned no data.');
+  return data;
+}
 export async function limitedFile(req:Request,max:number) {
   const length=Number(req.headers.get('content-length')||0);
   if(length>max+1048576)throw new Error('Upload exceeds configured size limit');

@@ -16,3 +16,5 @@ mobile/dist/
 mobile/web-build/
 mobile/android/
 mobile/ios/
+mobile/credentials/
+mobile/builds/

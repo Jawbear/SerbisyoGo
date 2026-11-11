@@ -1,0 +1,113 @@
+name: Build downloadable Android APK
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish the verified APK as a GitHub prerelease download
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+jobs:
+  apk:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      NODE_ENV: production
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      ANDROID_KEYSTORE_PATH: /tmp/serbisyogo-release.p12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install the locked mobile dependencies
+        run: npm ci --include=dev
+      - run: npm test
+      - run: npm run lint
+      - run: npx expo install --check
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Configure persistent private release signing
+        run: node scripts/prepare-android-release.mjs
+        env:
+          ANDROID_RELEASE_KEYSTORE: ${{ secrets.ANDROID_RELEASE_KEYSTORE }}
+          ANDROID_RELEASE_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
+          ANDROID_RELEASE_ALIAS: ${{ secrets.ANDROID_RELEASE_ALIAS }}
+      - name: Build the standalone release APK
+        working-directory: mobile/android
+        run: node ../../scripts/report-ci-command.mjs ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+        env:
+          ANDROID_RELEASE_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
+          ANDROID_RELEASE_ALIAS: ${{ secrets.ANDROID_RELEASE_ALIAS }}
+      - name: Verify signing, identity, permissions and bundled code
+        run: node scripts/verify-apk.mjs
+        env:
+          ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      - name: Start an Android emulator for installation checks
+        timeout-minutes: 12
+        shell: bash
+        run: |
+          if [ ! -e /dev/kvm ]; then echo 'Android emulator acceleration is unavailable'; exit 1; fi
+          sudo chmod 666 /dev/kvm
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'system-images;android-35;google_apis;x86_64' > "$RUNNER_TEMP/android-image.log" 2>&1
+          printf 'no\n' | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name serbisyogo-ci --package 'system-images;android-35;google_apis;x86_64' --device pixel --force
+          "$ANDROID_HOME/emulator/emulator" -avd serbisyogo-ci -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect > "$RUNNER_TEMP/android-emulator.log" 2>&1 &
+          adb wait-for-device
+          ready=0
+          for attempt in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1' ]; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != '1' ]; then tail -n 50 "$RUNNER_TEMP/android-emulator.log"; exit 1; fi
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+          adb shell input keyevent 82
+      - name: Install APK and check native navigation without Metro
+        timeout-minutes: 6
+        run: node scripts/smoke-android.mjs
+      - name: Keep the verified APK and evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: SerbisyoGo-Android-APK
+          path: mobile/builds/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish the requested downloadable APK
+        if: inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('app.json')).expo.version")
+          tag="android-v$version"
+          node scripts/release-notes.mjs > builds/release-notes.md
+          gh release create "$tag" "builds/SerbisyoGo-$version.apk" "builds/SerbisyoGo-$version.apk.sha256" builds/build-metadata.json builds/android-home.png --target "$GITHUB_SHA" --title "SerbisyoGo Android $version" --prerelease --notes-file builds/release-notes.md
+          printf '### APK download\n\n[Download SerbisyoGo %s](https://github.com/%s/releases/download/%s/SerbisyoGo-%s.apk)\n' "$version" "$GITHUB_REPOSITORY" "$tag" "$version" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove runner signing material
+        if: always()
+        run: node -e "require('fs').rmSync(process.env.ANDROID_KEYSTORE_PATH, {force:true})"
+      - name: Show native failure diagnostics
+        if: failure()
+        run: |
+          adb logcat -d -b crash || true
+          if [ -f "$RUNNER_TEMP/android-emulator.log" ]; then tail -n 50 "$RUNNER_TEMP/android-emulator.log"; fi

@@ -6,8 +6,14 @@
     "scheme": "serbisyogo",
     "orientation": "default",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0f0e",
     "icon": "./assets/logo.png",
-    "android": { "package": "com.serbisyogo.mobile" },
+    "android": {
+      "package": "com.serbisyogo.mobile",
+      "versionCode": 1,
+      "allowBackup": false,
+      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.SYSTEM_ALERT_WINDOW"]
+    },
     "web": { "bundler": "metro", "output": "single", "favicon": "./assets/logo.png" },
     "plugins": ["expo-font"]
   }

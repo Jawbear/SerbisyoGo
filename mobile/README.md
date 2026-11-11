@@ -2,6 +2,8 @@
 
 React Native/Expo client for the existing SerbisyoGo home-services system. It opens directly with the shared Supabase backend. There is no demo mode, sample catalog, local-only booking system or mode switch in the shipped application.
 
+The signed [SerbisyoGo 0.1.0 APK](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.1.0/SerbisyoGo-0.1.0.apk) is available for Android 7.0+. It passed signature, installation, launch, discovery navigation and Android Back checks on an Android API 35 emulator without Metro. See [Android build and installation details](ANDROID_BUILD.md).
+
 ## Run on your laptop
 
 From `C:\Users\ACER\Desktop\INTREP`:
@@ -60,6 +62,6 @@ npm.cmd run test:e2e
 
 Controlled browser tests intercept backend HTTP calls while exercising the real application, authentication client and booking RPC wiring. Fixtures exist only under `tests/`; they are not an application mode. Separate opt-in tests check actual development accounts without creating hosted bookings. See [VALIDATION.md](VALIDATION.md) for exact results and limits.
 
-This completes the connected navigation/customer-request milestone. Provider operations, admin management, registration/recovery, messaging and profile editing still use the existing website; mobile parity for those features is separate work. No signed APK or physical-phone validation is claimed. `export:android` produces a JavaScript/Hermes bundle, not an APK.
+This completes the connected navigation/customer-request milestone. Provider operations, admin management, registration/recovery, messaging and profile editing still use the existing website; mobile parity for those features is separate work. Physical-phone validation remains pending. The downloadable APK comes from the native Gradle build; `export:android` alone produces a JavaScript/Hermes bundle.
 
 See the [evaluation guide](LAB_GUIDE.md) and [AI development record](AI_DEVELOPMENT.md).

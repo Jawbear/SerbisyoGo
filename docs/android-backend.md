@@ -33,7 +33,7 @@ The website does not own a private Next.js API. The React Native/Expo client in 
 | Upload | `POST /functions/v1/files` multipart | `file`, `kind`, optional `booking_id`, `draft_id`, `case_id`; server generates paths |
 | Private file | `GET /functions/v1/files?id=UUID` | Authorized 60-second signed URL |
 | Avatar | `GET /functions/v1/files?avatar=PROVIDER_UUID` | Public only for the approved provider's current avatar |
-| Release | `app_releases` published read / `GET /functions/v1/releases?id=UUID` | Published metadata plus fresh artifact URL; no APK exists until supplied |
+| Release | `app_releases` published read / `GET /functions/v1/releases?id=UUID` | Verified private-storage releases use fresh signed URLs; the website also supplies the checksum-pinned public GitHub APK |
 
 ## Booking states
 

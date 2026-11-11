@@ -1,10 +1,9 @@
 import {test,expect} from '@playwright/test';
 import {publicFixtures} from './public-fixtures';
 test.beforeEach(async({page})=>{await publicFixtures(page);});
-test('public navigation and no-release download state are usable',async({page})=>{
+test('public navigation and the published download page are usable',async({page})=>{
  await page.goto('/');await expect(page.getByRole('heading',{name:'Your home. In good hands.'})).toBeVisible();
- await page.goto('/download/');await expect(page.getByRole('heading',{name:'Our Android app is on its way.'})).toBeVisible();await expect(page.getByRole('button',{name:'Download APK'})).toHaveCount(0);
- await page.getByRole('link',{name:'Keep using the website'}).click();await expect(page.getByRole('heading',{name:'Find a professional'})).toBeVisible();
+ await page.goto('/download/');await expect(page.getByRole('heading',{name:'Take SerbisyoGo with you.'})).toBeVisible();await expect(page.getByRole('link',{name:'Download APK',exact:true})).toHaveAttribute('href',/SerbisyoGo-0\.1\.0\.apk$/);
 });
 test('private and admin routes do not expose records without authentication',async({page})=>{
  await page.goto('/admin/providers/');await expect(page.getByText(/Administrator sign in required|Connect your Supabase backend/)).toBeVisible();

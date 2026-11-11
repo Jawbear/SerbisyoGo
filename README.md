@@ -1,6 +1,6 @@
 # SERBISYOGO website
 
-A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) uses the same Supabase accounts, services and booking backend directly, with responsive screens and React Navigation. No native APK or signing key has been generated.
+A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) uses the same Supabase accounts, services and booking backend directly, with responsive screens and React Navigation. A signed [Android 0.1.0 APK](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.1.0/SerbisyoGo-0.1.0.apk) is available; see [native build details](mobile/ANDROID_BUILD.md).
 
 ## Current validation status
 
@@ -133,11 +133,13 @@ The owner-photo endpoint is `GET /functions/v1/files?my_avatar=1` with the user'
 
 ## Android APK releases
 
+The public `/download/` page now links to the actual signed GitHub APK, with verified version, Android compatibility, file size, publication date, SHA-256 and a direct-download QR code. Its checked-in metadata is in `src/features/app-releases/android-release.json`. This trusted published download remains available when Supabase is unconfigured or its optional release lookup fails. Newer verified admin-managed releases can still take precedence.
+
 Use `/admin/settings/` to upload an **actual developer-supplied APK** and matching metadata. The Edge Function checks the ZIP entries, parses Android binary manifest version/minimum SDK, computes SHA-256, uploads to a versioned private path, reads it back, and verifies the stored bytes. Version name/code and minimum Android version must match the manifest. Draft notes can be edited; artifacts are not overwritten.
 
-Publication locks the release flow and checks verification and stored-object size transactionally. Downloads accept published releases only and return fresh short-lived URLs. Empty, incomplete or archived releases are never offered as valid public APKs. The public page shows the actual version, compatibility, size, publication date, release notes, checksum and a QR code generated from `NEXT_PUBLIC_SITE_URL`. It shows **coming soon** until a release exists.
+Private-storage publication locks the release flow and checks verification and stored-object size transactionally. Its download endpoint accepts verified published releases only and returns fresh short-lived URLs. Empty, incomplete or archived private-storage releases are never offered as valid APKs. The independently verified GitHub release supplies the current public download.
 
-The maximum configured upload is 50 MB and may be reduced by project or Edge limits. This task does not develop the Android client. APK certificate/signature verification with the Android SDK's `apksigner` and a known expected certificate belongs in the future Android release pipeline; manifest/checksum validation is not a claim of code safety or certificate verification.
+The private-storage upload limit remains 50 MB. The standalone APK is distributed through GitHub Releases and is not subject to that upload endpoint. Its native pipeline uses Android `apksigner`, the persistent expected signing certificate, package/version and permission checks, and an emulator installation/navigation test. Physical-phone testing and full mobile provider/admin feature parity remain separate. See [release validation](docs/android-apk-release.md).
 
 ## Checks
 
@@ -157,7 +159,7 @@ Domain tests use Node's TypeScript stripping and run without installed dependenc
 
 The main [SERBISYOGO Figma file](https://www.figma.com/design/h3Lkpwb6xxLVgn8jzuP0js/SERBISYOGO?node-id=0-1) supplied the dark workspace structure, 216px sidebar, 72px header, Plus Jakarta Sans, tokens and card/forms proportions. The original 34px logo and technician image were recovered as exact rendered assets from that file in `public/brand/`. No substitute logo was invented. The secondary file was access-restricted, and final browser comparison was blocked; no pixel-perfect claim is made. No pitch deck existed in the empty repository. Neither Figma file was modified.
 
-See [Android shared-backend contract](docs/android-backend.md), [security notes](docs/security.md), [deployment](docs/deployment.md), and [validation results](docs/validation.md). Final operator-approved terms/privacy wording, business pricing policy, SMTP sender, real payment/payout integrations if desired, production tile configuration, actual Supabase credentials and the future APK remain setup inputs.
+See [Android shared-backend contract](docs/android-backend.md), [security notes](docs/security.md), [deployment](docs/deployment.md), and [validation results](docs/validation.md). Final operator-approved terms/privacy wording, business pricing policy, SMTP sender, real payment/payout integrations if desired, production tile configuration and deployment-specific credentials remain operator setup inputs. The signed Android APK is now supplied separately through the verified release above.
 
 To apply the owner's supplied display names to existing development accounts without reseeding, run `npm run seed:development -- --development-project YOUR_PROJECT_REF --rename-names`. It renames only the five approved fixture providers and fixture administrator, verifies protected development metadata first, and preserves their IDs, login credentials, roles and related history. Customer and pending-provider sample names remain unchanged. Restart the session or sign out/in if an old display name remains cached.
 

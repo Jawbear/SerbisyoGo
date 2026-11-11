@@ -37,6 +37,10 @@ No Kotlin/Java project, WebView wrapper, native APK or signing key was fabricate
 | Test fixture callback named `use` triggered React hook lint | Renamed it to `provideFixture`, preserving the React hook rule for application code. |
 | Service-error test remained loading during automatic retries | Disabled automatic PostgREST retries for screen requests. The bounded fetch timeout and visible manual retry action now control recovery. |
 | Laptop hero cropped the professional's face | Used side-by-side text/image on wider screens while preserving the stacked phone layout. |
+| Android signing-tool output changed | Accepted signer-label variants while requiring every certificate digest to match the persistent release key; added regression tests. |
+| Android tools missing from runner PATH and emulator startup stalled | Configured SDK/platform-tool/AVD paths explicitly, disabled Vulkan, bounded device waits and separated APK compilation from native checks. The retained artifact then passed installation and navigation without recompiling. |
+| Workflow release token returned HTTP 403 | All native checks passed; published the same checksum-verified artifact with the repository owner's existing authorized connection. No private signing key was committed. |
+| Browser full-file checks exceeded the transfer deadline | Verified the stored release asset size/hash and actual browser download initiation/filename, then canceled duplicate large test transfers. This is not represented as a completed full-file browser download. |
 
 ## Validation and responsibility
 

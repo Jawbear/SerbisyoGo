@@ -62,19 +62,11 @@ test('discovery filters survive reload and profile navigation', async ({ page })
   await expect(page.getByRole('button', { name: 'List only' })).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('failed release reads show an error and can be retried', async ({ page }) => {
-  test.skip(!process.env.NEXT_PUBLIC_SUPABASE_URL, 'Requires configured client to intercept a failed backend response.');
-  let allowRetry = false;
-  await page.route('**/*.supabase.co/rest/v1/app_releases*', async route => {
-    if (!allowRetry) {
-      await route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Temporary release lookup error' }) });
-    } else await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-  });
+test('published APK remains available if optional release lookup fails', async ({ page }) => {
+  await page.route('**/*.supabase.co/rest/v1/app_releases*', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Release lookup unavailable' }) }));
   await page.goto('/download/');
-  await expect(page.getByText('Temporary release lookup error')).toBeVisible();
-  allowRetry = true;
-  await page.getByRole('button', { name: 'Try again', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Our Android app is on its way.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download APK', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Take SerbisyoGo with you.' })).toBeVisible();
 });
 
 test('every admin section and private workflow denies anonymous access', async ({ page }) => {

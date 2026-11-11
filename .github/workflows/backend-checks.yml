@@ -1,28 +1,56 @@
-name: Local Supabase security checks
+name: Isolated Supabase integration checks
 on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', 'tests/**', 'scripts/**', 'src/**', 'package*.json', 'playwright.config.ts', '.github/workflows/backend-checks.yml']
   pull_request:
-    paths: ['supabase/**', 'tests/**', 'scripts/**', 'src/lib/**']
+    paths: ['supabase/**', 'tests/**', 'scripts/**', 'src/**', 'package*.json', 'playwright.config.ts', '.github/workflows/backend-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   database:
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm install
+      - run: npm ci
       - run: npx supabase start
       - run: npx supabase db reset
       - run: npm run test:db
       - run: npm run db:types
+      - run: npm run typecheck
       - name: Deno type check Edge Functions
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
       - run: deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
+      - name: Prepare isolated browser test configuration
+        run: node scripts/prepare-local-integration.mjs
+      - name: Install browser and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Serve local Edge Functions
+        run: |
+          npx supabase functions serve --env-file .cache/edge-test.env > .cache/edge-test.log 2>&1 &
+          node scripts/wait-for-local-edge.mjs
+      - name: Run persisted workflows on desktop and mobile
+        shell: bash
+        run: |
+          failed=0
+          for project in desktop mobile; do
+            npx supabase db reset
+            node scripts/seed-demo.mjs
+            if ! npx playwright test tests/e2e/workflows.spec.ts --project="$project" --reporter=line --trace=off --output=".cache/integration-$project"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
       - name: Stop local backend
         if: always()
         run: npx supabase stop --no-backup

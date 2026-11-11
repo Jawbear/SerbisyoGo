@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs",
+    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs tests/local-inbox.test.ts",
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
     "db:start": "supabase start",

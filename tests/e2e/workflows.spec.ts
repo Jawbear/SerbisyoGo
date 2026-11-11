@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {createClient} from '@supabase/supabase-js';
 import {unzipSync} from 'fflate';
 import {readAndroidManifest,androidVersions} from '../../src/lib/apk';
+import {verificationEmailLink} from '../local-inbox';
 type Credentials={id:string;email:string;password:string};
 type Fixtures={accounts:Record<string,Credentials>;bookings:{id:string;status:string}[];services:string[];caseId:string};
 const url=process.env.TEST_SUPABASE_URL,key=process.env.TEST_SUPABASE_PUBLISHABLE_KEY,secret=process.env.TEST_SUPABASE_SECRET_KEY;
@@ -73,13 +74,24 @@ test('customers, providers and admins upload their own private avatars',async()=
   const publicAvatar=await fetch(`${url}/functions/v1/files?avatar=${fixtures.accounts[who].id}`,{redirect:'manual',headers:{apikey:key!}});expect(publicAvatar.status).toBe(who==='providerA'?302:404);
  }
 });
-test('registration verifies an actual configured Supabase email link',async({page,request})=>{
- test.skip(!process.env.TEST_INBOX_URL,'Requires the local Inbucket test inbox API; never use a real mailbox.');
+test('registration verifies an actual configured Supabase email link',async({page})=>{
+ test.skip(!process.env.TEST_INBOX_URL,'Requires a local Mailpit/Inbucket test inbox; never use a real mailbox.');
  const local='registration.'+Date.now()+'.'+Math.random().toString(16).slice(2);const email=local+'@example.test';const password=crypto.randomUUID()+crypto.randomUUID();
  await page.goto('/register/');await page.getByLabel('Full name',{exact:true}).fill('Registration Demo');await page.getByLabel('Philippine mobile number').fill('09171234567');await page.getByLabel('Email address',{exact:true}).fill(email);await page.getByLabel('Create password',{exact:true}).count().then(async count=>{if(count)await page.getByLabel('Create password',{exact:true}).fill(password);else await page.getByLabel('Password',{exact:true}).fill(password);});await page.getByLabel('Confirm password').fill(password);await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Create an account',exact:true}).click();await expect(page).toHaveURL(/verify/);
- let messages:{id:string}[]=[];await expect.poll(async()=>{const response=await request.get(`${process.env.TEST_INBOX_URL}/api/v1/mailbox/${local}`);messages=response.ok()?await response.json():[];return messages.length;},{timeout:30000}).toBeGreaterThan(0);
- const mail=await (await request.get(`${process.env.TEST_INBOX_URL}/api/v1/mailbox/${local}/${messages[0].id}`)).json();const html=String(mail.body?.html||mail.body?.text||'');const link=html.match(/https?:\/\/[^\s"<>]+\/auth\/v1\/verify[^\s"<>]*/)?.[0]?.replaceAll('&amp;','&');expect(link).toBeTruthy();await page.goto(link!);await expect(page).toHaveURL(/dashboard/,{timeout:30000});await expect(page.getByRole('heading',{name:/Welcome back/})).toBeVisible();
+ let link:string|null=null;await expect.poll(async()=>{link=await verificationEmailLink(process.env.TEST_INBOX_URL!,email,url!);return Boolean(link);},{timeout:30000}).toBe(true);
+ await page.goto(link!);await expect(page).toHaveURL(/dashboard/,{timeout:30000});await expect(page.getByRole('heading',{name:/Welcome back/})).toBeVisible();
 });
+test('password recovery email opens the reset form and persists the new password',async({page})=>{
+ test.skip(!process.env.TEST_INBOX_URL,'Requires a local test inbox; never use a real mailbox.');
+ const account=fixtures.accounts.customerB;
+ await page.goto('/forgot-password/');await page.getByLabel('Email address',{exact:true}).fill(account.email);await page.getByRole('button',{name:'Send reset link',exact:true}).click();
+ await expect(page.getByText('Email request submitted.',{exact:true})).toBeVisible();
+ let link:string|null=null;await expect.poll(async()=>{link=await verificationEmailLink(process.env.TEST_INBOX_URL!,account.email,url!);return Boolean(link);},{timeout:30000}).toBe(true);
+ await page.goto(link!);await expect(page).toHaveURL(/\/reset-password\//,{timeout:30000});
+ const password=crypto.randomUUID()+crypto.randomUUID();await page.getByLabel('New password',{exact:true}).fill(password);await page.getByLabel('Confirm password',{exact:true}).fill(password);await page.getByRole('button',{name:'Update password',exact:true}).click();await expect(page).toHaveURL(/\/account\//);
+ const c=client('customerB');const response=await c.auth.signInWithPassword({email:account.email,password});expect(response.error).toBeNull();fixtures.accounts.customerB.password=password;await c.auth.signOut({scope:'local'});
+});
+
 test('an actual test APK can be verified, published locally, downloaded and archived',async({page})=>{
  test.skip(!process.env.TEST_APK_PATH,'No real developer test APK supplied; do not fabricate a package.');
  const bytes=await readFile(process.env.TEST_APK_PATH!);const entries=unzipSync(bytes,{filter:e=>e.name==='AndroidManifest.xml'});const manifest=readAndroidManifest(entries['AndroidManifest.xml']);const admin=await signed('admin');const {data:{session}}=await admin.auth.getSession();

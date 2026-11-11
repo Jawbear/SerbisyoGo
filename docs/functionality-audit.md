@@ -46,3 +46,24 @@ npx.cmd playwright test tests/e2e/development-readonly.spec.ts --project=desktop
 ```
 
 Without the explicit opt-in, the live read-only cases skip. The default public suite continues using controlled responses, and the existing write-integration suite continues requiring an isolated localhost backend.
+
+## Isolated backend automation follow-up
+
+Docker Desktop and WSL are absent on the current Windows workstation. The tracked `backend-checks.yml` workflow now runs on relevant pushes to `main`, pull requests and manual dispatch. It starts a disposable Supabase stack on the GitHub runner, applies migrations, runs pgTAP tests, regenerates database types, checks TypeScript and Edge Functions, and serves the local Edge endpoints. Each desktop/mobile project receives a fresh database and newly seeded fictional accounts before its persisted workflow tests run.
+
+The workflow reads keys only from `supabase status` for that local stack. It does not receive hosted project credentials. `scripts/prepare-local-integration.mjs` refuses nonlocal API/inbox endpoints and writes only ignored local integration files and the runner environment; it preserves the operator's `.env.local`. The local readiness check requires the actual empty-release response from the Edge Function before testing.
+
+Registration supports Mailpit's recipient-filtered rendered messages and older Inbucket responses. A new recovery test follows a captured reset link, changes the disposable test user's password and verifies login with that password. The email helper refuses hosted inboxes and authentication links outside the local backend. Four new unit checks cover this behavior, bringing the Node suite to **20 passing tests**.
+
+There are now 11 workflow cases per browser project. The real-APK case deliberately remains skipped without an actual developer-supplied APK, leaving 20 intended persisted/email cases across desktop and mobile. Configuring or pushing this workflow does **not** establish a passing result. Verify the matching commit under [Isolated Supabase integration checks](https://github.com/Jawbear/SerbisyoGo/actions/workflows/backend-checks.yml); GitHub Actions API authentication was unavailable from the current session. No hosted database, real mailbox or APK was changed by this follow-up.
+
+On a workstation with Docker, prepare the same environment using a disposable local stack:
+
+```powershell
+npm.cmd run db:start
+npx.cmd supabase db reset --local
+node scripts/prepare-local-integration.mjs
+node --env-file=.cache/local-integration.env scripts/seed-demo.mjs
+```
+
+Start the frontend with the generated `.cache/local-integration.env` rather than hosted credentials, serve Edge Functions with `.cache/edge-test.env`, and run `workflows.spec.ts` with the same local test environment. Recreate the disposable database and seed between desktop/mobile runs so earlier persisted writes do not contaminate later assertions.

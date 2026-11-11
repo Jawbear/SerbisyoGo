@@ -4,7 +4,7 @@ A Next.js App Router / TypeScript / Tailwind website with a customer experience,
 
 ## Current validation status
 
-The implementation is reviewable source, **not a verified production deployment**. Sixteen Node tests, TypeScript, full ESLint and the static production build pass. The functionality audit ran 46 existing desktop/mobile browser checks, 6 new authentication regressions and actual read-only customer/provider/admin checks against the designated development backend. Sign-in return navigation and a protected-page hydration race were fixed. Twenty local write-integration cases remain skipped without an isolated backend; email delivery, real file writes and real APK publication/download remain unverified. See the [current functionality audit](docs/functionality-audit.md) for exact scope and remaining checks.
+The implementation is reviewable source, **not a verified production deployment**. Twenty Node tests and TypeScript pass; full ESLint and the static production build passed in the functionality audit. That audit ran 46 existing desktop/mobile browser checks, 6 new authentication regressions and actual read-only customer/provider/admin checks against the designated development backend. Sign-in return navigation and a protected-page hydration race were fixed. The isolated backend workflow now runs database security checks and persisted desktop/mobile workflows, including captured registration/recovery email. Its remote results must be verified; configuring the workflow does not establish that those integration checks passed. Real APK publication/download remains unverified. See the [current functionality audit](docs/functionality-audit.md) for exact scope and remaining checks.
 
 ## Hosting: GitHub and Supabase
 

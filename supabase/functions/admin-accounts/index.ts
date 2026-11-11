@@ -1,4 +1,4 @@
-import {authorize,json,unwrap,requireData} from '../_shared/http.ts';
+import {authorize,json,unwrap} from '../_shared/http.ts';
 import {uuid,text,email,phone,password} from './validation.ts';
 
 function accountCors(req:Request) {
@@ -9,6 +9,7 @@ function accountCors(req:Request) {
 }
 type Plan={files:{bucket:string;path:string}[];counts:Record<string,number>};
 type Purge={operation_id:string;phase:'files'|'auth';plan:Plan};
+function authOk(result:{error:{message:string}|null}) {if(result.error)throw new Error(result.error.message);}
 
 Deno.serve(async req=>{
  let headers:Record<string,string>={};let deleting=false;
@@ -38,11 +39,11 @@ Deno.serve(async req=>{
    const name=text(body.full_name,'Full name',2,100),address=email(body.email),mobile=phone(body.phone),secret=password(body.password);
    const role=String(body.role||'customer');if(!['customer','admin'].includes(role))throw new Error('Create a customer account first; provider approval uses the verification workflow');
    const id=crypto.randomUUID();unwrap(await user.rpc('admin_account_auth_guard',{p_id:id,p_action:'account_created',p_reason:reason}));
-   const created=requireData(await privileged.auth.admin.createUser({id,email:address,password:secret,email_confirm:body.email_verified===true,user_metadata:{full_name:name}}));
-   if(!created.user)throw new Error('The account could not be created');
-   const saved=await user.rpc('admin_save_account',{p_id:created.user.id,p_name:name,p_phone:mobile,p_status:'active',p_role:role,p_reason:reason});
-   if(saved.error){await privileged.from('profiles').update({status:'deactivated'}).eq('id',created.user.id);throw new Error('The account was created but setup failed. It has been disabled; finish its setup from User accounts.');}
-   return json({account:await account(created.user.id)},headers,201);
+   const created=await privileged.auth.admin.createUser({id,email:address,password:secret,email_confirm:body.email_verified===true,user_metadata:{full_name:name}});authOk(created);
+   const createdUser=created.data.user;if(!createdUser)throw new Error('The account could not be created');
+   const saved=await user.rpc('admin_save_account',{p_id:createdUser.id,p_name:name,p_phone:mobile,p_status:'active',p_role:role,p_reason:reason});
+   if(saved.error){await privileged.from('profiles').update({status:'deactivated'}).eq('id',createdUser.id);throw new Error('The account was created but setup failed. It has been disabled; finish its setup from User accounts.');}
+   return json({account:await account(createdUser.id)},headers,201);
   }
   const id=uuid(body.id);
   if(action==='profile'){
@@ -57,7 +58,7 @@ Deno.serve(async req=>{
    if(action==='password'){values.password=password(body.password);if(body.password_confirmation!==body.password)throw new Error('Password confirmation does not match');}
    if(action==='verify_email'){if(body.email_verified!==true)throw new Error('Administrator verification is required');values.email_confirm=true;}
    unwrap(await user.rpc('admin_account_auth_guard',{p_id:id,p_action:operation,p_reason:reason}));
-   unwrap(await privileged.auth.admin.updateUserById(id,values));
+   authOk(await privileged.auth.admin.updateUserById(id,values));
    return json({account:await account(id),updated:true},headers);
   }
   if(action==='delete'){
@@ -67,7 +68,7 @@ Deno.serve(async req=>{
    if(job.phase==='files'){
     const target=await privileged.auth.admin.getUserById(id);
     if(target.error&&target.error.status!==404&&!['user_not_found','not_found'].includes(target.error.code||''))throw new Error(target.error.message);
-    if(target.data.user)unwrap(await privileged.auth.admin.updateUserById(id,{ban_duration:'876000h'}));
+    if(target.data.user)authOk(await privileged.auth.admin.updateUserById(id,{ban_duration:'876000h'}));
    }
    const plan=unwrap(await privileged.rpc('admin_account_purge_plan',{p_actor:identity.id,p_target:id})) as Plan;
     const buckets=new Map<string,string[]>();
@@ -75,7 +76,7 @@ Deno.serve(async req=>{
     for(const [bucket,paths]of buckets)for(let start=0;start<paths.length;start+=100)unwrap(await privileged.storage.from(bucket).remove(paths.slice(start,start+100)));
    if(job.phase==='files')unwrap(await privileged.rpc('admin_purge_account_records',{p_actor:identity.id,p_target:id,p_operation:job.operation_id}));
    const current=await privileged.auth.admin.getUserById(id);
-   if(current.data.user)unwrap(await privileged.auth.admin.deleteUser(id,false));
+   if(current.data.user)authOk(await privileged.auth.admin.deleteUser(id,false));
    else if(current.error&&!['user_not_found','not_found'].includes(current.error.code||'')&&current.error.status!==404)throw new Error(current.error.message);
    unwrap(await privileged.rpc('admin_finish_account_purge',{p_actor:identity.id,p_target:id,p_operation:job.operation_id}));
    return json({deleted:true,counts:job.plan.counts},headers);

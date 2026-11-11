@@ -11,8 +11,9 @@ import { ActionButton, ButtonLink, Dialog } from './ui';
 import { AccountAvatar } from '@/features/account/profile-photo';
 import { AccountRoleBadge } from '@/features/account/role-badge';
 const publicNav = [['/', 'Overview', Home], ['/dashboard/', 'My dashboard', LayoutDashboard], ['/find/', 'Find a professional', Search], ['/services/', 'Service categories', Layers], ['/bookings/', 'My bookings', CalendarDays], ['/messages/', 'Messages', MessageSquare], ['/bookings/?view=invoices', 'Invoices', Receipt], ['/support/', 'Help & support', LifeBuoy], ['/account/', 'Account settings', Settings], ['/provider/', 'Provider portal', BriefcaseBusiness]] as const;
+const adminShortcut = ['/admin/', 'Administration', ShieldCheck] as const;
 const visitorNav = [['/', 'Home', Home], ['/find/', 'Find a professional', Search], ['/services/', 'Services', Layers], ['/provider/apply/', 'For professionals', BriefcaseBusiness], ['/support/', 'Support', LifeBuoy]] as const;
-export const adminNav = [['/admin/', 'Operations dashboard', LayoutDashboard], ['/admin/providers/', 'Providers & verification', ShieldCheck], ['/admin/customers/', 'Customers', Users], ['/admin/bookings/', 'Bookings', CalendarDays], ['/admin/services/', 'Services & pricing', Layers], ['/admin/payouts/', 'Commissions & payouts', Wallet], ['/admin/transactions/', 'Transactions', CreditCard], ['/admin/reports/', 'Reports & analytics', ChartNoAxesCombined], ['/admin/complaints/', 'Complaints & safety', LifeBuoy], ['/admin/announcements/', 'Announcements', Megaphone], ['/admin/settings/', 'Settings & audit logs', Settings]] as const;
+export const adminNav = [['/admin/', 'Operations dashboard', LayoutDashboard], ['/admin/providers/', 'Providers & verification', ShieldCheck], ['/admin/accounts/', 'User accounts', Users], ['/admin/customers/', 'Customers', Users], ['/admin/bookings/', 'Bookings', CalendarDays], ['/admin/services/', 'Services & pricing', Layers], ['/admin/payouts/', 'Commissions & payouts', Wallet], ['/admin/transactions/', 'Transactions', CreditCard], ['/admin/reports/', 'Reports & analytics', ChartNoAxesCombined], ['/admin/complaints/', 'Complaints & safety', LifeBuoy], ['/admin/announcements/', 'Announcements', Megaphone], ['/admin/settings/', 'Settings & audit logs', Settings]] as const;
 export function Brand({ onClick }: { onClick?: () => void } = {}) {
   return <Link href="/" className="brand" onClick={onClick}><Image unoptimized width={34} height={34} src={`${config.basePath}/brand/logo.png`} alt="" /><span>SerbisyoGo</span></Link>;
 }
@@ -27,7 +28,7 @@ export function Shell({
   const session = useSession();
   const [open, setOpen] = useState(false);
   const workspace = admin || !!session.user;
-  const nav = admin ? adminNav : workspace ? publicNav : visitorNav;
+  const nav = admin ? adminNav : workspace ? session.role === 'admin' ? [adminShortcut, ...publicNav] : publicNav : visitorNav;
   const active = nav.find(n => n[0].includes('?') && n[0].split('?')[0] === path && new URLSearchParams(n[0].split('?')[1]).get('view') === query.get('view')) || nav.find(n => !n[0].includes('?') && n[0] === path) || nav.find(n => n[0] !== '/' && path.startsWith(n[0].split('?')[0])) || nav[0];
   const title = path === '/download/' ? 'Download Android app' : path.includes('login') ? 'Sign in' : path.includes('register') ? 'Create an account' : path.includes('preview') ? 'Design preview' : active[1];
   const links = <nav aria-label={admin ? 'Administration' : workspace ? 'Workspace' : 'Main navigation'}>{nav.map(([href, label, Icon]) => <Link key={href} href={href} className={`nav-item ${active[0] === href ? 'active' : ''}`} aria-current={active[0] === href ? 'page' : undefined} onClick={() => setOpen(false)}><Icon size={17} /><span>{label}</span></Link>)}</nav>;

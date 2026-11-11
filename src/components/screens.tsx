@@ -13,6 +13,7 @@ import { Account, Notifications } from '@/features/account/account';
 import { Support } from '@/features/support/support';
 import { DownloadPage } from '@/features/app-releases/download';
 import { AdminWorkspace, type AdminTab } from '@/features/admin/workspace';
+import { AdminAccounts } from '@/features/admin/accounts';
 import { demoProviders } from '@/lib/data';
 export function Screen({
   name
@@ -80,6 +81,8 @@ export function Screen({
       return <Guard><Account /></Guard>;
     case 'notifications':
       return <Guard><Notifications /></Guard>;
+    case 'admin-accounts':
+      return <Guard admin><AdminAccounts /></Guard>;
     default:
       if (name.startsWith('admin-')) return <Guard admin><AdminWorkspace tab={name.slice(6) as AdminTab} /></Guard>;
       return <Landing />;

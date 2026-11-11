@@ -14,6 +14,35 @@ test.skip(!configured,'Requires an isolated local Supabase project, local demo s
 async function signIn(page:Page,who:string){await page.goto('/login/');await page.getByLabel('Email address',{exact:true}).fill(fixtures.accounts[who].email);await page.getByLabel('Password',{exact:true}).fill(fixtures.accounts[who].password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/dashboard|provider|admin/);}
 function client(who?:string){const c=createClient(url!,who?key!:secret!,{auth:{persistSession:false}});return c;}
 async function signed(who:string){const c=client(who);const {error}=await c.auth.signInWithPassword(fixtures.accounts[who]);if(error)throw error;return c;}
+
+test('administrator creates, edits and permanently erases a disposable account through the protected endpoint',async()=>{
+ const admin=await signed('admin');const customer=await signed('customerA');
+ const {data:{session}}=await admin.auth.getSession();const {data:{session:other}}=await customer.auth.getSession();
+ const call=async(body?:Record<string,unknown>,query='',bearer=session!.access_token)=>{
+  const response=await fetch(`${url}/functions/v1/admin-accounts${query}`,{method:body?'POST':'GET',headers:{apikey:key!,Authorization:`Bearer ${bearer}`,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+  return {status:response.status,ok:response.ok,data:await response.json()};
+ };
+ expect((await call(undefined,'',other!.access_token)).status).toBe(403);
+ const address=`admin-managed.${crypto.randomUUID()}@example.test`;const password=crypto.randomUUID()+crypto.randomUUID();
+ const created=await call({action:'create',full_name:'Disposable managed account',email:address,phone:'09171234567',password,role:'customer',email_verified:true,reason:'Isolated account integration check'});
+ expect(created.ok,JSON.stringify(created.data)).toBe(true);const id=created.data.account.id;
+ const profile=await call({action:'profile',id,full_name:'Updated managed account',phone:'09181234567',status:'active',role:'customer',updated_at:created.data.account.updated_at,reason:'Verify persisted account editing'});
+ expect(profile.ok,JSON.stringify(profile.data)).toBe(true);expect(profile.data.account.full_name).toBe('Updated managed account');
+ const nextPassword=crypto.randomUUID()+crypto.randomUUID();expect((await call({action:'password',id,password:nextPassword,password_confirmation:nextPassword,reason:'Verify administrator password reset'})).ok).toBe(true);
+ const changedAddress=`updated.${crypto.randomUUID()}@example.test`;
+ expect((await call({action:'email',id,email:changedAddress,email_verified:true,reason:'Verified ownership in isolated test'})).ok).toBe(true);
+ const disposable=client('customerA');expect((await disposable.auth.signInWithPassword({email:changedAddress,password:nextPassword})).error).toBeNull();
+ const {data:{session:targetSession}}=await disposable.auth.getSession();
+ const image=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=','base64'));
+ const form=new FormData();form.set('kind','avatar');form.set('file',new File([image.buffer],'avatar.png',{type:'image/png'}));
+ const upload=await fetch(`${url}/functions/v1/files`,{method:'POST',headers:{apikey:key!,Authorization:`Bearer ${targetSession!.access_token}`},body:form});expect(upload.ok).toBe(true);const file=await upload.json();
+ const preview=await call(undefined,`?preview=${id}`);expect(preview.ok).toBe(true);
+ expect((await call({action:'delete',id,confirmation:'wrong confirmation',reason:'Verify confirmation safeguard'})).ok).toBe(false);
+ const erased=await call({action:'delete',id,confirmation:changedAddress,reason:'Erase isolated integration fixture'});expect(erased.ok,JSON.stringify(erased.data)).toBe(true);expect(erased.data.deleted).toBe(true);
+ expect((await client().auth.admin.getUserById(id)).data.user).toBeNull();expect((await client().from('profiles').select('id').eq('id',id)).data).toEqual([]);
+ expect((await client().storage.from('avatars').download(file.path)).error).toBeTruthy();expect((await call(undefined,`?id=${id}`)).data.rows).toEqual([]);
+ expect((await call({action:'delete',id:fixtures.accounts.admin.id,confirmation:fixtures.accounts.admin.email,reason:'Verify self deletion protection'})).ok).toBe(false);
+});
 test('customer signs in and persists account changes',async({page})=>{await signIn(page,'customerA');await page.goto('/account/');await page.getByLabel('Full name',{exact:true}).fill('Alex Demo Updated');await page.getByRole('button',{name:'Save profile'}).click();await expect(page.getByText('Saved successfully',{exact:true})).toBeVisible();await page.reload();await expect(page.getByLabel('Full name',{exact:true})).toHaveValue('Alex Demo Updated');});
 test('customer finds a professional, schedules a persisted booking and provider follows the state machine',async({page})=>{
  const c=await signed('customerA');const {data:service,error}=await c.from('provider_services').select('*').eq('id',fixtures.services[1]).single();if(error)throw error;

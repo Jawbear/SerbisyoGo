@@ -15,8 +15,8 @@ export function Card({ children, style }) { return <View style={[s.card, style]}
 export function Badge({ children }) { return <View style={s.badge}><Text style={s.badgeText}>{children}</Text></View>; }
 export function StatusBadge({ status }) { return <Badge>{statusLabels[status] || status}</Badge>; }
 
-export function Button({ title, onPress, secondary = false, disabled = false, busy = false, icon, testID }) {
-  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [s.button, secondary && s.secondary, (disabled || busy) && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
+export function Button({ title, onPress, secondary = false, danger = false, disabled = false, busy = false, icon, testID }) {
+  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [s.button, secondary && s.secondary, danger && {backgroundColor:c.error,borderColor:c.error}, (disabled || busy) && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
     {busy ? <ActivityIndicator color={secondary ? c.green : c.buttonText} /> : icon ? <Icon name={icon} size={18} color={secondary ? c.green : c.buttonText} /> : null}
     <Text style={[s.buttonText, secondary && { color: c.green }]}>{title}</Text>
   </Pressable>;

@@ -4,7 +4,7 @@ import { useApp } from '../AppContext';
 import { useAction } from '../hooks';
 import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
-const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings']);
+const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'AdminHome']);
 
 export default function SignInScreen({ navigation, route }) {
   const { signIn, liveAvailable } = useApp();
@@ -17,6 +17,7 @@ export default function SignInScreen({ navigation, route }) {
       const identity = await signIn(email, password);
       if (!identity) throw new Error('Your account could not be verified. Please try again.');
       const destination = destinations.has(route.params?.returnTo) ? route.params.returnTo : 'Home';
+      if (destination.startsWith('Admin') && identity.role !== 'admin') throw new Error('Administrator access required.');
       if (['BookingForm', 'BookingReview'].includes(destination) && identity.role !== 'customer') throw new Error('Submitting a service request requires a customer account.');
       navigation.replace(destination, route.params?.routeParams);
     });

@@ -6,14 +6,14 @@ import snackConfig from '../../snack.config';
 import { validateRequest } from '../domain';
 
 export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || snackConfig.supabaseUrl;
-const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || snackConfig.supabasePublishableKey;
+export const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || snackConfig.supabasePublishableKey;
 export const liveAvailable = Boolean(supabaseUrl && publishableKey && !publishableKey.startsWith('sb_secret_'));
-async function boundedFetch(input, init = {}) {
+export async function boundedFetch(input, init = {}, timeoutMs = 15000) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   if (init.signal?.aborted) abort();
   else init.signal?.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(abort, 15000);
+  const timeout = setTimeout(abort, timeoutMs);
   try { return await fetch(input, { ...init, signal: controller.signal }); }
   catch (error) {
     if (controller.signal.aborted) throw new Error('The connection took too long. Please check your connection and try again.');

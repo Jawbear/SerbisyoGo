@@ -15,6 +15,7 @@ export default function HomeScreen({ navigation }) {
   return <Screen>
     <View style={s.between}><View style={[s.inline, { flexShrink: 1 }]}><Icon name="location-outline" size={15} /><Muted style={{ flexShrink: 1 }}>Bunawan, Agusan del Sur</Muted></View>{app.identity ? <Badge>{roleLabels[app.identity.role]}</Badge> : <Button title="Sign in" secondary disabled={app.authLoading || !app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} />}</View>
     {!app.liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
+    {app.identity?.role==='admin' && <Button title="Open administration" icon="shield-checkmark-outline" onPress={()=>navigation.navigate('AdminHome')} />}
     <View style={styles.hero}>
       <View style={[s.stack, wide && { flexDirection: 'row', alignItems: 'center', gap: 28 }]}>
       <View style={[s.stack, wide && s.flex]}>

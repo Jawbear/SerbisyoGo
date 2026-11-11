@@ -14,6 +14,8 @@ import BookingReviewScreen from './src/screens/BookingReviewScreen';
 import MyBookingsScreen from './src/screens/MyBookingsScreen';
 import BookingRecordScreen from './src/screens/BookingRecordScreen';
 import SignInScreen from './src/screens/SignInScreen';
+import { AdminAccountsScreen, AdminAccountScreen } from './src/admin/Accounts';
+import { AdminHomeScreen, AdminRecordsScreen, AdminRecordScreen, AdminReportsScreen } from './src/admin/Workspace';
 
 const Stack = createNativeStackNavigator();
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, primary: c.green, background: c.background, card: c.background, text: c.text, border: c.border } };
@@ -22,7 +24,9 @@ const linking = {
   config: { screens: {
     Home: '', FindProfessionals: 'find', ProviderDetails: 'providers/:providerId',
     BookingForm: 'book/:providerId/:serviceId', BookingReview: 'review/:draftId',
-    MyBookings: 'bookings', BookingRecord: 'bookings/:bookingId', SignIn: 'sign-in'
+    MyBookings: 'bookings', BookingRecord: 'bookings/:bookingId', SignIn: 'sign-in',
+    AdminHome: 'admin', AdminAccounts: 'admin/accounts', AdminAccount: 'admin/account',
+    AdminRecords: 'admin/records', AdminRecord: 'admin/record', AdminReports: 'admin/reports'
   } }
 };
 
@@ -42,6 +46,12 @@ function Navigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My bookings' }} />
       <Stack.Screen name="BookingRecord" component={BookingRecordScreen} options={{ title: 'Booking details' }} />
       <Stack.Screen name="SignIn" component={SignInScreen} options={{ title: 'Sign in', presentation: 'modal' }} />
+      <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{title:'Administration'}} />
+      <Stack.Screen name="AdminAccounts" component={AdminAccountsScreen} options={{title:'User accounts'}} />
+      <Stack.Screen name="AdminAccount" component={AdminAccountScreen} options={{title:'Manage account'}} />
+      <Stack.Screen name="AdminRecords" component={AdminRecordsScreen} options={{title:'Administration records'}} />
+      <Stack.Screen name="AdminRecord" component={AdminRecordScreen} options={{title:'Manage record'}} />
+      <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{title:'Reports'}} />
     </Stack.Navigator>
   </NavigationContainer>;
 }

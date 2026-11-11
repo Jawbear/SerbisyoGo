@@ -9,7 +9,7 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest', sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
-      globals: { process: 'readonly', require: 'readonly', console: 'readonly', fetch: 'readonly', URL: 'readonly', AbortController: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', __DEV__: 'readonly' }
+      globals: { process: 'readonly', require: 'readonly', console: 'readonly', fetch: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', FormData: 'readonly', AbortController: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', __DEV__: 'readonly' }
     },
     plugins: { 'react-hooks': hooks, react },
     rules: { ...hooks.configs.recommended.rules, 'react/jsx-uses-vars': 'error', 'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }] }

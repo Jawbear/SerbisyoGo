@@ -129,7 +129,7 @@ declare job admin_private.account_purges; expected text; plan jsonb; begin
   update public.profiles set status='deactivated' where id=p_target;
   update public.provider_profiles set status='suspended' where id=p_target;
  else
-  if job.confirmation_hash<>encode(extensions.digest(lower(trim(p_confirmation))||p_target::text,'sha256'),'hex') and not (trim(p_confirmation)=p_target::text and not exists(select 1 from auth.users where id=p_target)) then raise exception 'Deletion confirmation does not match'; end if;
+  if job.confirmation_hash<>encode(extensions.digest(lower(trim(p_confirmation))||p_target::text,'sha256'),'hex') and trim(p_confirmation)<>p_target::text then raise exception 'Deletion confirmation does not match'; end if;
   plan=admin_private.account_plan(p_target);
  end if;
  return jsonb_build_object('operation_id',job.id,'phase',job.phase,'plan',plan);

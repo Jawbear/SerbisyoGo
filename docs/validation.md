@@ -1,5 +1,7 @@
 # Validation report
 
+The [11 November functionality audit](functionality-audit.md) is the latest validation record. It includes actual read-only development-backend checks, customer/provider/admin browser reads, and fixes for sign-in return navigation and protected-page hydration. The older results and environment limitations below are retained as validation history; refer to the new audit for current scope and remaining gaps.
+
 ## Executed here
 
 Visitor-layout follow-up: anonymous visitors now have discovery navigation, signed-in users retain workspace navigation, categories precede featured providers, and phone category tiles use a compact two-column layout. Supporting text was enlarged. TypeScript, full lint, 16 Node tests and the static export pass. Desktop/mobile screenshots were reviewed. Browser checks cover 320–1920px and the 700/1100/1101/1280px navigation boundaries, using controlled backend responses. Overlapping test runs caused one trace-output filesystem failure; affected mobile cases were rerun sequentially in a separate output directory. This is UI verification, not a new hosted backend certification.

@@ -4,7 +4,7 @@ A Next.js App Router / TypeScript / Tailwind website with a customer experience,
 
 ## Current validation status
 
-The implementation is reviewable source, **not a verified production deployment**. Sixteen Node tests, TypeScript, full ESLint and the static production build pass locally, including the `/SerbisyoGo` Pages path. Browser UI checks passed across six viewport widths using controlled backend responses. Live database/RLS, authenticated workflow, Edge and real-APK integration checks remain unverified. See the [responsive review](docs/responsive-review.md) and [validation report](docs/validation.md).
+The implementation is reviewable source, **not a verified production deployment**. Sixteen Node tests, TypeScript, full ESLint and the static production build pass. The functionality audit ran 46 existing desktop/mobile browser checks, 6 new authentication regressions and actual read-only customer/provider/admin checks against the designated development backend. Sign-in return navigation and a protected-page hydration race were fixed. Twenty local write-integration cases remain skipped without an isolated backend; email delivery, real file writes and real APK publication/download remain unverified. See the [current functionality audit](docs/functionality-audit.md) for exact scope and remaining checks.
 
 ## Hosting: GitHub and Supabase
 

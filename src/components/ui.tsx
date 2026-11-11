@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type FormEvent } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type FormEvent } from 'react';
 import { CheckCircle2, AlertCircle, LoaderCircle, Search, ArrowRight, Inbox, X } from 'lucide-react';
 import { backendConfigured } from '@/lib/config';
 import { useSession } from './session';
@@ -104,6 +105,10 @@ export function Skeleton() {
 export function SetupState() {
   return <Card><Empty title="Connect your Supabase backend" description="This operation needs a configured backend. Public design previews remain available; no changes are being saved." action={<ButtonLink href="/preview/">Explore the preview <ArrowRight size={16} /></ButtonLink>} /><p className="muted small">Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in GitHub repository variables, apply the migrations, and deploy the Edge Functions. See README.md.</p></Card>;
 }
+const emptySubscribe = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
 export function Guard({
   children,
   admin = false,
@@ -114,10 +119,17 @@ export function Guard({
   provider?: boolean;
 }) {
   const s = useSession();
+  // Auth may resolve before this Suspense boundary hydrates. Match its server
+  // loading state first, then render the current authenticated context.
+  const hydrated = useSyncExternalStore(emptySubscribe, clientSnapshot, serverSnapshot);
+  const path = usePathname();
+  const params = useSearchParams();
+  const next = path + (params.size ? `?${params.toString()}` : '');
+  const signIn = `${admin ? '/admin/login/' : '/login/'}?next=${encodeURIComponent(next)}`;
   if (!backendConfigured) return <SetupState />;
-  if (s.loading) return <Skeleton />;
+  if (!hydrated || s.loading) return <Skeleton />;
   if (s.error) return <Notice error>{s.error}</Notice>;
-  if (!s.user) return <Card><Empty title={admin ? 'Administrator sign in required' : 'Sign in to continue'} description="Your bookings and account details are private." action={<ButtonLink href={admin ? '/admin/login/' : '/login/'}>Sign in <ArrowRight size={16} /></ButtonLink>} /></Card>;
+  if (!s.user) return <Card><Empty title={admin ? 'Administrator sign in required' : 'Sign in to continue'} description="Your bookings and account details are private." action={<ButtonLink href={signIn}>Sign in <ArrowRight size={16} /></ButtonLink>} /></Card>;
   if (s.profile?.status !== 'active') return <Notice error>Your account is restricted. Contact support for assistance.</Notice>;
   if (admin && s.role !== 'admin') return <Notice error>Access denied. This workspace requires an authorized administrator account.</Notice>;
   if (provider && s.role !== 'provider' && s.role !== 'admin') return <Notice>Provider approval is required to accept jobs. <Link href="/provider/apply/">Continue your application</Link>.</Notice>;

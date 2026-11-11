@@ -76,7 +76,7 @@ export function AuthScreen({
             await client.auth.signOut();
             throw new Error('Administrator access is required.');
           }
-          router.push(admin ? '/admin/' : safeRedirect(params.get('next'), context.role === 'admin' ? '/admin/' : context.role === 'provider' ? '/provider/' : '/dashboard/'));
+          router.push(safeRedirect(params.get('next'), admin || context.role === 'admin' ? '/admin/' : context.role === 'provider' ? '/provider/' : '/dashboard/'));
           session.refresh();
         } else if (mode === 'forgot') {
           const {

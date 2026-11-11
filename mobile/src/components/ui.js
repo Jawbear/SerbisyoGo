@@ -6,6 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors as c, statusLabels } from '../theme';
 import { money } from '../domain';
 import { supabaseUrl } from '../data/backend';
+import { useUpdates } from '../updates/UpdateContext';
 
 export function Icon({ name, size = 20, color = c.green }) { return <Ionicons name={name} size={size} color={color} accessible={false} />; }
 export function Label({ children }) { return <Text style={s.label}>{children}</Text>; }
@@ -77,8 +78,9 @@ export function QuickNav() {
 }
 
 export function Screen({ children, footer = true }) {
+  const update=useUpdates(); const navigation=useNavigation();
   const route = useRoute();
-  return <SafeAreaView testID={`screen-${route.name}`} style={s.screen} edges={['left', 'right', 'bottom']}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>{children}</ScrollView></KeyboardAvoidingView>{footer && <QuickNav />}</SafeAreaView>;
+  return <SafeAreaView testID={`screen-${route.name}`} style={s.screen} edges={['left', 'right', 'bottom']}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>{update?.release && route.name!=='AppUpdates' && <Card style={s.stack}><Muted>{update.stage==='downloading'?`Downloading app update: ${update.progress}%`:update.stage==='ready'?'App update ready to install':`SerbisyoGo ${update.release.version_name} is available`}</Muted><Button title="View app update" secondary onPress={()=>navigation.navigate('AppUpdates')} /></Card>}{children}</ScrollView></KeyboardAvoidingView>{footer && <QuickNav />}</SafeAreaView>;
 }
 
 export const s = StyleSheet.create({

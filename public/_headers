@@ -1,0 +1,6 @@
+/app-update.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: no-store
+/app-update.json/
+  Access-Control-Allow-Origin: *
+  Cache-Control: no-store

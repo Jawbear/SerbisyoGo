@@ -14,6 +14,8 @@ import BookingReviewScreen from './src/screens/BookingReviewScreen';
 import MyBookingsScreen from './src/screens/MyBookingsScreen';
 import BookingRecordScreen from './src/screens/BookingRecordScreen';
 import SignInScreen from './src/screens/SignInScreen';
+import { UpdateProvider } from './src/updates/UpdateContext';
+import UpdateScreen from './src/updates/UpdateScreen';
 import { AdminAccountsScreen, AdminAccountScreen } from './src/admin/Accounts';
 import { AdminHomeScreen, AdminRecordsScreen, AdminRecordScreen, AdminReportsScreen } from './src/admin/Workspace';
 
@@ -26,7 +28,7 @@ const linking = {
     BookingForm: 'book/:providerId/:serviceId', BookingReview: 'review/:draftId',
     MyBookings: 'bookings', BookingRecord: 'bookings/:bookingId', SignIn: 'sign-in',
     AdminHome: 'admin', AdminAccounts: 'admin/accounts', AdminAccount: 'admin/account',
-    AdminRecords: 'admin/records', AdminRecord: 'admin/record', AdminReports: 'admin/reports'
+    AdminRecords: 'admin/records', AdminRecord: 'admin/record', AdminReports: 'admin/reports', AppUpdates: 'app-updates'
   } }
 };
 
@@ -46,6 +48,7 @@ function Navigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My bookings' }} />
       <Stack.Screen name="BookingRecord" component={BookingRecordScreen} options={{ title: 'Booking details' }} />
       <Stack.Screen name="SignIn" component={SignInScreen} options={{ title: 'Sign in', presentation: 'modal' }} />
+      <Stack.Screen name="AppUpdates" component={UpdateScreen} options={{title:'App updates'}} />
       <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{title:'Administration'}} />
       <Stack.Screen name="AdminAccounts" component={AdminAccountsScreen} options={{title:'User accounts'}} />
       <Stack.Screen name="AdminAccount" component={AdminAccountScreen} options={{title:'Manage account'}} />
@@ -57,7 +60,7 @@ function Navigator() {
 }
 
 export default function App() {
-  return <SafeAreaProvider><AppProvider><StatusBar style="light" /><Navigator /></AppProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><AppProvider><UpdateProvider><StatusBar style="light" /><Navigator /></UpdateProvider></AppProvider></SafeAreaProvider>;
 }
 
 const styles = StyleSheet.create({

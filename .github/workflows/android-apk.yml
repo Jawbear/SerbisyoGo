@@ -71,6 +71,12 @@ jobs:
         run: node scripts/verify-apk.mjs
         env:
           ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      - name: Build an isolated lower-version updater fixture
+        run: node scripts/build-update-baseline.mjs
+        env:
+          ANDROID_RELEASE_PASSWORD: ${{ secrets.ANDROID_RELEASE_PASSWORD }}
+          ANDROID_RELEASE_ALIAS: ${{ secrets.ANDROID_RELEASE_ALIAS }}
+          ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
       - name: Keep the signed APK for independent native checks
         uses: actions/upload-artifact@v7
         with:
@@ -86,6 +92,8 @@ jobs:
     if: always() && github.ref == 'refs/heads/main' && (needs.apk.result == 'success' || inputs.artifact_run_id != '')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      CI: '1'
     permissions:
       contents: write
       actions: read
@@ -164,3 +172,24 @@ jobs:
         run: |
           if [ -f "$RUNNER_TEMP/android-emulator.log" ]; then tail -n 50 "$RUNNER_TEMP/android-emulator.log"; fi
           timeout 10 adb -e logcat -d -b crash || true
+      - name: Verify the real in-app Android update flow
+        if: inputs.publish_release
+        timeout-minutes: 12
+        run: node scripts/smoke-update.mjs
+      - name: Publish in-app update verification evidence
+        if: inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('app.json')).expo.version")
+          gh release upload "android-v$version" builds/build-metadata.json builds/android-update-ready.png builds/android-update-confirmation.png --clobber
+      - name: Keep updater verification evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: SerbisyoGo-updater-evidence
+          path: |
+            mobile/builds/android-update-*.png
+            mobile/builds/update-failure.xml
+            mobile/builds/build-metadata.json

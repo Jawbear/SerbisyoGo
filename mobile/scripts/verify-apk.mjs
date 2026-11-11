@@ -16,6 +16,7 @@ console.log(signature);
 const certificateSha256 = signingCertificate(signature, process.env.ANDROID_RELEASE_CERT_SHA256);
 if (!manifest.includes(`package: name='${config.android.package}'`) || !manifest.includes(`versionName='${config.version}'`) || !manifest.includes(`versionCode='${config.android.versionCode}'`)) throw new Error('APK identity/version does not match app.json.');
 if (/application-debuggable/.test(manifest)) throw new Error('A debuggable APK cannot be published by this workflow.');
+if (!manifest.includes("uses-permission: name='android.permission.REQUEST_INSTALL_PACKAGES'")) throw new Error('The in-app updater installation permission is missing.');
 for (const permission of config.android.blockedPermissions) if (manifest.includes(`uses-permission: name='${permission}'`)) throw new Error(`Unexpected APK permission: ${permission}`);
 const entries = execFileSync('jar', ['tf', source], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }).split(/\r?\n/);
 if (!entries.includes('assets/index.android.bundle')) throw new Error('The standalone JavaScript bundle is missing; this APK would require Metro.');

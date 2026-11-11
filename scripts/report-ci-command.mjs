@@ -12,10 +12,10 @@ if (result.error) console.error(result.error.message);
 if (result.status !== 0 && process.env.GITHUB_ACTIONS === 'true') {
   // Action annotations remain readable when downloading raw logs requires login.
   // Keep the actual failing command's exit code; reporting never turns it green.
-  const lines = output.split(/\r?\n/);
+  const lines = output.replace(/\u001b\[[0-9;]*m/g, '').split(/\r?\n/);
   const selected = new Set();
   for (let i = 0; i < lines.length; i++) {
-    if (/not ok|ERROR:|Error:|error TS|FAIL|Test Summary|Dubious/i.test(lines[i])) {
+    if (/not ok|error:|\[ERROR\]|\bTS\d+|FAIL|Test Summary|Dubious/i.test(lines[i])) {
       for (let j = Math.max(0, i - 2); j < Math.min(lines.length, i + 12); j++) selected.add(j);
     }
   }

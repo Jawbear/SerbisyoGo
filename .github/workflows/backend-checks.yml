@@ -23,14 +23,14 @@ jobs:
       - run: npm ci
       - run: npx supabase start
       - run: npx supabase db reset
-      - run: npm run test:db
+      - run: node scripts/report-ci-command.mjs npm run test:db
       - run: npm run db:types
-      - run: npm run typecheck
+      - run: node scripts/report-ci-command.mjs npm run typecheck
       - name: Deno type check Edge Functions
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
+      - run: node scripts/report-ci-command.mjs deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
       - name: Prepare isolated browser test configuration
         run: node scripts/prepare-local-integration.mjs
       - name: Install browser and system dependencies
@@ -46,7 +46,7 @@ jobs:
           for project in desktop mobile; do
             npx supabase db reset
             node scripts/seed-demo.mjs
-            if ! npx playwright test tests/e2e/workflows.spec.ts --project="$project" --reporter=line --trace=off --output=".cache/integration-$project"; then
+            if ! node scripts/report-ci-command.mjs npx playwright test tests/e2e/workflows.spec.ts --project="$project" --reporter=line --trace=off --output=".cache/integration-$project"; then
               failed=1
             fi
           done

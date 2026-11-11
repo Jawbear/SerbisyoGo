@@ -39,6 +39,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            mobile/package-lock.json
+            mobile/app.json
+            mobile/scripts/prepare-android-release.mjs
       - name: Install the locked mobile dependencies
         run: npm ci --include=dev
       - run: npm test

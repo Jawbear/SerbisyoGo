@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "export:web": "expo export --platform web --max-workers 2",
     "export:android": "expo export --platform android --max-workers 2 --output-dir ../.cache/mobile-android-export",
-    "test": "node --test tests/domain.test.mjs",
+    "test": "node --test tests/domain.test.mjs tests/apk-signature.test.mjs",
     "test:e2e": "playwright test --config playwright.config.mjs",
     "lint": "eslint App.js index.js src tests scripts --config eslint.config.mjs"
   },

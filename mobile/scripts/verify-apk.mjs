@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { signingCertificate } from './apk-signature.mjs';
 
 const config = JSON.parse(readFileSync('app.json', 'utf8')).expo;
 const source = resolve('android/app/build/outputs/apk/release/app-release.apk');
@@ -11,9 +12,8 @@ const versions = readdirSync(join(sdk, 'build-tools')).filter(name => /^\d+\.\d+
 const tools = join(sdk, 'build-tools', versions.at(-1));
 const manifest = execFileSync(join(tools, 'aapt'), ['dump', 'badging', source], { encoding: 'utf8' });
 const signature = execFileSync(join(tools, 'apksigner'), ['verify', '--verbose', '--print-certs', source], { encoding: 'utf8' });
-const certificateSha256 = signature.match(/Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]+)/)?.[1].toLowerCase();
-const expected = process.env.ANDROID_RELEASE_CERT_SHA256?.toLowerCase();
-if (!expected || certificateSha256 !== expected) throw new Error('APK signing certificate does not match the persistent private release key.');
+console.log(signature);
+const certificateSha256 = signingCertificate(signature, process.env.ANDROID_RELEASE_CERT_SHA256);
 if (!manifest.includes(`package: name='${config.android.package}'`) || !manifest.includes(`versionName='${config.version}'`) || !manifest.includes(`versionCode='${config.android.versionCode}'`)) throw new Error('APK identity/version does not match app.json.');
 if (/application-debuggable/.test(manifest)) throw new Error('A debuggable APK cannot be published by this workflow.');
 for (const permission of config.android.blockedPermissions) if (manifest.includes(`uses-permission: name='${permission}'`)) throw new Error(`Unexpected APK permission: ${permission}`);

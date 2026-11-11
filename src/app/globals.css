@@ -14,3 +14,7 @@
 .map-view-switch button{display:flex;align-items:center;gap:6px;min-height:44px;padding:8px;border:0;border-radius:4px;background:#fff;color:#203d30;font-size:12px;font-weight:700}
 .map-view-switch button[aria-pressed=true]{background:#203d30;color:#fff}
 .map-view-switch small{flex-basis:100%;text-align:center;font-size:10px}
+
+/* Supplied service cover photographs; preserve the existing dark palette. */
+.category-card{overflow:hidden}.category-card .service-cover{display:block;width:calc(100% + 48px);max-width:none;height:150px;object-fit:cover;margin:-24px -24px 4px;border-radius:13px 13px 0 0}.hero-image>img{object-position:65% center}
+@media(max-width:700px){.category-card .service-cover{height:110px}}

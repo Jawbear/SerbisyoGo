@@ -1,6 +1,7 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { useAction, useData } from '../hooks';
+import { homeCover, serviceCover } from '../data/covers';
 import { colors as c, roleLabels } from '../theme';
 import { Badge, Button, Card, Icon, Label, Muted, Notice, ProviderGrid, Query, Screen, Section, s } from '../components/ui';
 
@@ -25,14 +26,15 @@ export default function HomeScreen({ navigation }) {
       <Muted>Find a helping hand nearby. Choose a professional and plan your next home service.</Muted>
       <Button title="Find a professional" icon="search-outline" onPress={() => navigation.navigate('FindProfessionals', { categoryId: '' })} />
       </View>
-      <Image source={require('../../assets/hero.png')} accessibilityLabel="Home service professional ready to help" style={[styles.heroImage, wide && { width: '42%', height: 310 }]} />
+      <Image source={homeCover} accessibilityLabel="Carpenter adjusting a cabinet hinge" style={[styles.heroImage, wide && { width: '42%', height: 310 }]} />
       </View>
       <View style={s.row}><Icon name="shield-checkmark-outline" /><Muted style={s.flex}>Profiles, schedules, and service requests in one place.</Muted></View>
     </View>
     <Query query={query}>{query.data && <>
       <Section title="What needs attention at home?">
-        <ScrollView horizontal style={{ flexGrow: 0, flexShrink: 0, height: 164 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        <ScrollView horizontal style={{ flexGrow: 0, flexShrink: 0, height: 240 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
           {query.data.categories.map(category => <Pressable key={category.id} accessibilityRole="button" accessibilityLabel={`Browse ${category.name}`} onPress={() => navigation.navigate('FindProfessionals', { categoryId: category.id })} style={styles.category}>
+            {serviceCover(category.name) ? <Image source={serviceCover(category.name)} accessibilityLabel={`${category.name} service cover`} style={styles.categoryCover} /> : <View style={styles.categoryPlaceholder}><Icon name={categoryIcons[category.icon] || 'construct-outline'} size={32} /></View>}
             <View style={styles.categoryIcon}><Icon name={categoryIcons[category.icon] || (category.icon?.endsWith('-outline') ? category.icon : 'construct-outline')} size={25} /></View><Text style={styles.categoryName}>{category.name}</Text><Icon name="arrow-forward-outline" size={16} />
           </Pressable>)}
         </ScrollView>
@@ -55,7 +57,9 @@ const styles = StyleSheet.create({
   hero: { padding: 22, borderRadius: 24, borderWidth: 1, borderColor: c.border, backgroundColor: '#112219', gap: 18 },
   heroTitle: { color: c.text, fontSize: 41, lineHeight: 47, letterSpacing: -1.2, fontWeight: '700' },
   heroImage: { width: '100%', height: 175, borderRadius: 16, resizeMode: 'cover' },
-  category: { width: 136, padding: 17, borderWidth: 1, borderColor: c.border, borderRadius: 18, backgroundColor: c.panel, gap: 15 },
+  category: { width: 168, padding: 14, borderWidth: 1, borderColor: c.border, borderRadius: 18, backgroundColor: c.panel, gap: 10 },
+  categoryCover: { width: '100%', height: 82, borderRadius: 10, resizeMode: 'cover' },
+  categoryPlaceholder: { height: 82, borderRadius: 10, backgroundColor: c.soft, alignItems: 'center', justifyContent: 'center' },
   categoryIcon: { backgroundColor: c.soft, width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   categoryName: { fontSize: 13, fontWeight: '700', color: c.text, minHeight: 34 }
 });

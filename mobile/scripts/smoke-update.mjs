@@ -22,7 +22,7 @@ let xml=await waitFor(value=>value.includes('A new version is available'),'optio
 tap(xml,'Remind me later');
 xml=await waitFor(value=>value.includes('View app update')&&!value.includes('A new version is available'),'Later keeps the app usable');
 tap(xml,'View app update');
-xml=await waitFor(value=>value.includes(`Installed version: ${metadata.version} (build ${metadata.versionCode-1})`),'native installed version');
+xml=await waitFor(value=>value.includes('Installed version:')&&value.includes(`(build ${metadata.versionCode-1})`),'native installed version');
 xml=await findButton('Download app update');
 tap(xml,'Download app update');
 xml=await findButton('Install update',480000);

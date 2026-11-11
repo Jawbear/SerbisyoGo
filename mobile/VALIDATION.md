@@ -2,6 +2,8 @@
 
 ## In-app updater source — 12 November 2026
 
+Local fallback update: verified Android SDK tools, Java 17, NDK 27.1, CMake and an Android 15 AOSP image are cached locally. Windows hypervisor acceleration works and the dedicated emulator booted. The updater Kotlin module, JavaScript bundle and native libraries compiled after fixing the module's required library version metadata. APK packaging did not complete: a Google Maven TLS download failed, and one cached retry hit Ninja's Windows 260-character path limit in the Gradle cache. Shortening the local Gradle cache path is the next build repair. No 0.3.0 APK has been published; the live download remains 0.2.0. The dedicated emulator was stopped to release laptop resources.
+
 - Twelve unit checks passed, including newer-version selection, invalid/untrusted manifest rejection, reminder timing, the public-release fallback and offline behavior.
 - Thirteen mobile browser checks passed, including both update-screen cases and the existing account, booking, admin and responsive checks.
 - Mobile lint, Android JavaScript/Hermes compilation, website lint/unit checks and the website static production build passed. Native module autolinking resolves the local updater module.

@@ -1,5 +1,7 @@
 # Android in-app updates
 
+The application stack remains JavaScript, React Native, Expo SDK 55, React Navigation and the shared Supabase backend. The updater uses a small local Expo module written in Kotlin for Android's package verification and installer APIs. Java, Gradle, the Android SDK and the emulator are build/test tools.
+
 Version 0.3.0 introduces the native updater. Users of 0.1.0 or 0.2.0 must install this release once over their existing app. They do not need to uninstall. Those older APKs cannot gain native updater functionality from a server change.
 
 The app checks for updates at launch and at most every six hours when returning to the foreground. It compares Android version codes, rather than version strings. The optional prompt offers Download and Later; Later suppresses that version's automatic reminder for one day. Users can continue using all existing screens. Home → App updates also provides a manual check, retry and installation screen. Update checks do not require sign-in and a failed check does not block normal app use.

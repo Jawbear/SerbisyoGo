@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { signingCertificate } from './apk-signature.mjs';
+import { androidTool } from './android-tool.mjs';
 
 const config = JSON.parse(readFileSync('app.json', 'utf8')).expo;
 const source = resolve('android/app/build/outputs/apk/release/app-release.apk');
@@ -10,8 +11,8 @@ const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
 if (!sdk) throw new Error('The Android SDK is required for APK verification.');
 const versions = readdirSync(join(sdk, 'build-tools')).filter(name => /^\d+\.\d+\.\d+$/.test(name)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 const tools = join(sdk, 'build-tools', versions.at(-1));
-const manifest = execFileSync(join(tools, 'aapt'), ['dump', 'badging', source], { encoding: 'utf8' });
-const signature = execFileSync(join(tools, 'apksigner'), ['verify', '--verbose', '--print-certs', source], { encoding: 'utf8' });
+const manifest = androidTool(tools, 'aapt', ['dump', 'badging', source]);
+const signature = androidTool(tools, 'apksigner', ['verify', '--verbose', '--print-certs', source]);
 console.log(signature);
 const certificateSha256 = signingCertificate(signature, process.env.ANDROID_RELEASE_CERT_SHA256);
 if (!manifest.includes(`package: name='${config.android.package}'`) || !manifest.includes(`versionName='${config.version}'`) || !manifest.includes(`versionCode='${config.android.versionCode}'`)) throw new Error('APK identity/version does not match app.json.');

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
-      contents: write
+      contents: read
     defaults:
       run:
         working-directory: mobile
@@ -67,13 +67,48 @@ jobs:
         run: node scripts/verify-apk.mjs
         env:
           ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      - name: Keep the signed APK for independent native checks
+        uses: actions/upload-artifact@v7
+        with:
+          name: SerbisyoGo-signed-APK
+          path: mobile/builds/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove runner signing material
+        if: always()
+        run: node -e "require('fs').rmSync(process.env.ANDROID_KEYSTORE_PATH, {force:true})"
+  native-checks:
+    needs: apk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Retrieve the already verified signed APK
+        run: gh run download "$GITHUB_RUN_ID" --name SerbisyoGo-signed-APK --dir builds
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Start an Android emulator for installation checks
         timeout-minutes: 12
         shell: bash
         run: |
           if [ ! -e /dev/kvm ]; then echo 'Android emulator acceleration is unavailable'; exit 1; fi
           sudo chmod 666 /dev/kvm
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'system-images;android-35;google_apis;x86_64' > "$RUNNER_TEMP/android-image.log" 2>&1
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          printf '%s\n' "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64' > "$RUNNER_TEMP/android-image.log" 2>&1
           printf 'no\n' | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name serbisyogo-ci --package 'system-images;android-35;google_apis;x86_64' --device pixel --force
           "$ANDROID_HOME/emulator/emulator" -avd serbisyogo-ci -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect > "$RUNNER_TEMP/android-emulator.log" 2>&1 &
           adb wait-for-device
@@ -108,9 +143,6 @@ jobs:
           node scripts/release-notes.mjs > builds/release-notes.md
           gh release create "$tag" "builds/SerbisyoGo-$version.apk" "builds/SerbisyoGo-$version.apk.sha256" builds/build-metadata.json builds/android-home.png --target "$GITHUB_SHA" --title "SerbisyoGo Android $version" --prerelease --notes-file builds/release-notes.md
           printf '### APK download\n\n[Download SerbisyoGo %s](https://github.com/%s/releases/download/%s/SerbisyoGo-%s.apk)\n' "$version" "$GITHUB_REPOSITORY" "$tag" "$version" >> "$GITHUB_STEP_SUMMARY"
-      - name: Remove runner signing material
-        if: always()
-        run: node -e "require('fs').rmSync(process.env.ANDROID_KEYSTORE_PATH, {force:true})"
       - name: Show native failure diagnostics
         if: failure()
         run: |

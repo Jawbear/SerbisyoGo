@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "SerbisyoGo",
+    "slug": "serbisyogo-mobile",
+    "version": "0.1.0",
+    "scheme": "serbisyogo",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/logo.png",
+    "android": { "package": "com.serbisyogo.mobile" },
+    "web": { "bundler": "metro", "output": "single", "favicon": "./assets/logo.png" },
+    "plugins": ["expo-font"]
+  }
+}

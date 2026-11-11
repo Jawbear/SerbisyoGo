@@ -8,5 +8,5 @@
     "paths": {"@/*":["./src/*"]}, "allowImportingTsExtensions": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  "exclude": ["node_modules", "supabase/functions", "handoff", ".cache", "out", "coverage", "playwright-report", "test-results"]
+  "exclude": ["node_modules", "mobile", "supabase/functions", "handoff", ".cache", "out", "coverage", "playwright-report", "test-results"]
 }

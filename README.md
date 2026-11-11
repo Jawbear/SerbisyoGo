@@ -1,6 +1,6 @@
 # SERBISYOGO website
 
-A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. Supabase Postgres, Auth, private Storage and Realtime are shared with the later Android client. **No Android app or APK has been fabricated.**
+A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) now implements the first React Native navigation milestone for the same system, with an offline lab demo and optional shared Supabase connection. No native APK or signing key has been generated.
 
 ## Current validation status
 

@@ -11,3 +11,8 @@ supabase/.temp/
 supabase/.branches/
 out/
 handoff/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/android/
+mobile/ios/

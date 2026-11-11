@@ -9,5 +9,6 @@ export default defineConfig([...nextVitals, ...nextTs, globalIgnores([
   'coverage/**',
   'playwright-report/**',
   'test-results/**',
+  'mobile/**',
   'src/lib/database.types.ts'
 ])]);

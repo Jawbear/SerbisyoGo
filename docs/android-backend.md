@@ -1,6 +1,6 @@
-# Shared Supabase contract for the later Android app
+# Shared Supabase contract for the Android/Expo client
 
-The website does not own a private Next.js API. Android can use the same Supabase Auth users, public catalog, protected PostgREST reads, database functions, Storage signing endpoints and Postgres Changes streams. Use an official maintained Supabase Android/Kotlin client and keep service/secret keys out of the APK.
+The website does not own a private Next.js API. The React Native/Expo client in `mobile/` can use the same Supabase Auth users, public catalog, protected PostgREST reads, database functions, Storage signing endpoints and Postgres Changes streams through `@supabase/supabase-js`. The instructor's required stack is React Native with React Navigation. Keep service/secret keys out of the mobile bundle.
 
 ## Identity and money
 
@@ -51,4 +51,4 @@ Subscribe to `messages`, `notifications`, `bookings`, and `booking_locations` us
 
 Private file links expire in 60 seconds. Request a fresh one after expiry and avoid permanent storage URLs. Draft APK storage is never public. Android release upload/publish endpoints are administrative and should not be included in the customer app.
 
-Configure native Auth redirect/deep-link allowlists separately from the website callback. No Android project, manifest, signing key or build artifact is included in this repository.
+Configure native Auth redirect/deep-link allowlists separately from the website callback before adding native email verification/recovery. The current Expo milestone supplies existing-account sign-in and customer navigation; it does not claim native recovery, messaging or provider/admin operational parity. Expo configuration lives in `mobile/app.json`; no generated native Android project, signing key or APK is committed.

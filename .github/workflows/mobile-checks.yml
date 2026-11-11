@@ -1,0 +1,38 @@
+name: Expo mobile navigation checks
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/mobile-checks.yml']
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/mobile-checks.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      BROWSER: none
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npx expo install --check
+      - run: npm run export:web
+      - run: npm run export:android
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

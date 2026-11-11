@@ -27,6 +27,11 @@ for (const role of ['customer', 'provider', 'admin']) {
     });
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/account/');
+    const roleLabel = role === 'admin' ? 'Admin' : role === 'provider' ? 'Provider' : 'Customer';
+    await expect(page.locator('.account-identity').getByLabel(`Account role: ${roleLabel}`, { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Open navigation' }).click();
+    await expect(page.getByRole('dialog', { name: 'Navigation' }).getByLabel(`Account role: ${roleLabel}`, { exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
     const input = page.getByLabel('Profile photo', { exact: true });
     await expect(input).toBeVisible();
     await input.setInputFiles({ name: 'unsupported.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });

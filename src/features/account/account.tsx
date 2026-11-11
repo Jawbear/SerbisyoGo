@@ -8,13 +8,14 @@ import { list } from '@/lib/data';
 import { rpc, requireDb, result } from '@/lib/backend';
 import { addressSchema, profileSchema } from '@/lib/schemas';
 import { manilaDate } from '@/lib/domain';
-import { ProfilePhotoEditor } from './profile-photo';
+import { AccountAvatar, ProfilePhotoEditor } from './profile-photo';
+import { AccountRoleBadge } from './role-badge';
 export function Account() {
   const s = useSession();
   const q = useQuery('addresses-' + s.user?.id, () => list('addresses', {
     user_id: s.user!.id
   }), !!s.user);
-  return <><PageHeading eyebrow="Your account" title="Keep your details up to date." description="Manage your contact information, saved addresses and preferences." /><div className="grid-2"><div className="stack"><Card><h2>Personal information</h2><MutationForm submit="Save profile" onSubmit={async f => {
+  return <><PageHeading eyebrow="Your account" title="Keep your details up to date." description="Manage your contact information, saved addresses and preferences." /><Card className="account-identity"><AccountAvatar large /><div><h2>{s.profile?.full_name || 'Your account'}</h2><AccountRoleBadge /></div></Card><div className="grid-2"><div className="stack"><Card><h2>Personal information</h2><MutationForm submit="Save profile" onSubmit={async f => {
             const data = profileSchema.parse({
               full_name: f.get('full_name'),
               phone: f.get('phone')

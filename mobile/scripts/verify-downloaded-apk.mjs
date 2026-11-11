@@ -1,0 +1,18 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { signingCertificate } from './apk-signature.mjs';
+const metadata = JSON.parse(readFileSync('builds/build-metadata.json', 'utf8'));
+const config = JSON.parse(readFileSync('app.json', 'utf8')).expo;
+if (metadata.packageName !== config.android.package || metadata.version !== config.version || metadata.versionCode !== config.android.versionCode || !/^SerbisyoGo-[\d.]+\.apk$/.test(metadata.fileName)) throw new Error('The reused artifact has the wrong application identity/version.');
+const path = join('builds', metadata.fileName);
+if (createHash('sha256').update(readFileSync(path)).digest('hex') !== metadata.sha256) throw new Error('Downloaded APK checksum mismatch.');
+const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+const version = readdirSync(join(sdk, 'build-tools')).filter(name => /^\d+\.\d+\.\d+$/.test(name)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).at(-1);
+const tools = join(sdk, 'build-tools', version);
+const output = execFileSync(join(tools, 'apksigner'), ['verify', '--verbose', '--print-certs', path], { encoding: 'utf8' });
+signingCertificate(output, process.env.ANDROID_RELEASE_CERT_SHA256);
+const manifest = execFileSync(join(tools, 'aapt'), ['dump', 'badging', path], { encoding: 'utf8' });
+if (!manifest.includes(`package: name='${metadata.packageName}'`) || !manifest.includes(`versionName='${metadata.version}'`) || !manifest.includes(`versionCode='${metadata.versionCode}'`) || /application-debuggable/.test(manifest)) throw new Error('Downloaded APK manifest verification failed.');
+console.log('Downloaded artifact checksum, package/version and persistent release signature verified.');

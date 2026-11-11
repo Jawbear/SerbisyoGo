@@ -14,7 +14,7 @@ test('Download APK starts the real published file with verified release metadata
   expect(asset.size).toBe(published.byte_size);
   expect(asset.digest).toBe(`sha256:${published.sha256}`);
   expect(asset.browser_download_url).toBe(published.download_url);
-  await page.goto('/download/');
+  await page.goto('/download/', { waitUntil: 'domcontentloaded' });
   const button = page.getByRole('link', { name: 'Download APK', exact: true });
   await expect(button).toHaveAttribute('href', published.download_url);
   await expect(page.getByText(published.sha256, { exact: true })).toBeVisible();
@@ -31,7 +31,7 @@ test('Download APK starts the real published file with verified release metadata
 test('a release-database outage does not block the published APK', async ({ page }) => {
   const published = JSON.parse(await readFile(new URL('../../src/features/app-releases/android-release.json', import.meta.url), 'utf8'));
   await page.route('**/*.supabase.co/rest/v1/app_releases*', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Release service unavailable' }) }));
-  await page.goto('/download/');
+  await page.goto('/download/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Take SerbisyoGo with you.', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Download APK', exact: true })).toHaveAttribute('href', published.download_url);
   await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(0);

@@ -3,6 +3,7 @@ node_modules/
 .env*
 !.env.example
 .cache/
+.g/
 coverage/
 playwright-report/
 test-results/

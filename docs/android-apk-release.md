@@ -1,4 +1,12 @@
-# Android 0.1.0 release and web download
+# Android releases
+
+## Latest: Android 0.3.0
+
+[Download APK 0.3.0](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.0/SerbisyoGo-0.3.0.apk). Version code 3; Android 7.0+; ARM64, ARMv7 and x86_64; 53,270,004 bytes. SHA-256: `a890549596168493698d9a42e867ea7e29c4cf1e32a1f756734cf69d0664548b`. Built locally from `e657a09be781df20f2035c29515eced511b93765` using the existing release certificate.
+
+Native startup/navigation and an actual in-app upgrade from a lower-version test fixture passed on the dedicated Android 15 emulator, including download verification, installation permission, Android confirmation and retained private data. Release metadata and screenshots accompany the APK. Physical-phone testing remains pending. Install this updater-enabled version once over 0.1.0/0.2.0 without uninstalling; future verified versions can be downloaded and installed from inside the app.
+
+## Earlier: Android 0.1.0
 
 Published on 11 November 2026: [Download SerbisyoGo APK](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.1.0/SerbisyoGo-0.1.0.apk).
 

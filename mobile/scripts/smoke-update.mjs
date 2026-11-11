@@ -9,6 +9,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function ui(){adb('shell','uiautomator','dump','/sdcard/serbisyogo-update.xml');return adb('shell','cat','/sdcard/serbisyogo-update.xml');}
 async function waitFor(check,description,timeout=90000){const end=Date.now()+timeout;let last='';while(Date.now()<end){try{last=ui();if(check(last))return last;}catch{ /* The emulator can briefly reject UI dumps while changing activities. */ }await sleep(1000);}writeFileSync('builds/update-failure.xml',last);throw new Error(`Updater check timed out: ${description}`);}
 function tap(xml,text){const node=[...xml.matchAll(/<node\b[^>]*>/g)].map(match=>match[0]).find(node=>node.includes(`text="${text}"`)||node.includes(`content-desc="${text}"`));const bounds=node?.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);if(!bounds)throw new Error(`No accessible updater control: ${text}`);const[,x1,y1,x2,y2]=bounds.map(Number);adb('shell','input','tap',String(Math.round((x1+x2)/2)),String(Math.round((y1+y2)/2)));}
+async function findButton(text,timeout=90000){return waitFor(value=>{if(value.includes(`content-desc="${text}"`)||value.includes(`text="${text}"`))return true;adb('shell','input','swipe','800','1400','800','600','350');return false;},text,timeout);}
 
 // This is the disposable runner emulator, never a connected user's phone.
 adb('uninstall',metadata.packageName);adb('install','builds/updater-baseline.apk');
@@ -21,16 +22,17 @@ let xml=await waitFor(value=>value.includes('A new version is available'),'optio
 tap(xml,'Remind me later');
 xml=await waitFor(value=>value.includes('View app update')&&!value.includes('A new version is available'),'Later keeps the app usable');
 tap(xml,'View app update');
-xml=await waitFor(value=>value.includes(`Installed version: ${metadata.version} (build ${metadata.versionCode-1})`)&&value.includes('Download app update'),'native version and available update');
+xml=await waitFor(value=>value.includes(`Installed version: ${metadata.version} (build ${metadata.versionCode-1})`),'native installed version');
+xml=await findButton('Download app update');
 tap(xml,'Download app update');
-xml=await waitFor(value=>value.includes('Install update'),'verified in-app APK download',480000);
+xml=await findButton('Install update',480000);
 writeFileSync('builds/android-update-ready.png',execFileSync('adb',['-e','exec-out','screencap','-p']));
 tap(xml,'Install update');
 await waitFor(value=>value.includes('Allow from this source')||value.includes('Install unknown apps'),'Android per-app installation permission');
 adb('shell','appops','set',metadata.packageName,'REQUEST_INSTALL_PACKAGES','allow');adb('shell','input','keyevent','4');
 xml=await waitFor(value=>value.includes('Install update'),'return from Android settings');tap(xml,'Install update');
-xml=await waitFor(value=>/text="(?:Update|Install)"/.test(value),'Android update confirmation');
-writeFileSync('builds/android-update-confirmation.png',execFileSync('adb',['-e','exec-out','screencap','-p']));tap(xml,/text="Update"/.test(xml)?'Update':'Install');
+xml=await waitFor(value=>/text="(?:Update|Install)"/i.test(value),'Android update confirmation');
+writeFileSync('builds/android-update-confirmation.png',execFileSync('adb',['-e','exec-out','screencap','-p']));tap(xml,xml.match(/text="(Update|Install)"/i)[1]);
 const end=Date.now()+90000;let upgraded=false;
 while(Date.now()<end){if(new RegExp(`versionCode=${metadata.versionCode}\\b`).test(adb('shell','dumpsys','package',metadata.packageName))){upgraded=true;break;}await sleep(1000);}
 if(!upgraded)throw new Error('Android did not install the newer version.');

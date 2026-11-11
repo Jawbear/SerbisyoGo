@@ -1,12 +1,12 @@
 {
-  "version_name": "0.2.0",
-  "version_code": 2,
+  "version_name": "0.3.0",
+  "version_code": 3,
   "min_android": "7.0",
-  "published_at": "2026-11-11T12:57:39Z",
-  "byte_size": 53255608,
-  "sha256": "7d89ff3b0ac049a3ebf1606be5ea94402f5838ecea562d5ed9b49d31b7055ce9",
-  "release_notes": "Standalone SerbisyoGo Android app with account sign-in, provider discovery, service requests, saved bookings and administrator tools. Administrators can manage accounts, edit access and credentials, and permanently erase selected accounts and their related records. Uses your existing backend. Native startup and navigation verified on an Android emulator; physical-phone checks remain pending.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.2.0/SerbisyoGo-0.2.0.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.2.0",
-  "source_commit": "2848e5608b4972145946288b6db8a01619bde6bc"
+  "published_at": "2026-11-11T23:04:57Z",
+  "byte_size": 53270004,
+  "sha256": "a890549596168493698d9a42e867ea7e29c4cf1e32a1f756734cf69d0664548b",
+  "release_notes": "Includes optional in-app update prompts, verified APK downloads, download progress and Android installation from the existing app. Account sign-in, discovery, booking requests and administrator tools use the existing backend. Install this version once to enable future in-app updates. Android confirmation is required; no uninstall is needed. Emulator update and data-retention checks passed; physical-phone testing remains pending.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.0/SerbisyoGo-0.3.0.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.3.0",
+  "source_commit": "e657a09be781df20f2035c29515eced511b93765"
 }

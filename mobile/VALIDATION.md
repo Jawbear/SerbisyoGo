@@ -2,13 +2,13 @@
 
 ## In-app updater source — 12 November 2026
 
-Local fallback update: verified Android SDK tools, Java 17, NDK 27.1, CMake and an Android 15 AOSP image are cached locally. Windows hypervisor acceleration works and the dedicated emulator booted. The updater Kotlin module, JavaScript bundle and native libraries compiled after fixing the module's required library version metadata. APK packaging did not complete: a Google Maven TLS download failed, and one cached retry hit Ninja's Windows 260-character path limit in the Gradle cache. Shortening the local Gradle cache path is the next build repair. No 0.3.0 APK has been published; the live download remains 0.2.0. The dedicated emulator was stopped to release laptop resources.
+The signed 0.3.0 APK was built locally on Windows and published after GitHub runner startup failures. The missing native library version was fixed; Google artifacts were checksum-verified and cached, and the Gradle cache path was shortened to resolve Windows path limits. Signature, identity, permissions, embedded bundle and all three ABI checks passed. Android 15 emulator startup, discovery and Back passed. A lower-version test fixture then detected 0.3.0, allowed Later, downloaded and verified the APK, opened installation permission settings, displayed Android's confirmation, upgraded to version code 3 and retained a private test-data sentinel. The confirmation test was adjusted for Android's uppercase button labels and scrolling through long release notes. The emulator was stopped after testing. Physical-phone testing remains pending.
 
 - Twelve unit checks passed, including newer-version selection, invalid/untrusted manifest rejection, reminder timing, the public-release fallback and offline behavior.
 - Thirteen mobile browser checks passed, including both update-screen cases and the existing account, booking, admin and responsive checks.
 - Mobile lint, Android JavaScript/Hermes compilation, website lint/unit checks and the website static production build passed. Native module autolinking resolves the local updater module.
 - The public `/app-update.json` endpoint is deployed, responds with valid current release metadata, allows public browser access and uses `Cache-Control: no-store`.
-- Signed 0.3.0 APK compilation and the real Android installer/data-retention check are still pending. GitHub Actions returned an internal `startup_failure` before creating any jobs, including on retry; a fresh [release job](https://github.com/Jawbear/SerbisyoGo/actions/runs/43096480569) was submitted. Other repository workflows are also queued. The website intentionally continues to offer verified 0.2.0 until the new release passes its checks. No successful native-updater test or physical-phone test is claimed yet.
+- [Published APK and native update evidence](https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.3.0): 53,270,004 bytes; SHA-256 `a890549596168493698d9a42e867ea7e29c4cf1e32a1f756734cf69d0664548b`; source `e657a09be781df20f2035c29515eced511b93765`. The website release metadata now selects 0.3.0. Users of 0.1.0/0.2.0 must install it once to obtain the updater.
 
 ## Earlier application checks
 

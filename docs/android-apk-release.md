@@ -29,3 +29,15 @@ The current app includes connected account sign-in, discovery, service requests 
 - Mobile: seven unit checks and the native APK/emulator checks passed. Existing connected-client browser coverage is recorded in `mobile/VALIDATION.md`.
 
 The public GitHub release includes its checksum and metadata. The original signing key remains private in ignored `mobile/credentials/` and encrypted repository secrets. Keep its backup for future application updates.
+# Android 0.2.0 — administrator workspace
+
+Released on November 11, 2026 from source `2848e5608b4972145946288b6db8a01619bde6bc`.
+
+- Download: https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.2.0/SerbisyoGo-0.2.0.apk
+- Version code: 2; package: `com.serbisyogo.mobile`; minimum Android: 7.0.
+- Size: 53,255,608 bytes.
+- SHA-256: `7d89ff3b0ac049a3ebf1606be5ea94402f5838ecea562d5ed9b49d31b7055ce9`.
+- Uses the existing private release certificate, allowing upgrades from 0.1.0.
+- Build, signature verification, emulator installation/startup, discovery navigation, Android Back and publication passed in [run 43022959821](https://github.com/Jawbear/SerbisyoGo/actions/runs/43022959821).
+- Admin account editing, deletion confirmation, incomplete-deletion retry and customer denial passed mobile browser checks. Physical-phone testing remains pending.
+

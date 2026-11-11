@@ -30,3 +30,5 @@ file_size_limit = "50MiB"
 verify_jwt = false
 [functions.releases]
 verify_jwt = false
+[functions.admin-accounts]
+verify_jwt = false

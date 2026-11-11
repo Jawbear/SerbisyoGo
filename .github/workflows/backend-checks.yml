@@ -30,7 +30,7 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: node scripts/report-ci-command.mjs deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts
+      - run: node scripts/report-ci-command.mjs deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts supabase/functions/admin-accounts/index.ts
       - name: Prepare isolated browser test configuration
         run: node scripts/report-ci-command.mjs node scripts/prepare-local-integration.mjs
       - name: Install browser and system dependencies

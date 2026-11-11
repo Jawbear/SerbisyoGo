@@ -6,7 +6,24 @@ export async function installBackend(page) {
   const user = { id: '10000000-0000-4000-8000-000000000001', aud: 'authenticated', role: 'authenticated', email: 'customer@example.test' };
   const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
   const token = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: user.id, aud: 'authenticated', role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 })}.fixture`;
-  const state = { drafts: [], bookings: [], confirmations: 0, failSubmit: false, failCatalog: false, signedIn: false, role: 'customer' };
+  const state = { drafts: [], bookings: [], confirmations: 0, failSubmit: false, failCatalog: false, signedIn: false, role: 'customer', accounts: [{id:'40000000-0000-4000-8000-000000000001',full_name:'Managed Customer',email:'managed@example.test',phone:'09171234567',role:'customer',status:'active',updated_at:'2026-11-11T00:00:00Z',email_confirmed_at:'2026-11-11T00:00:00Z'}], accountActions:[], failDelete:false };
+  await page.route('**/functions/v1/admin-accounts*',async route=>{
+    if(state.role!=='admin')return route.fulfill({status:403,json:{error:'Administrator access required.'}});
+    const url=new URL(route.request().url());
+    if(route.request().method()==='GET'){
+      if(url.searchParams.has('preview'))return route.fulfill({json:{counts:{bookings:2,files:1,messages:3},irreversible:true}});
+      let rows=state.accounts;if(url.searchParams.get('id'))rows=rows.filter(row=>row.id===url.searchParams.get('id'));
+      const search=url.searchParams.get('search');if(search)rows=rows.filter(row=>`${row.full_name} ${row.email}`.includes(search));
+      return route.fulfill({json:{rows,total:rows.length,offset:0,limit:25}});
+    }
+    const body=route.request().postDataJSON();state.accountActions.push(body);const row=state.accounts.find(row=>row.id===body.id);
+    if(body.action==='delete'){
+      if(state.failDelete)return route.fulfill({status:409,json:{error:'Permanent deletion is incomplete and the account remains disabled. Retry deletion.',deletion_pending:true}});
+      state.accounts=state.accounts.filter(item=>item.id!==body.id);return route.fulfill({json:{deleted:true}});
+    }
+    if(body.action==='profile')Object.assign(row,{full_name:body.full_name,phone:body.phone,status:body.status,role:body.role,updated_at:new Date().toISOString()});
+    return route.fulfill({json:{account:row,updated:true}});
+  });
   await page.route('**/auth/v1/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/logout')) { state.signedIn = false; return route.fulfill({ status: 204 }); }
@@ -22,6 +39,7 @@ export async function installBackend(page) {
     const id = url.searchParams.get('id')?.replace(/^eq\./, '');
     let data;
     if (table === 'user_context') data = { profile: { id: user.id, full_name: 'Test Account', status: 'active' }, role: state.role };
+    else if (table === 'is_admin') data = state.role==='admin';
     else if (table === 'available_slots') data = [8, 10, 13].map(hour => ({ starts_at: new Date(`${body.p_day}T${String(hour).padStart(2, '0')}:00:00+08:00`).toISOString() }));
     else if (table === 'save_booking_draft') {
       const draft = { id: body.p_id || '20000000-0000-4000-8000-000000000001', customer_id: user.id, provider_service_id: body.p_service, description: body.p_description, address: body.p_address, starts_at: body.p_starts_at };

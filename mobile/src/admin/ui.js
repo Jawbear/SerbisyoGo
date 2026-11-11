@@ -11,7 +11,7 @@ export function AdminScreen({children,navigation}) {
 }
 export const reasonField={name:'reason',label:'Reason for this action',multiline:true,maxLength:1000};
 export function Check({label,checked,onChange}) {
-  return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{checked}} onPress={()=>onChange(!checked)} style={[s.row,{minHeight:48,paddingVertical:8}]}><Text style={{color:checked?c.green:c.muted,fontSize:24}}>{checked?'☑':'☐'}</Text><Muted style={s.flex}>{label}</Muted></Pressable>;
+  return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{checked}} aria-checked={checked} onPress={()=>onChange(!checked)} style={[s.row,{minHeight:48,paddingVertical:8}]}><Text style={{color:checked?c.green:c.muted,fontSize:24}}>{checked?'☑':'☐'}</Text><Muted style={s.flex}>{label}</Muted></Pressable>;
 }
 export function Choice({label,options,value,onChange}) {
   return <View style={{gap:10}}><Text style={s.fieldLabel}>{label}</Text><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>{options.map(option=>{const [id,title]=Array.isArray(option)?option:[option,option];return <Chip key={id} title={title} selected={value===id} onPress={()=>onChange(id)} />;})}</View></View>;

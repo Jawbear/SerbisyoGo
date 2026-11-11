@@ -9,7 +9,8 @@ console.log(`Installable SerbisyoGo Android APK ${build.version} (version code $
 - Android API ${build.minSdk}+; ARM64, ARMv7 and x86_64 libraries are included.
 - Verified APK signature, application identity, embedded JavaScript bundle and restricted permission list.
 - Installed and launched on an Android API 35 emulator; discovery navigation and Android Back passed without Metro.
-- Physical-phone testing remains pending. This initial version includes the connected customer navigation/request milestone; additional provider/admin tools still use the website.
+- Includes the connected customer navigation/request flow and the administrator workspace, including protected account editing and permanent deletion controls.
+- Physical-phone testing remains pending. Administrator UI flows are checked in the browser preview; native smoke checks cover startup, discovery navigation and Android Back.
 
 Package: \`${build.packageName}\`
 SHA-256: \`${build.sha256}\`

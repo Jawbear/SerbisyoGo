@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { publicFixtures } from './public-fixtures';
-import published from '../../src/features/app-releases/android-release.json';
 
 test.beforeEach(async ({ page }) => { if (process.env.E2E_LIVE_SITE !== '1') await publicFixtures(page); });
 
@@ -30,6 +29,7 @@ test('Download APK starts the real published file with verified release metadata
 });
 
 test('a release-database outage does not block the published APK', async ({ page }) => {
+  const published = JSON.parse(await readFile(new URL('../../src/features/app-releases/android-release.json', import.meta.url), 'utf8'));
   await page.route('**/*.supabase.co/rest/v1/app_releases*', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Release service unavailable' }) }));
   await page.goto('/download/');
   await expect(page.getByRole('heading', { name: 'Take SerbisyoGo with you.', exact: true })).toBeVisible();

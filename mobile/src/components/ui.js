@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useApp } from '../AppContext';
 import { colors as c, statusLabels } from '../theme';
 import { money } from '../domain';
 import { supabaseUrl } from '../data/backend';
@@ -63,14 +62,18 @@ export function ProviderCard({ provider }) {
 
 export function Section({ title, children }) { return <View style={s.stack}><Text accessibilityRole="header" style={s.sectionTitle}>{title}</Text>{children}</View>; }
 
+export function ProviderGrid({ providers }) {
+  const { width } = useWindowDimensions();
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>{providers.map(provider => <View key={provider.id} style={{ flexBasis: width >= 760 ? '46%' : '100%', flexGrow: 1, minWidth: 0 }}><ProviderCard provider={provider} /></View>)}</View>;
+}
+
 export function QuickNav() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { mode } = useApp();
   const active = ['ProviderDetails', 'BookingForm', 'BookingReview'].includes(route.name) ? 'FindProfessionals' : route.name === 'BookingRecord' ? 'MyBookings' : route.name;
   return <View style={s.bottom}><View style={s.navRow}>{[
     ['Home', 'Home', 'home-outline'], ['FindProfessionals', 'Find help', 'search-outline'], ['MyBookings', 'Bookings', 'calendar-outline']
-  ].map(([name, title, icon]) => <Pressable key={name} accessibilityRole="button" accessibilityLabel={`Navigate to ${title}`} accessibilityState={{ selected: active === name }} onPress={() => navigation.navigate(name)} style={s.navItem}><Icon name={icon} color={active === name ? c.green : c.muted} /><Text style={[s.navLabel, { color: active === name ? c.green : c.muted }]}>{title}</Text></Pressable>)}</View><Text style={s.modeText}>{mode === 'demo' ? 'LAB DEMO · SAMPLE RECORDS ON THIS DEVICE' : 'CONNECTED · YOUR SERBISYOGO ACCOUNT'}</Text></View>;
+  ].map(([name, title, icon]) => <Pressable key={name} accessibilityRole="button" accessibilityLabel={`Navigate to ${title}`} accessibilityState={{ selected: active === name }} onPress={() => navigation.navigate(name)} style={s.navItem}><Icon name={icon} color={active === name ? c.green : c.muted} /><Text style={[s.navLabel, { color: active === name ? c.green : c.muted }]}>{title}</Text></Pressable>)}</View><Text style={s.tagline}>LOCAL SKILLS. EVERYDAY CARE.</Text></View>;
 }
 
 export function Screen({ children, footer = true }) {
@@ -78,13 +81,9 @@ export function Screen({ children, footer = true }) {
   return <SafeAreaView testID={`screen-${route.name}`} style={s.screen} edges={['left', 'right', 'bottom']}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>{children}</ScrollView></KeyboardAvoidingView>{footer && <QuickNav />}</SafeAreaView>;
 }
 
-export function ConfirmDialog({ open, title, description, onClose, onConfirm }) {
-  return <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}><View style={s.overlay}><View accessibilityViewIsModal style={[s.card, { gap: 18, width: '100%', maxWidth: 420 }]}><Text accessibilityRole="header" style={s.sectionTitle}>{title}</Text><Muted>{description}</Muted><Button title="Reset sample bookings" onPress={onConfirm} /><Button title="Keep my demo" secondary onPress={onClose} /></View></View></Modal>;
-}
-
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.background }, flex: { flex: 1, minWidth: 0 },
-  content: { padding: 22, gap: 24, paddingBottom: 30, width: '100%', maxWidth: 720, alignSelf: 'center', flexGrow: 1 },
+  content: { padding: 22, gap: 24, paddingBottom: 30, width: '100%', maxWidth: 960, alignSelf: 'center', flexGrow: 1 },
   stack: { gap: 16 }, row: { flexDirection: 'row', gap: 14, alignItems: 'center' }, inline: { flexDirection: 'row', gap: 5, alignItems: 'center' },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   label: { color: c.green, fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
@@ -107,7 +106,6 @@ export const s = StyleSheet.create({
   providerName: { color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 3 }, rating: { color: c.green, fontSize: 12, fontWeight: '600' },
   cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderTopColor: c.border }, price: { color: c.green, fontSize: 18, fontWeight: '700' },
   empty: { gap: 16, alignItems: 'center', paddingVertical: 32 }, loading: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 15 },
-  bottom: { backgroundColor: c.background, borderTopColor: c.border, borderTopWidth: 1, paddingTop: 8, paddingBottom: 6 }, navRow: { flexDirection: 'row', maxWidth: 720, width: '100%', alignSelf: 'center' },
-  navItem: { flex: 1, minHeight: 50, alignItems: 'center', justifyContent: 'center', gap: 4 }, navLabel: { fontSize: 11, fontWeight: '600' }, modeText: { color: c.muted, textAlign: 'center', fontSize: 8, letterSpacing: 1, marginTop: 5 },
-  overlay: { flex: 1, backgroundColor: '#000b', alignItems: 'center', justifyContent: 'center', padding: 24 }
+  bottom: { backgroundColor: c.background, borderTopColor: c.border, borderTopWidth: 1, paddingTop: 8, paddingBottom: 6 }, navRow: { flexDirection: 'row', maxWidth: 960, width: '100%', alignSelf: 'center' },
+  navItem: { flex: 1, minHeight: 50, alignItems: 'center', justifyContent: 'center', gap: 4 }, navLabel: { fontSize: 11, fontWeight: '600' }, tagline: { color: c.muted, textAlign: 'center', fontSize: 8, letterSpacing: 1, marginTop: 5 }
 });

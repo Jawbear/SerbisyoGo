@@ -7,15 +7,15 @@ import { Button, Card, Chip, Empty, Field, Label, Muted, Notice, Query, Screen, 
 import LoginPrompt from '../components/LoginPrompt';
 
 export default function BookingFormScreen({ navigation, route }) {
-  const { api, mode, identity } = useApp();
+  const { api, identity } = useApp();
   const { providerId, serviceId, draftId } = route.params || {};
-  const allowed = mode === 'demo' || identity?.role === 'customer';
+  const allowed = identity?.role === 'customer';
   const query = useData(`form-${providerId}-${serviceId}-${draftId}`, () => api.form(providerId, serviceId, draftId), allowed);
-  return <Screen>{!allowed ? identity ? <Notice>This request needs a customer account. Your provider or admin account can continue using its workspace on the website.</Notice> : <LoginPrompt navigation={navigation} returnTo="BookingForm" routeParams={route.params} /> : <Query query={query}>{query.data ? <BookingEditor key={`${mode}-${serviceId}-${draftId || 'new'}`} data={query.data} navigation={navigation} draftId={draftId} /> : <Empty />}</Query>}</Screen>;
+  return <Screen>{!allowed ? identity ? <Notice>This request needs a customer account. Your provider or admin account can continue using its workspace on the website.</Notice> : <LoginPrompt navigation={navigation} returnTo="BookingForm" routeParams={route.params} /> : <Query query={query}>{query.data ? <BookingEditor key={`${serviceId}-${draftId || 'new'}`} data={query.data} navigation={navigation} draftId={draftId} /> : <Empty />}</Query>}</Screen>;
 }
 
 function BookingEditor({ data, navigation, draftId }) {
-  const { api, mode } = useApp();
+  const { api } = useApp();
   const action = useAction();
   const [form, setForm] = useState(() => ({
     description: data.draft?.description || '', label: data.draft?.address?.label || 'Home',
@@ -48,7 +48,6 @@ function BookingEditor({ data, navigation, draftId }) {
       <ScrollView horizontal style={s.chipStrip} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{Array.from({ length: 14 }, (_, index) => manilaDay(new Date(), index + 1)).map(date => <Chip key={date} title={dayLabel(date)} selected={day === date} onPress={() => { setDay(date); set('starts_at')(''); }} />)}</ScrollView>
       <Query query={slots}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{slots.data?.map(slot => <Chip key={slot.starts_at} title={timeLabel(slot.starts_at)} selected={form.starts_at === slot.starts_at} onPress={() => set('starts_at')(slot.starts_at)} />)}</View>{slots.data?.length === 0 && <Muted>No appointments on this date. Please choose another day.</Muted>}</Query>
     </Section>
-    {mode === 'demo' && <Notice>These are sample appointment times for your laboratory demonstration.</Notice>}
     {action.error && <Notice error>{action.error}</Notice>}
     <Button title="Save and review request" busy={action.busy} onPress={continueRequest} icon="arrow-forward-outline" />
   </>;

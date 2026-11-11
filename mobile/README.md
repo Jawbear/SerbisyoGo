@@ -1,70 +1,53 @@
-# SerbisyoGo mobile — Laboratory Exercise 3
+# SerbisyoGo mobile
 
-The first Expo/React Native client for the existing SerbisyoGo home-services system. It uses the website's black-and-green identity and shares its Supabase contracts. There was no earlier Expo project to import; this extends the approved system rather than claiming to extend an earlier mobile codebase.
+React Native/Expo client for the existing SerbisyoGo home-services system. It opens directly with the shared Supabase backend. There is no demo mode, sample catalog, local-only booking system or mode switch in the shipped application.
 
-## Run locally
+## Run on your laptop
 
-Node 22.13+ is required. From the INTREP folder:
+From `C:\Users\ACER\Desktop\INTREP`:
 
 ```powershell
 cd mobile
 npm.cmd ci
-npm.cmd start
-```
-
-Scan the QR code with an **Expo Go build compatible with SDK 55** on an Android phone on the same network. Obtain the matching client from [Expo's official download page](https://expo.dev/go). Android Studio is optional for a physical-phone Expo Go demonstration. It is required, together with the Android SDK, for local native builds/emulation.
-
-For the browser preview:
-
-```powershell
 npm.cmd run web
 ```
 
-The app starts in **Lab demo**. Five labelled sample professionals, sample schedules and an example PHP 50 booking fee support the entire navigation exercise without authentication or network access after the app/assets have loaded. Demo drafts and requests persist through AsyncStorage on the current device. They are never sent to a provider and do not represent payment or accepted appointments.
+Open the address printed by Expo, normally **http://localhost:8081**. Keep the terminal running. Chrome/Edge device emulation (`F12`, then `Ctrl+Shift+M`) lets you view phone widths without a phone. Existing dependencies are already installed in this workspace, so `npm.cmd ci` is only needed on a fresh installation.
 
-## Screens and route parameters
+The interface uses a single column on phones, two-column provider cards on wider screens, bounded content on laptops, safe-area insets and scrollable forms. The application also allows device rotation. Browser responsiveness does not establish physical-device behaviour.
 
-| Screen | Purpose | Parameters |
-| --- | --- | --- |
-| Home | Entry point, categories, major features, demo/live selection | None |
-| FindProfessionals | Search and service-category filtering | Optional `categoryId` |
-| ProviderDetails | Show the exact selected provider and their services | `providerId` |
-| BookingForm | Task, address, date and available appointment selection | `providerId`, `serviceId`, optional `draftId` |
-| BookingReview | Reload the saved draft, professional, schedule and total | `draftId` |
-| MyBookings | Show persisted requests and status filters | Optional newly saved `bookingId` |
-| BookingRecord | Reopen the selected saved request | `bookingId` |
-| SignIn | Existing live-account authentication | Allowlisted `returnTo`, identifier-only `routeParams` |
+## Backend configuration
 
-The first six screens form the main laboratory flow. BookingRecord and SignIn are additional functional screens. `NavigationContainer` and `createNativeStackNavigator` in `App.js` provide stack history, titles and back navigation. The bottom shortcuts use the same stack navigator; they do not replace it with a tab-only implementation.
+Copy `.env.example` to `.env.local` and supply only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. This workspace is already configured privately with the website's public project values. Never place a service-role/secret key or account password in the bundle. Missing configuration shows an explicit connection error; it never substitutes sample data.
 
-Only identifiers travel in route parameters. Screens resolve those identifiers through the active repository. A provider/service mismatch or inaccessible record shows a recovery action instead of a blank screen. After submission, the stack resets to Home → MyBookings so Back does not return to an already-submitted form.
-
-## Expo Snack compatibility
-
-Checked on 11 November 2026. Expo's [published Snack SDK list](https://github.com/expo/snack/blob/main/packages/snack-content/src/sdks/index.ts) includes stable SDK 55. Native packages match Expo's [SDK 55 bundled versions](https://github.com/expo/expo/blob/sdk-55/packages/expo/bundledNativeModules.json); `expo install --check` passes locally. The project deliberately has no Expo Router dependency: the exercise uses React Navigation's explicit stack API.
-
-To transfer the implementation into your own Snack:
-
-1. Create a blank Snack and select **SDK 55**. Check its SDK picker and matching Expo Go client before the classroom demo.
-2. Copy `App.js`, `snack.config.js`, the `src/` files and both `assets/` images into the same relative paths. Snack uses `App.js` as its entry point; its runtime supplies the registration wrapper.
-3. Add the dependencies listed in `snack-dependencies.json` through Snack's dependency editor. Keep Snack's supplied React/React Native/Expo core versions.
-4. Keep `snack.config.js` blank for the complete lab demonstration, then test all six core screens.
-
-No Snack was uploaded or published on the user's behalf. The local project and compatibility check do not establish that a particular hosted Snack or physical Android phone has been tested.
-
-## Optional live Supabase mode
-
-Copy `.env.example` to `.env.local` inside `mobile/` and set **only** the project URL and publishable key. The current workspace has been configured privately with the website's public project values. No service-role/secret key, fixture password or admin credential is bundled in the app.
-
-In Snack, optional public values belong in `snack.config.js`; never paste elevated credentials. Select **Use live services** on Home. Existing accounts can sign in, see their server-assigned Customer/Provider/Admin label, browse public services and read authorized booking records. Customer booking requests use:
+Anyone can browse public professionals and services. Existing accounts sign in through Supabase Auth. The server verifies active account status and assigns the Customer, Provider or Admin label. Private bookings require sign-in. Customer requests use the existing backend functions:
 
 `available_slots` → `save_booking_draft` → `draft_price` → `confirm_booking`.
 
-The server supplies prices, validates appointments, checks ownership and prevents duplicate confirmation. There is no fallback from a failed live operation to a fake successful demo request. Live mode requires an active customer account to submit a customer request. Provider operational controls, mobile admin mutations, mobile registration/recovery deep links, messaging and photo editing are future mobile milestones; the existing website still supplies those features.
+Prices and appointments come from the server. A successful confirmation is required before displaying a saved booking. A failed request remains recoverable on the current screen. Sign-out removes private records from the visible UI.
 
-Private reads and existing-account sign-in have been tested through the mobile web preview against the designated development project. Mobile live booking writes have not been submitted to the hosted project by this implementation. Backend persisted workflows have their own isolated tests in the main project.
+## Screens and parameters
 
-## Checks
+| Screen | Purpose | Parameters |
+| --- | --- | --- |
+| Home | Public discovery, account access, main shortcuts | None |
+| FindProfessionals | Search and category filtering | Optional `categoryId` |
+| ProviderDetails | Selected professional and services | `providerId` |
+| BookingForm | Task, address and available appointment | `providerId`, `serviceId`, optional `draftId` |
+| BookingReview | Saved draft and server-calculated total | `draftId` |
+| MyBookings | Authorized requests and status filters | Optional saved `bookingId` |
+| BookingRecord | Private request details | `bookingId` |
+| SignIn | Existing-account authentication | Allowlisted `returnTo`, identifier-only `routeParams` |
+
+`App.js` registers an explicit React Navigation native stack with screen titles and Back navigation. Destinations resolve identifiers through the backend. Invalid, mismatched or inaccessible records have recovery actions. Successful submission resets history to Home → MyBookings to avoid returning to a submitted form.
+
+## Phone and Snack
+
+Run `npm.cmd start` and scan the QR code with an [Expo Go client compatible with SDK 55](https://expo.dev/go). No phone is needed for the laptop browser preview. Android Studio/SDK is needed for local native builds or an emulator.
+
+For Snack, select SDK 55, copy `App.js`, `snack.config.js`, `src/` and `assets/`, and add the packages in `snack-dependencies.json`. Configure the **public** backend URL/key in `snack.config.js`; the real connection is required. Snack supplies its own registration wrapper and core React/Expo packages. Compatibility was checked against [Snack's SDK metadata](https://github.com/expo/snack/blob/main/packages/snack-content/src/sdks/index.ts) and [Expo SDK 55 package versions](https://github.com/expo/expo/blob/sdk-55/packages/expo/bundledNativeModules.json). No Snack was published here.
+
+## Validation and scope
 
 ```powershell
 npm.cmd test
@@ -75,8 +58,8 @@ npm.cmd run export:android
 npm.cmd run test:e2e
 ```
 
-The browser suite uses installed Chrome locally and bundled Chromium in CI. It verifies correct provider parameters, category/search filtering, Back, draft editing, acknowledgement, saved requests after reload, missing-record recovery and phone-width layouts. The optional `E2E_MOBILE_LIVE_READONLY=1` suite uses the matching ignored development fixture manifest; traces/screenshots/video are disabled for those real-credential checks.
+Controlled browser tests intercept backend HTTP calls while exercising the real application, authentication client and booking RPC wiring. Fixtures exist only under `tests/`; they are not an application mode. Separate opt-in tests check actual development accounts without creating hosted bookings. See [VALIDATION.md](VALIDATION.md) for exact results and limits.
 
-`export:android` checks the Android JavaScript/module bundle. It does **not** produce a signed or installable APK. Physical Android/Expo Go behaviour, including hardware Back and the on-device keyboard, remains a manual check on the instructor's chosen device.
+This completes the connected navigation/customer-request milestone. Provider operations, admin management, registration/recovery, messaging and profile editing still use the existing website; mobile parity for those features is separate work. No signed APK or physical-phone validation is claimed. `export:android` produces a JavaScript/Hermes bundle, not an APK.
 
-See [the face-to-face demonstration guide](LAB_GUIDE.md) and [AI development documentation](AI_DEVELOPMENT.md).
+See the [evaluation guide](LAB_GUIDE.md) and [AI development record](AI_DEVELOPMENT.md).

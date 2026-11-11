@@ -27,12 +27,14 @@ export const supabase = liveAvailable ? createClient(supabaseUrl, publishableKey
 }) : null;
 
 async function result(query) {
-  const response = await query;
+  // Screens offer an explicit retry action; avoid extending the request timeout
+  // through repeated automatic retries when the service is unavailable.
+  const response = await query.retry(false);
   if (response.error) throw new Error(response.error.message);
   return response.data;
 }
 function db() {
-  if (!supabase) throw new Error('Live services are unavailable in this build. You can use the lab demo.');
+  if (!supabase) throw new Error('The service connection is not configured. Please contact support.');
   return supabase;
 }
 async function serviceContext(serviceId) {
@@ -61,7 +63,7 @@ export const liveApi = {
     const selected = await serviceContext(serviceId);
     if (!selected || selected.provider.id !== providerId) return null;
     const draft = draftId ? await result(db().from('booking_drafts').select('*').eq('id', draftId).maybeSingle()) : null;
-    if (draft && draft.provider_service_id !== serviceId) return null;
+    if (draftId && (!draft || draft.provider_service_id !== serviceId)) return null;
     return { ...selected, draft };
   },
   slots: (serviceId, day) => result(db().rpc('available_slots', { p_service: serviceId, p_day: day })),

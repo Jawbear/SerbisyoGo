@@ -1,72 +1,57 @@
-# F1 Navigation — demonstration and explanation
+# F1 Navigation — evaluation guide
 
-System title: **SerbisyoGo**. The application helps users find local home-service professionals and organize service requests.
+System title: **SerbisyoGo**. The mobile client connects directly to the same home-services system as the website. The user requested a final connected interface, so the earlier lab/demo mode has been removed.
 
-## Three-minute demonstration
+## Demonstrate the connected flow
 
-1. Open Home in Lab demo. Show the SerbisyoGo identity and explain that the demonstration uses labelled sample records.
-2. Open Find a professional, select **Francis Romay**, and point out the plumbing service. Go Back and select **Art Ecleo**: the detail screen must now show Art and his electrical service. This proves that the selected record determines the destination screen.
-3. Return to Francis and choose Plumbing home service. Enter a task of at least 10 characters, a complete address, city and four-digit postal code. Choose a future date/time.
-4. Save and review. Show the same provider, task, address and appointment on BookingReview, together with the sample total.
-5. Press Edit request details. Change the address, save again, and show the updated address in the review. The same `draftId` is retained.
-6. Acknowledge the details and save the demo request. MyBookings must show one request awaiting provider acceptance, with a `DEMO-` reference.
-7. Open the saved record and show the same information. Reload/restart and reopen MyBookings to demonstrate persistence.
-8. Use the header Back button and, on a physical Android device, hardware/gesture Back. Also demonstrate Home/Find help/Bookings shortcuts and the no-results recovery action.
-
-Do not present a demo request as a real booking. In live mode only an actual successful server confirmation produces a saved request, and the requested state still awaits provider acceptance.
+1. Open Home and browse available professionals. Select two different profiles and show that the selected record determines each detail screen. Use Back between selections.
+2. Choose a service and sign in with an existing authorized customer account. The selected provider/service survives sign-in and appears in BookingForm.
+3. Enter the task and complete address, then select an available appointment in Philippine time.
+4. Save and review the draft. Show the same provider, task, address, schedule and server-calculated total.
+5. Edit the address and review again. The same `draftId` is retained while the displayed address updates.
+6. For an evaluation booking you intend to create, acknowledge the details and submit. MyBookings displays the saved request after actual server confirmation. It still awaits provider acceptance.
+7. Open its detail screen. Reload and reopen MyBookings to show backend persistence. Sign out and show that private records require authentication.
+8. Show Home/Find help/Bookings shortcuts and no-results recovery. Resize the laptop browser to phone/tablet widths. Hardware Back and the native keyboard must be checked separately on a physical device when available.
 
 ## Rubric mapping
 
-| Criterion | Demonstration/evidence |
+| Criterion | Evidence |
 | --- | --- |
-| Screen development — 20 | Six core screens plus saved-record and sign-in screens; separate files in `src/screens/` |
-| Navigation — 25 | `App.js` registers the native stack, titles, Back and logical screen order; shortcuts call the same navigator |
-| Parameter passing — 20 | `providerId`, `serviceId`, `draftId`, `bookingId`; different selections resolve different records |
-| UI consistency — 15 | Shared components in `src/components/ui.js`, dark/green tokens in `src/theme.js`, visible loading/error/empty states |
-| Code understanding — 10 | Explain the examples and questions below using the actual source |
-| AI documentation — 10 | `AI_DEVELOPMENT.md`, reviewed implementation, encountered errors and validation scope |
+| Screen development — 20 | Eight relevant screens in `src/screens/` |
+| Navigation — 25 | Native stack, titles, Back, sign-in return destination and main shortcuts |
+| Parameter passing — 20 | Provider/service/draft/booking IDs resolve the selected records |
+| UI consistency — 15 | Shared dark/green components, responsive provider grid, loading/error/empty states |
+| Understanding — 10 | Explain the actual code below and practise the complete flow |
+| AI documentation — 10 | `AI_DEVELOPMENT.md` and current validation evidence |
 
-## Explain these four pieces of code
+## Explain these pieces
 
-Register a destination in `App.js`:
+Register the destination in `App.js`:
 
 ```jsx
 <Stack.Screen name="ProviderDetails" component={ProviderScreen}
   options={{ title: 'Provider details' }} />
 ```
 
-Navigate with an identifier in `src/components/ui.js`:
+Navigate with the selected identifier in `src/components/ui.js`:
 
 ```js
 navigation.navigate('ProviderDetails', { providerId: provider.id });
 ```
 
-Read the identifier and load its record in `ProviderScreen.js`:
+Resolve it in `ProviderScreen.js`:
 
 ```js
 const providerId = route.params?.providerId;
 const query = useData(`provider-${providerId}`, () => api.provider(providerId));
 ```
 
-Return to the preceding screen:
+Return through history:
 
 ```js
 navigation.goBack();
 ```
 
-IDs are serializable, small and sufficient to identify records. The destination gets current data from the repository instead of depending on a copied provider object. See [React Navigation's parameter guidance](https://reactnavigation.org/docs/params/).
+Identifiers are small and serializable. Destinations obtain current data from the backend instead of relying on copied objects. See [React Navigation parameters](https://reactnavigation.org/docs/params/).
 
-## Likely questions
-
-- **What is a stack?** A history of screens. Navigating adds or focuses a destination; Back returns through that history. The native stack supplies platform behaviour and headers.
-- **What does NavigationContainer do?** Owns navigation state and connects screen navigation, linking and the theme.
-- **Why pass providerId?** So ProviderDetails displays the provider selected by the user. The app must not hard-code a single person's information.
-- **Why have a separate serviceId?** A provider may offer more than one service. The service must belong to the selected provider; mismatched IDs are rejected.
-- **Where is form data stored?** The form holds edits in React state. Save creates/updates a draft in AsyncStorage for demo mode or through a trusted Supabase RPC in live mode. Review receives the draft ID and reloads that draft.
-- **Why reset the stack after submission?** Back should not reopen a submitted form and encourage an accidental repeat submission. The draft UUID also supplies server idempotency in live mode.
-- **Does a green success message mean paid or accepted?** No. The request is saved, payment is cash/manual, and the provider still needs to accept it.
-- **What is still a manual check?** The actual Android/Expo Go device, hardware Back, keyboard behaviour and the hosted Snack after transferring the files.
-
-## Before evaluation
-
-Verify the Snack SDK/Expo Go versions match, load all assets before going offline, reset demo data if needed, and perform the complete flow on the actual demonstration device. Read and practise explaining the code; documentation is not a substitute for understanding it.
+Be ready to explain `NavigationContainer`, stack history, the provider/service relationship, local form state versus saved backend drafts, server-calculated pricing, authentication checks and the stack reset after confirmation. Explain that a saved request is not automatically an accepted appointment or a paid transaction.

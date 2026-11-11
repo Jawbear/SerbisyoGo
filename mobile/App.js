@@ -3,7 +3,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { AppProvider, useApp } from './src/AppContext';
+import { AppProvider } from './src/AppContext';
 import { colors as c } from './src/theme';
 import { Icon } from './src/components/ui';
 import HomeScreen from './src/screens/HomeScreen';
@@ -27,8 +27,7 @@ const linking = {
 };
 
 function Navigator() {
-  const { mode } = useApp();
-  return <NavigationContainer key={mode} theme={theme} linking={linking}>
+  return <NavigationContainer theme={theme} linking={linking}>
     <Stack.Navigator screenOptions={({ navigation }) => ({
       headerStyle: { backgroundColor: c.background }, headerTintColor: c.text,
       headerTitleStyle: { fontSize: 16, fontWeight: '700' }, headerShadowVisible: false,

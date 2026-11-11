@@ -4,7 +4,7 @@
     "slug": "serbisyogo-mobile",
     "version": "0.1.0",
     "scheme": "serbisyogo",
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "dark",
     "icon": "./assets/logo.png",
     "android": { "package": "com.serbisyogo.mobile" },

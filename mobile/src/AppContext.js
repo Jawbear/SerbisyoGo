@@ -1,17 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createDemoStore } from './data/demo-store';
 import { liveApi, liveAvailable, supabase } from './data/backend';
 
 const Context = createContext(null);
-const demoApi = createDemoStore(AsyncStorage);
 
 export function AppProvider({ children }) {
-  const [mode, setMode] = useState('demo');
   const [identity, setIdentity] = useState(null);
   const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(Boolean(supabase));
   const [revision, setRevision] = useState(0);
   const authRequest = useRef(0);
   const invalidateAuth = useCallback(() => { authRequest.current++; }, []);
@@ -42,7 +38,7 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (mode !== 'live' || !supabase) return;
+    if (!supabase) return;
     let alive = true;
     void loadIdentity().catch(() => {});
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
@@ -61,16 +57,10 @@ export function AppProvider({ children }) {
       appState?.remove();
       if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh();
     };
-  }, [mode, loadIdentity, invalidateAuth]);
-
-  const chooseMode = useCallback(next => {
-    if (next === 'live' && !liveAvailable) return;
-    authRequest.current++;
-    setIdentity(null); setAuthError(''); setAuthLoading(next === 'live'); setMode(next);
-  }, []);
+  }, [loadIdentity, invalidateAuth]);
 
   const signIn = useCallback(async (email, password) => {
-    if (!supabase) throw new Error('Live sign-in is unavailable in this build.');
+    if (!supabase) throw new Error('The service connection is not configured. Please contact support.');
     const response = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (response.error) throw new Error(response.error.message);
     return loadIdentity();
@@ -86,10 +76,9 @@ export function AppProvider({ children }) {
   }, [refresh]);
 
   const value = useMemo(() => ({
-    mode, chooseMode, identity, authError, authLoading, liveAvailable, signIn, signOut,
-    api: mode === 'live' ? liveApi : demoApi, revision, refresh,
-    resetDemo: async () => { await demoApi.reset(); refresh(); }
-  }), [mode, chooseMode, identity, authError, authLoading, signIn, signOut, revision, refresh]);
+    identity, authError, authLoading, liveAvailable, signIn, signOut,
+    api: liveApi, revision, refresh
+  }), [identity, authError, authLoading, signIn, signOut, revision, refresh]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

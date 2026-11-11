@@ -12,13 +12,15 @@ for (const role of ['customer', 'provider', 'admin']) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
-    await page.getByRole('button', { name: 'Use live services', exact: true }).click();
     await page.getByRole('button', { name: 'Sign in to your account', exact: true }).click();
     await page.getByLabel('Email address', { exact: true }).fill(account.email);
     await page.getByLabel('Password', { exact: true }).fill(account.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     const home = page.getByTestId('screen-Home').filter({ visible: true });
-    await expect(home.getByText(role === 'admin' ? 'Admin' : role === 'provider' ? 'Provider' : 'Customer', { exact: true }).first()).toBeVisible({ timeout: 30000 });
+    const badge = home.getByText(role === 'admin' ? 'Admin' : role === 'provider' ? 'Provider' : 'Customer', { exact: true }).first();
+    await expect(badge.or(page.getByRole('alert')).first()).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole('alert'), `${role} development-account authentication must succeed`).toHaveCount(0);
+    await expect(badge).toBeVisible();
     await page.getByRole('button', { name: 'Navigate to Bookings', exact: true }).click();
     await expect(page.getByRole('button', { name: 'All requests', exact: true })).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('alert')).toHaveCount(0);

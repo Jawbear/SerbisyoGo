@@ -1,6 +1,6 @@
 # SERBISYOGO website
 
-A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) now implements the first React Native navigation milestone for the same system, with an offline lab demo and optional shared Supabase connection. No native APK or signing key has been generated.
+A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) uses the same Supabase accounts, services and booking backend directly, with responsive screens and React Navigation. No native APK or signing key has been generated.
 
 ## Current validation status
 

@@ -7,7 +7,7 @@ import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../
 const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings']);
 
 export default function SignInScreen({ navigation, route }) {
-  const { signIn, mode } = useApp();
+  const { signIn, liveAvailable } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const action = useAction();
@@ -21,11 +21,12 @@ export default function SignInScreen({ navigation, route }) {
       navigation.replace(destination, route.params?.routeParams);
     });
   }
-  return <Screen footer={false}><View style={s.stack}><Label>Welcome back</Label><Title>Your home services, all together.</Title><Muted>Sign in with your existing SerbisyoGo account. Your role is verified by the server.</Muted></View>{mode === 'demo' ? <Card style={s.stack}><Notice>The lab demo does not need a password. Switch to live services from Home to sign in.</Notice><Button title="Return to Home" onPress={() => navigation.navigate('Home')} /></Card> : <Card style={s.stack}>
+  return <Screen footer={false}><View style={s.stack}><Label>Welcome back</Label><Title>Your home services, all together.</Title><Muted>Sign in with your existing SerbisyoGo account.</Muted></View><Card style={s.stack}>
     <Field label="Email address" placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} />
     <Field label="Password" secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
     {action.error && <Notice error>{action.error}</Notice>}
-    <Button title="Sign in" busy={action.busy} onPress={submit} />
+    {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
+    <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
     <Muted>Account registration and password recovery remain available on the SerbisyoGo website.</Muted>
-  </Card>}</Screen>;
+  </Card></Screen>;
 }

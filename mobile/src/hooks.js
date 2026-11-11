@@ -3,10 +3,11 @@ import { useIsFocused } from '@react-navigation/native';
 import { useApp } from './AppContext';
 
 export function useData(key, loader, enabled = true) {
-  const { revision, mode } = useApp();
+  const { revision, identity } = useApp();
+  const accountId = identity?.user.id || 'guest';
   const focused = useIsFocused();
   const [reload, setReload] = useState(0);
-  const request = useMemo(() => ({ key, revision, mode, reload, focused, enabled }), [key, revision, mode, reload, focused, enabled]);
+  const request = useMemo(() => ({ key, revision, accountId, reload, focused, enabled }), [key, revision, accountId, reload, focused, enabled]);
   const [settled, setSettled] = useState(null);
   useEffect(() => {
     if (!request.enabled || !request.focused) return;
@@ -20,7 +21,7 @@ export function useData(key, loader, enabled = true) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request]);
   return {
-    data: settled?.request.key === key && settled?.request.mode === mode ? settled.data : null,
+    data: enabled && settled?.request.key === key && settled?.request.accountId === accountId ? settled.data : null,
     loading: enabled && focused && settled?.request !== request,
     error: settled?.request === request ? settled.error : '',
     retry: useCallback(() => setReload(value => value + 1), [])

@@ -14,6 +14,6 @@ The persistent release certificate and package name allow an in-place upgrade th
 
 ## Publishing future updates
 
-Increment `expo.version`, `android.versionCode`, and the package/lock versions. Build and publish the signed APK through `android-apk.yml` with the existing release key. The public release must include the signed APK, checksum and verified `build-metadata.json`. Once published, the app can discover it through the release feed. Update `src/features/app-releases/android-release.json` from the verified release and deploy the website to refresh its download and fast update endpoint.
+Increment `expo.version`, `android.versionCode`, and the package/lock versions. Build and publish the signed APK through `android-apk.yml` with the existing release key. The public release must include the signed APK, checksum and verified `build-metadata.json`. Once published, the app can discover it through the release feed. Run `node scripts/sync-android-release.mjs VERSION` after native update checks pass, then commit the verified metadata and deploy the website to refresh its download and fast update endpoint.
 
 The pipeline also builds a lower-version fixture for its disposable emulator. That fixture is never a published APK asset. After publication, the emulator exercises the real update prompt, Later, download, verification, Android settings permission, installation confirmation, version upgrade and retention of a private-data sentinel. It adds the results to the release metadata. Physical-phone verification remains a separate check.

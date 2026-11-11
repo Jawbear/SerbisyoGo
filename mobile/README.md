@@ -2,7 +2,9 @@
 
 React Native/Expo client for the existing SerbisyoGo home-services system. It opens directly with the shared Supabase backend. There is no demo mode, sample catalog, local-only booking system or mode switch in the shipped application.
 
-The signed [SerbisyoGo 0.1.0 APK](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.1.0/SerbisyoGo-0.1.0.apk) is available for Android 7.0+. It passed signature, installation, launch, discovery navigation and Android Back checks on an Android API 35 emulator without Metro. See [Android build and installation details](ANDROID_BUILD.md).
+The verified signed APK is available from the [SerbisyoGo download page](https://serbisyogo.sg-team.workers.dev/download/), for Android 7.0+. See [Android build and installation details](ANDROID_BUILD.md).
+
+The 0.3.0 source adds optional in-app Android updates: a newer-version prompt, Later, download progress, APK verification and Android installation confirmation. Home → App updates provides a manual check. Users on 0.1.0/0.2.0 must install an updater-enabled APK once without uninstalling first. Expo Go and browser previews cannot perform native APK installation. See [the updater flow and release checks](../docs/in-app-updates.md). Release availability depends on completion of the signed Android build and emulator checks.
 
 ## Run on your laptop
 

@@ -1,5 +1,15 @@
 # Mobile validation record
 
+## In-app updater source — 12 November 2026
+
+- Twelve unit checks passed, including newer-version selection, invalid/untrusted manifest rejection, reminder timing, the public-release fallback and offline behavior.
+- Thirteen mobile browser checks passed, including both update-screen cases and the existing account, booking, admin and responsive checks.
+- Mobile lint, Android JavaScript/Hermes compilation, website lint/unit checks and the website static production build passed. Native module autolinking resolves the local updater module.
+- The public `/app-update.json` endpoint is deployed, responds with valid current release metadata, allows public browser access and uses `Cache-Control: no-store`.
+- Signed 0.3.0 APK compilation and the real Android installer/data-retention check are still pending. GitHub Actions returned an internal `startup_failure` before creating any jobs, including on retry; a fresh [release job](https://github.com/Jawbear/SerbisyoGo/actions/runs/43096480569) was submitted. Other repository workflows are also queued. The website intentionally continues to offer verified 0.2.0 until the new release passes its checks. No successful native-updater test or physical-phone test is claimed yet.
+
+## Earlier application checks
+
 Checked on 11 November 2026 after removing the application's demo mode. Earlier demo-only persistence tests were removed together with the local demo store.
 
 | Check | Result | Scope |

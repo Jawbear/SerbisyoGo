@@ -1,6 +1,12 @@
 # Android releases
 
-## Latest: Android 0.3.0
+## Latest: Android 0.3.1
+
+[Download APK 0.3.1](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.1/SerbisyoGo-0.3.1.apk). Version code 4; Android 7.0+; ARM64, ARMv7 and x86_64; 53,680,280 bytes. SHA-256: `eb1f522d2816985e414b73fb257f36ab8d66507972c0c08f699670e700e33f9d`. Built from `9af9556e6e5c8ca28d5f718b5802cd547779f833` with the existing release certificate.
+
+Adds optimized, bundled service cover photographs while retaining the black-and-green design. Startup, discovery and hardware Back passed on the dedicated Android 15 emulator. An actual upgrade from the published 0.3.0 APK to 0.3.1 passed: optional prompt, Later, verified download, installation permission, Android confirmation and retained private app data. The test initially tapped an offscreen button below the bottom navigation; its scroll handling was corrected and the installation check resumed successfully using the same verified download. Physical-phone testing remains pending.
+
+## Earlier: Android 0.3.0
 
 [Download APK 0.3.0](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.0/SerbisyoGo-0.3.0.apk). Version code 3; Android 7.0+; ARM64, ARMv7 and x86_64; 53,270,004 bytes. SHA-256: `a890549596168493698d9a42e867ea7e29c4cf1e32a1f756734cf69d0664548b`. Built locally from `e657a09be781df20f2035c29515eced511b93765` using the existing release certificate.
 

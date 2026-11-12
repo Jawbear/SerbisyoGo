@@ -1,12 +1,12 @@
 {
-  "version_name": "0.3.0",
-  "version_code": 3,
+  "version_name": "0.3.1",
+  "version_code": 4,
   "min_android": "7.0",
-  "published_at": "2026-11-11T23:04:57Z",
-  "byte_size": 53270004,
-  "sha256": "a890549596168493698d9a42e867ea7e29c4cf1e32a1f756734cf69d0664548b",
-  "release_notes": "Includes optional in-app update prompts, verified APK downloads, download progress and Android installation from the existing app. Account sign-in, discovery, booking requests and administrator tools use the existing backend. Install this version once to enable future in-app updates. Android confirmation is required; no uninstall is needed. Emulator update and data-retention checks passed; physical-phone testing remains pending.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.0/SerbisyoGo-0.3.0.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.3.0",
-  "source_commit": "e657a09be781df20f2035c29515eced511b93765"
+  "published_at": "2026-11-11T23:59:57Z",
+  "byte_size": 53680280,
+  "sha256": "eb1f522d2816985e414b73fb257f36ab8d66507972c0c08f699670e700e33f9d",
+  "release_notes": "Adds optimized cover photos to Home and service browsing, bundled for offline display. Keeps the black-and-green design and existing account, booking and administrator features. Users on version 0.3.0 can update through App updates with Android confirmation; no uninstall is needed. Emulator update and data-retention checks passed; physical-phone testing remains pending.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.1/SerbisyoGo-0.3.1.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.3.1",
+  "source_commit": "9af9556e6e5c8ca28d5f718b5802cd547779f833"
 }

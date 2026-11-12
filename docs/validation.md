@@ -1,5 +1,7 @@
 # Validation report
 
+12 November cover-photo follow-up: supplied cabinet, plumbing, appliance, air-conditioning and carpentry photos now appear on the website and mobile Home/service browsing screens. Optimized JPEGs total 406,997 bytes per platform; the mobile copies are bundled for offline display. The existing dark green palette remains. TypeScript, website/mobile lint, three focused mobile browser navigation/update checks, the 320px website category layout check and live website photo-loading/overflow checks at 390px and 1440px passed. Website and native Android Home screenshots were reviewed; the signed 0.3.1 APK passed startup, discovery and hardware Back checks on the dedicated Android 15 emulator. The actual released 0.3.0 to 0.3.1 in-app upgrade also passed, including Android confirmation and retained private data. The automation initially tapped an offscreen control; corrected scrolling allowed the same downloaded APK to complete installation. Physical-phone testing remains pending.
+
 The [11 November functionality audit](functionality-audit.md) is the latest validation record. It includes actual read-only development-backend checks, customer/provider/admin browser reads, and fixes for sign-in return navigation and protected-page hydration. The older results and environment limitations below are retained as validation history; refer to the new audit for current scope and remaining gaps.
 
 ## Executed here

@@ -64,6 +64,6 @@ npm.cmd run test:e2e
 
 Controlled browser tests intercept backend HTTP calls while exercising the real application, authentication client and booking RPC wiring. Fixtures exist only under `tests/`; they are not an application mode. Separate opt-in tests check actual development accounts without creating hosted bookings. See [VALIDATION.md](VALIDATION.md) for exact results and limits.
 
-This completes the connected navigation/customer-request milestone. Provider operations, admin management, registration/recovery, messaging and profile editing still use the existing website; mobile parity for those features is separate work. Physical-phone validation remains pending. The downloadable APK comes from the native Gradle build; `export:android` alone produces a JavaScript/Hermes bundle.
+Mobile administration has been removed; administrators use the website. Mobile includes registration, verification-email resend, recovery requests, booking conversations, provider status/quotation actions and manual GCash receipt submission. Email confirmation/recovery links open the website. Provider onboarding and availability, profile editing, reviews, support and refund requests still use the website. See [alpha/beta setup and validation limits](../docs/alpha-beta-gcash.md). Physical-phone validation remains pending. The downloadable APK comes from the native Gradle build; `export:android` alone produces a JavaScript/Hermes bundle.
 
 See the [evaluation guide](LAB_GUIDE.md) and [AI development record](AI_DEVELOPMENT.md).

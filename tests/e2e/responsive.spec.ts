@@ -94,8 +94,8 @@ test('provider service links lead to a protected booking form', async ({ page })
 test('phone calls to action keep normal button heights', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  for (const name of ['Become a provider', 'Android app details']) {
-    const button = page.getByRole('link', { name, exact: true });
+  for (const name of ['Become a provider', 'Download Android app']) {
+    const button = page.getByRole('main').getByRole('link', { name, exact: true });
     await expect(button).toBeVisible();
     const bounds = await button.boundingBox();
     expect(bounds!.height).toBeGreaterThanOrEqual(44);

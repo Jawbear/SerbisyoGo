@@ -15,6 +15,7 @@ import { BookingDetail } from '@/features/bookings/screens';
 import { CaseDetail } from '@/features/support/support';
 import { FileList } from '@/features/support/files';
 import { todayManila } from '@/features/bookings/flow';
+import { GCashReview, GCashSettings } from '@/features/payments/gcash';
 type RecordRow = Record<string, unknown>;
 type Report = {
   customers: number;
@@ -126,7 +127,7 @@ export function AdminWorkspace({
         label: 'Recorded platform fees',
         value: money(metrics.platform_fees_centavos),
         note: 'Authorized settlements, less recorded refunds'
-      }]} />}<div className={tab === 'dashboard' ? 'split' : 'stack'}><div className="stack">{tab === 'reports' ? <Reports report={metrics} /> : tab === 'settings' ? <><SettingsPanel settings={q.data?.settings || []} /><ReleaseManagement releases={q.data?.releases || []} /><Card><h2>Administrator activity</h2><AdminTable tab={tab} rows={rows} select={onRow} /></Card></> : <Card><div className="row between" style={{
+      }]} />}<div className={tab === 'dashboard' ? 'split' : 'stack'}><div className="stack">{tab === 'reports' ? <Reports report={metrics} /> : tab === 'settings' ? <><GCashSettings /><SettingsPanel settings={q.data?.settings || []} /><ReleaseManagement releases={q.data?.releases || []} /><Card><h2>Administrator activity</h2><AdminTable tab={tab} rows={rows} select={onRow} /></Card></> : <Card><div className="row between" style={{
               marginBottom: 20
             }}><h2>{tab === 'dashboard' ? 'Recent bookings' : title}</h2>{['services', 'announcements'].includes(tab) && <button className="button compact" onClick={() => setCreate(true)}>+ {tab === 'services' ? 'Add category' : 'Create announcement'}</button>}</div><AdminTable tab={tab} rows={rows} select={onRow} /></Card>}{tab === 'services' && <Card><h2>Provider service rates</h2><DataTable rows={q.data?.services || []} columns={[{
               key: 'title',
@@ -346,7 +347,7 @@ function AdminDetail({
         }
       });
     }}><Badge>{String(row.status)}</Badge><Select label="Review action" name="action"><option value="approve">Approve request (no transfer)</option><option value="reject">Reject request</option><option value="record_transfer">Record completed external transfer</option></Select><Field label="External transfer reference (required for recorded transfer)" name="reference" /><Textarea label="Review reason / verification details" name="reason" minLength={5} required /></MutationForm></div>;
-  if (tab === 'transactions') return <div className="stack"><h2>Payment settlement</h2><dl className="definition-list"><div><dt>Booking</dt><dd>{String(row.booking_id)}</dd></div><div><dt>Recorded amount</dt><dd>{money(Number(row.amount_centavos))}</dd></div><div><dt>State</dt><dd><Badge>{String(row.status)}</Badge></dd></div></dl><Notice>Use this only to record independently verified cash/manual settlement or an actual refund. This action does not collect money or return funds.</Notice><SettlementForm row={row} /><Link href={`/admin/bookings/?id=${row.booking_id}`}>Inspect booking →</Link></div>;
+  if (tab === 'transactions') return <div className="stack"><h2>Payment settlement</h2><dl className="definition-list"><div><dt>Booking</dt><dd>{String(row.booking_id)}</dd></div><div><dt>Recorded amount</dt><dd>{money(Number(row.amount_centavos))}</dd></div><div><dt>State</dt><dd><Badge>{String(row.status)}</Badge></dd></div></dl><Notice>Use this only to record independently verified cash/manual settlement or an actual refund. This action does not collect money or return funds.</Notice><GCashReview paymentId={id} /><SettlementForm row={row} /><Link href={`/admin/bookings/?id=${row.booking_id}`}>Inspect booking →</Link></div>;
   return <dl className="definition-list">{Object.entries(row).map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}</dd></div>)}</dl>;
 }
 function ProviderVerificationData({
@@ -498,7 +499,7 @@ function SettlementForm({
       p_method: f.get('method'),
       p_reason: f.get('reason')
     });
-  }}><Select label="Settlement event" name="status"><option value="paid">Payment received and verified</option><option value="refunded">Actual refund completed and verified</option></Select><Select label="Settlement method" name="method" defaultValue={String(row.method)}><option value="cash">Cash collected directly by provider</option><option value="manual_platform">Manual payment received by platform</option></Select><Textarea label="Verified external reference and explanation" name="reason" minLength={10} required maxLength={2000} /></MutationForm>;
+  }}><Select label="Settlement event" name="status"><option value="paid">Payment received and verified</option><option value="refunded">Actual refund completed and verified</option></Select><Select label="Settlement method" name="method" defaultValue={row.method === 'gcash' ? 'manual_platform' : String(row.method)}><option value="cash">Cash collected directly by provider</option><option value="manual_platform">Manual payment received by platform</option></Select><Textarea label="Verified external reference and explanation" name="reason" minLength={10} required maxLength={2000} /></MutationForm>;
 }
 function RefundReview({
   row

@@ -1,6 +1,6 @@
-/** Shared cash/manual contract. No browser event is evidence of payment. */
+/** Shared settlement contract. Personal GCash transfers require admin verification. */
 export type PaymentState = 'pending' | 'paid' | 'failed' | 'refunded';
-export type PaymentMethod = 'cash' | 'manual_platform';
+export type PaymentMethod = 'cash' | 'manual_platform' | 'gcash';
 export interface PaymentRecord {
   id: string;
   booking_id: string;
@@ -9,7 +9,7 @@ export interface PaymentRecord {
   amount_centavos: number;
   settled_at: string | null;
 }
-export const supportedPaymentMethods: readonly PaymentMethod[] = ['cash', 'manual_platform'];
+export const supportedPaymentMethods: readonly PaymentMethod[] = ['cash', 'manual_platform', 'gcash'];
 export function settlementLabel(status: PaymentState) {
   return {
     pending: 'Payment pending',
@@ -25,5 +25,4 @@ export function checkoutRequest() {
     charges_online: false
   };
 }
-// Future online adapters must verify provider-signed events in an Edge Function,
-// then enter the database through an idempotent trusted settlement function.
+// A submitted receipt never changes payment status to paid. See review_gcash_receipt.

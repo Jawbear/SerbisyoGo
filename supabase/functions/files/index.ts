@@ -33,7 +33,7 @@ Deno.serve(async req=>{
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
  const form=await limitedFile(req,10485760);const file=form.get('file');const kind=String(form.get('kind')||'');
- if(!(file instanceof File)||!['verification','booking','support','avatar'].includes(kind))throw new Error('Valid file and kind are required');
+ if(!(file instanceof File)||!['verification','booking','support','avatar','payment'].includes(kind))throw new Error('Valid file and kind are required');
  validateUpload(kind,file.size,file.type,file.name,kind==='avatar'?5242880:10485760);
  const bytes=new Uint8Array(await file.arrayBuffer());if(!signatures(bytes,file.type))throw new Error('File contents do not match the declared type');
  const booking=String(form.get('booking_id')||'')||null;const caseId=String(form.get('case_id')||'')||null;const draftId=String(form.get('draft_id')||'')||null;
@@ -41,11 +41,17 @@ Deno.serve(async req=>{
  const p=unwrap(await user.from('provider_profiles').select('id').eq('id',identity.id).maybeSingle());if(!p)throw new Error('Provider application required');
  }
  if(kind==='booking') {if(draftId){const draft=unwrap(await user.from('booking_drafts').select('id').eq('id',draftId).eq('customer_id',identity.id).maybeSingle());if(!draft)throw new Error('Own draft required');}else if(!booking||!unwrap(await user.rpc('booking_member',{bid:booking})))throw new Error('Assigned booking required');}
+ if(kind==='payment') {
+   if(!booking||draftId)throw new Error('A completed booking is required');
+   const own=unwrap(await user.from('bookings').select('id').eq('id',booking).eq('customer_id',identity.id).eq('status','completed').maybeSingle());
+   const pending=unwrap(await user.from('payments').select('id').eq('booking_id',booking).eq('status','pending').maybeSingle());
+   if(!own||!pending)throw new Error('Own completed booking with a pending payment is required');
+ }
  if(kind==='support') {if(!caseId)throw new Error('Support case required');const isOwner=unwrap(await user.rpc('case_owner',{cid:caseId}));const admin=unwrap(await user.rpc('is_admin'));if(!isOwner&&!admin)throw new Error('Support case access required');}
  const bucket=kind==='avatar'?'avatars':'private-files';const extension=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':file.type==='image/webp'?'webp':'pdf';
  const id=crypto.randomUUID();const path=`${identity.id}/${kind}/${id}.${extension}`;
  unwrap(await privileged.storage.from(bucket).upload(path,bytes,{contentType:file.type,upsert:false}));
- const record=await privileged.from('files').insert({id,owner_id:identity.id,kind,bucket,path,booking_id:kind==='booking'&&!draftId?booking:null,draft_id:kind==='booking'?draftId:null,case_id:kind==='support'?caseId:null,original_name:file.name.slice(0,200),mime_type:file.type,byte_size:file.size});
+ const record=await privileged.from('files').insert({id,owner_id:identity.id,kind,bucket,path,booking_id:['booking','payment'].includes(kind)&&!draftId?booking:null,draft_id:kind==='booking'?draftId:null,case_id:kind==='support'?caseId:null,original_name:file.name.slice(0,200),mime_type:file.type,byte_size:file.size});
  if(record.error){await privileged.storage.from(bucket).remove([path]);throw new Error(record.error.message);}
  if(kind==='avatar'){
  unwrap(await privileged.from('profiles').update({avatar_path:path}).eq('id',identity.id));

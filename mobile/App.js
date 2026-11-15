@@ -16,8 +16,8 @@ import BookingRecordScreen from './src/screens/BookingRecordScreen';
 import SignInScreen from './src/screens/SignInScreen';
 import { UpdateProvider } from './src/updates/UpdateContext';
 import UpdateScreen from './src/updates/UpdateScreen';
-import { AdminAccountsScreen, AdminAccountScreen } from './src/admin/Accounts';
-import { AdminHomeScreen, AdminRecordsScreen, AdminRecordScreen, AdminReportsScreen } from './src/admin/Workspace';
+import { RegisterScreen, VerifyEmailScreen, ForgotPasswordScreen } from './src/screens/AuthScreens';
+import MessagesScreen from './src/screens/MessagesScreen';
 
 const Stack = createNativeStackNavigator();
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, primary: c.green, background: c.background, card: c.background, text: c.text, border: c.border } };
@@ -27,8 +27,7 @@ const linking = {
     Home: '', FindProfessionals: 'find', ProviderDetails: 'providers/:providerId',
     BookingForm: 'book/:providerId/:serviceId', BookingReview: 'review/:draftId',
     MyBookings: 'bookings', BookingRecord: 'bookings/:bookingId', SignIn: 'sign-in',
-    AdminHome: 'admin', AdminAccounts: 'admin/accounts', AdminAccount: 'admin/account',
-    AdminRecords: 'admin/records', AdminRecord: 'admin/record', AdminReports: 'admin/reports', AppUpdates: 'app-updates'
+    Register: 'register', VerifyEmail: 'verify-email', ForgotPassword: 'forgot-password', Messages: 'messages/:bookingId', AppUpdates: 'app-updates'
   } }
 };
 
@@ -49,12 +48,10 @@ function Navigator() {
       <Stack.Screen name="BookingRecord" component={BookingRecordScreen} options={{ title: 'Booking details' }} />
       <Stack.Screen name="SignIn" component={SignInScreen} options={{ title: 'Sign in', presentation: 'modal' }} />
       <Stack.Screen name="AppUpdates" component={UpdateScreen} options={{title:'App updates'}} />
-      <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{title:'Administration'}} />
-      <Stack.Screen name="AdminAccounts" component={AdminAccountsScreen} options={{title:'User accounts'}} />
-      <Stack.Screen name="AdminAccount" component={AdminAccountScreen} options={{title:'Manage account'}} />
-      <Stack.Screen name="AdminRecords" component={AdminRecordsScreen} options={{title:'Administration records'}} />
-      <Stack.Screen name="AdminRecord" component={AdminRecordScreen} options={{title:'Manage record'}} />
-      <Stack.Screen name="AdminReports" component={AdminReportsScreen} options={{title:'Reports'}} />
+      <Stack.Screen name="Register" component={RegisterScreen} options={{title:'Create account'}} />
+      <Stack.Screen name="Messages" component={MessagesScreen} options={{title:'Booking conversation'}} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{title:'Verify email'}} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{title:'Reset password'}} />
     </Stack.Navigator>
   </NavigationContainer>;
 }

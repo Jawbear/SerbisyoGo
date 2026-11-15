@@ -4,7 +4,7 @@ import { useApp } from '../AppContext';
 import { useAction } from '../hooks';
 import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
-const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'AdminHome']);
+const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages']);
 
 export default function SignInScreen({ navigation, route }) {
   const { signIn, liveAvailable } = useApp();
@@ -17,7 +17,6 @@ export default function SignInScreen({ navigation, route }) {
       const identity = await signIn(email, password);
       if (!identity) throw new Error('Your account could not be verified. Please try again.');
       const destination = destinations.has(route.params?.returnTo) ? route.params.returnTo : 'Home';
-      if (destination.startsWith('Admin') && identity.role !== 'admin') throw new Error('Administrator access required.');
       if (['BookingForm', 'BookingReview'].includes(destination) && identity.role !== 'customer') throw new Error('Submitting a service request requires a customer account.');
       navigation.replace(destination, route.params?.routeParams);
     });
@@ -28,6 +27,7 @@ export default function SignInScreen({ navigation, route }) {
     {action.error && <Notice error>{action.error}</Notice>}
     {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
     <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
-    <Muted>Account registration and password recovery remain available on the SerbisyoGo website.</Muted>
+    <Button title="Create an account" secondary onPress={() => navigation.navigate('Register')} />
+    <Button title="Forgot password?" secondary onPress={() => navigation.navigate('ForgotPassword')} />
   </Card></Screen>;
 }

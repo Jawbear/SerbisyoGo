@@ -66,3 +66,23 @@ test('admin sign-in rejects a customer before following the return destination',
   await expect(page.getByText('Administrator access is required.', { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/login\//);
 });
+
+
+test('website registration preserves the email for verification and normalizes customer details', async ({ page }) => {
+  await publicFixtures(page); let input: Record<string, unknown> | undefined;
+  await page.route('**/auth/v1/signup*', route => {
+    input = route.request().postDataJSON();
+    return route.fulfill({ json: { id: '40000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: input!.email, identities: [], user_metadata: input!.data } });
+  });
+  await page.goto('/register/');
+  await page.getByLabel('Full name', { exact: true }).fill('New Web Tester');
+  await page.getByLabel('Philippine mobile number', { exact: true }).fill('09171234567');
+  await page.getByLabel('Email address', { exact: true }).fill('new-web-tester@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('TestingPassword123!');
+  await page.getByLabel('Confirm password', { exact: true }).fill('TestingPassword123!');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click();
+  await expect(page).toHaveURL(url => url.pathname === '/verify/' && url.searchParams.get('email') === 'new-web-tester@example.test');
+  await expect(page.getByLabel('Email address', { exact: true })).toHaveValue('new-web-tester@example.test');
+  expect(input?.data).toEqual({ full_name: 'New Web Tester', phone: '+639171234567', consent: true });
+});

@@ -42,7 +42,7 @@ export function AuthScreen({
           const full_name = String(f.get('full_name')).trim();
           if (full_name.length < 2) throw new Error('Please enter your full name.');
           const {
-            error
+            data, error
           } = await client.auth.signUp({
             email,
             password,
@@ -56,7 +56,8 @@ export function AuthScreen({
             }
           });
           if (error) throw error;
-          router.push('/verify/');
+          router.push(data.session ? '/dashboard/' : `/verify/?email=${encodeURIComponent(email)}`);
+          session.refresh();
         } else if (mode === 'login' || admin) {
           const {
             error
@@ -117,7 +118,7 @@ export function AuthScreen({
         }
       }}>
  {mode === 'register' && <><Field label="Full name" name="full_name" autoComplete="name" required minLength={2} maxLength={100} /><Field label="Philippine mobile number" name="phone" type="tel" autoComplete="tel" placeholder="09XXXXXXXXX" required /></>}
- {mode !== 'reset' && <Field label={admin ? 'Work email' : 'Email address'} name="email" type="email" autoComplete="email" placeholder="you@example.com" required />}
+ {mode !== 'reset' && <Field label={admin ? 'Work email' : 'Email address'} name="email" type="email" autoComplete="email" placeholder="you@example.com" defaultValue={mode === 'verify' ? params.get('email') || '' : ''} maxLength={254} required />}
  {['login', 'admin', 'register', 'reset'].includes(mode) && <Field label={mode === 'reset' ? 'New password' : 'Password'} name="password" type="password" autoComplete={mode === 'register' || mode === 'reset' ? 'new-password' : 'current-password'} minLength={mode === 'register' || mode === 'reset' ? 12 : undefined} required />}
  {['register', 'reset'].includes(mode) && <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" required minLength={12} />}
  {mode === 'register' && <label className="check-field"><input type="checkbox" name="consent" required /><span>I consent to processing my account and booking information as described in the <Link href="/privacy/">privacy notice</Link> and acknowledge the <Link href="/terms/">service terms</Link>.</span></label>}

@@ -141,7 +141,7 @@ function Payment({
     maxWidth: 960
   }}><Card><h2>Payment method</h2><div className="row" style={{
         marginBottom: 20
-      }}><ShieldCheck className="green" /><div><strong>Cash / manual settlement</strong><p className="small muted">Payment is pending until an authorized settlement is recorded.</p></div></div><Notice>Online GCash, Maya and card payments are not configured. No online charge is made by this request.</Notice><MutationForm submit="Submit booking request →" disabled={!price.data || !draft.starts_at} onSubmit={async f => {
+      }}><ShieldCheck className="green" /><div><strong>GCash / cash settlement</strong><p className="small muted">Payment is pending until an authorized settlement is recorded.</p></div></div><Notice>After service completion, open booking details to send a GCash payment and submit your receipt for administrator verification. No payment is collected when you submit this request.</Notice><MutationForm submit="Submit booking request →" disabled={!price.data || !draft.starts_at} onSubmit={async f => {
         if (!f.get('acknowledge')) throw new Error('Please acknowledge the booking request.');
         const id = await rpc<string>('confirm_booking', {
           p_draft: draft.id,

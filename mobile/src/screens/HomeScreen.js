@@ -16,7 +16,7 @@ export default function HomeScreen({ navigation }) {
   return <Screen>
     <View style={s.between}><View style={[s.inline, { flexShrink: 1 }]}><Icon name="location-outline" size={15} /><Muted style={{ flexShrink: 1 }}>Bunawan, Agusan del Sur</Muted></View>{app.identity ? <Badge>{roleLabels[app.identity.role]}</Badge> : <Button title="Sign in" secondary disabled={app.authLoading || !app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} />}</View>
     {!app.liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
-    {app.identity?.role==='admin' && <Button title="Open administration" icon="shield-checkmark-outline" onPress={()=>navigation.navigate('AdminHome')} />}
+    {app.identity?.role==='admin' && <Notice>Administration is available on the SerbisyoGo website.</Notice>}
     <Button title="App updates" secondary icon="download-outline" onPress={()=>navigation.navigate('AppUpdates')} />
     <View style={styles.hero}>
       <View style={[s.stack, wide && { flexDirection: 'row', alignItems: 'center', gap: 28 }]}>
@@ -48,7 +48,7 @@ export default function HomeScreen({ navigation }) {
       {app.authLoading && <Muted>Checking your account…</Muted>}
       {app.authError ? <Notice error>{app.authError}</Notice> : null}
       {action.error ? <Notice error>{action.error}</Notice> : null}
-      {app.identity || app.authError ? <Button title="Sign out of this device" secondary busy={action.busy} onPress={() => action.run(app.signOut)} /> : <Button title="Sign in to your account" disabled={app.authLoading || !app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} />}
+      {app.identity || app.authError ? <Button title="Sign out of this device" secondary busy={action.busy} onPress={() => action.run(app.signOut)} /> : <><Button title="Sign in to your account" disabled={app.authLoading || !app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} /><Button title="Create an account" secondary disabled={!app.liveAvailable} onPress={() => navigation.navigate('Register')} /></>}
     </Card>
   </Screen>;
 }

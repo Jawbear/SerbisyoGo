@@ -141,7 +141,8 @@ export function MutationForm({
   submit = 'Save changes',
   success = 'Saved successfully',
   className = '',
-  disabled = false
+  disabled = false,
+  extraActions
 }: {
   children: ReactNode;
   onSubmit: (form: FormData) => Promise<void | false>;
@@ -149,6 +150,7 @@ export function MutationForm({
   success?: string;
   className?: string;
   disabled?: boolean;
+  extraActions?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -176,7 +178,7 @@ export function MutationForm({
       setBusy(false);
     }
   }
-  return <form onSubmit={handle} className={`form ${className}`}>{children}{error && <Notice error>{error}</Notice>}{ok && <Notice>{ok}</Notice>}<button className="button" type="submit" disabled={busy || disabled}>{busy ? <LoaderCircle size={16} className="spin" /> : null}{busy ? 'Please wait…' : submit}</button></form>;
+  return <form onSubmit={handle} className={`form ${className}`}>{children}{error && <Notice error>{error}</Notice>}{ok && <Notice>{ok}</Notice>}{extraActions ? <div className="auth-actions-row"><button className="button" type="submit" disabled={busy || disabled}>{busy ? <LoaderCircle size={16} className="spin" /> : null}{busy ? 'Please wait…' : submit}</button>{extraActions}</div> : <button className="button" type="submit" disabled={busy || disabled}>{busy ? <LoaderCircle size={16} className="spin" /> : null}{busy ? 'Please wait…' : submit}</button>}</form>;
 }
 export function ActionButton({
   children,

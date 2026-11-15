@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { useApp } from '../AppContext';
+import { websiteUrl } from '../data/backend';
 import { useAction } from '../hooks';
 import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
@@ -27,6 +28,7 @@ export default function SignInScreen({ navigation, route }) {
     {action.error && <Notice error>{action.error}</Notice>}
     {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
     <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
+    <Button title="Continue with Google (Gmail)" secondary onPress={() => action.run(() => Linking.openURL(`${websiteUrl}/login/?next=/dashboard/`))} />
     <Button title="Create an account" secondary onPress={() => navigation.navigate('Register')} />
     <Button title="Forgot password?" secondary onPress={() => navigation.navigate('ForgotPassword')} />
   </Card></Screen>;

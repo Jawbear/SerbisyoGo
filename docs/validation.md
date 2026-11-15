@@ -57,3 +57,51 @@ Playwright public tests cover navigation, unauthenticated admin/private denial, 
 7. Run the browser workflows and visual review on desktop/mobile, then fix any overflow, alignment, dependency or integration findings. Pixel-perfect fidelity and production readiness have not been established.
 
 The user requested no public deployment or production database changes. Neither occurred. GitHub Pages is prepared for a fictional unconfigured preview; its commercial/sensitive-transaction restrictions are documented in deployment.md.
+## Deployment preparation verification — 2026-11-15
+
+The continuation prepared local deployment tooling; no website, hosted database,
+SMTP settings or APK was published or changed.
+
+- Website Node tests: 20 passed. Mobile Node tests: 14 passed.
+- Website TypeScript check and both website/mobile linters passed.
+- Website production static export passed using the intended public site URL
+  supplied to the build process. Local `.env.local` was left unchanged.
+- `deploy:check` passed with that HTTPS site URL and the existing public Supabase
+  configuration. The default localhost site URL was correctly rejected.
+- Exported `_headers` contains the security headers and preserves both Android
+  update-feed CORS/no-store rules. This is file verification, not hosted HTTP QA.
+- All four email templates retain the Supabase confirmation link placeholder.
+  Support links use the configured Site URL; fixed expiry claims were removed.
+- `git diff --check` passed.
+- Database tests could not connect to local PostgreSQL at `127.0.0.1:54322`.
+  Docker is not available on PATH. SQL runtime/RLS tests remain unverified here.
+
+Cloudflare workflow changes have not been executed remotely. SMTP delivery,
+physical-device behavior, hosted migration rollout and real GCash settlement
+remain pending. See `physical-device-testing.md` and `alpha-beta-gcash.md`.
+
+## Policy, Google SMTP and deployment gate — 2026-11-15
+
+This continuation added the operator policy approval record, public pricing page,
+Google SMTP runbook/delivery check and an explicit Cloudflare deploy command. No
+hosted setting, SMTP credential, policy approval or deployment was changed.
+
+- Website typecheck, full lint, 20 Node tests, 15 mobile Node tests and the static
+  export passed. The export contains 45 documented route entrypoints, including
+  /pricing/.
+- /terms/, /privacy/ and /pricing/ render the structured policy text with a
+  visible DRAFT banner and `noindex, nofollow` while the approval record is a draft.
+  The pricing text renders the configured ₱50 fee and 10% commission rather than
+  separate hard-coded values.
+- `npm run policy:check:hosted` matched the active development settings
+  (fee 5000 centavos, commission 1000 bps). The hosted support address is still
+  `support@example.test` and must be replaced before approval.
+- `npm run deploy:check` passed configuration, worker, header, template and export
+  checks and correctly failed the approved-policy gate while the record is a draft.
+- `npm run email:guide` passed all four template checks. No real recovery email or
+  Google SMTP delivery was attempted; SMTP credentials and the Supabase dashboard
+  change remain operator steps.
+- The live Worker at `https://serbisyogo.sg-team.workers.dev` responds, but its
+  rendered homepage is older than the current source. It was not redeployed.
+- Physical-phone testing remains pending. The acceptance document now includes a
+  laptop-browser and Android-emulator substitute with a test-record template.

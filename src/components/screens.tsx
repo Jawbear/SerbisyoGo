@@ -14,6 +14,8 @@ import { Support } from '@/features/support/support';
 import { DownloadPage } from '@/features/app-releases/download';
 import { AdminWorkspace, type AdminTab } from '@/features/admin/workspace';
 import { AdminAccounts } from '@/features/admin/accounts';
+import { PolicyPage } from '@/features/policies/policy-page';
+import { termsOfService, privacyPolicy, pricingPolicy } from '@/lib/policies';
 import { demoProviders } from '@/lib/data';
 export function Screen({
   name
@@ -50,8 +52,11 @@ export function Screen({
     case 'preview':
       return <Preview />;
     case 'terms':
+      return <PolicyPage policy={termsOfService} current="terms" />;
     case 'privacy':
-      return <PolicyPage mode={name} />;
+      return <PolicyPage policy={privacyPolicy} current="privacy" />;
+    case 'pricing':
+      return <PolicyPage policy={pricingPolicy} current="pricing" />;
     case 'book':
       return <Guard><BookingFlow step="details" /></Guard>;
     case 'schedule':
@@ -159,13 +164,4 @@ function Preview() {
         key: 'route',
         label: 'Route'
       }]} actions={r => <Link href={r.route}>Open screen →</Link>} /></Card></>;
-}
-function PolicyPage({
-  mode
-}: {
-  mode: 'terms' | 'privacy';
-}) {
-  return <><PageHeading title={mode === 'privacy' ? 'Privacy notice' : 'Service terms'} description="Implementation disclosure for review before launch." /><Card className="form-width"><Notice>Final operator-approved policies have not been supplied. This page describes implemented data handling and does not establish fees, guarantees, cancellation entitlements or a refund policy.</Notice><div className="stack" style={{
-        marginTop: 24
-      }}>{mode === 'privacy' ? <><h2>Information used by the service</h2><p className="muted">Accounts use your name, email, mobile number and saved addresses. Booking participants can access the task, service address, status and conversation needed for that job. Provider verification documents and support evidence are private to authorized participants and administrators. GCash receipt images, transaction references and recipient details are accessible only to the submitting customer and authorized administrators.</p><h2>Optional location sharing</h2><p className="muted">An assigned professional can choose to share their current coordinate during an active job. No location is invented or automatically generated. Shared job locations are removed when the job completes or closes.</p><h2>Account assistance</h2><p className="muted">Use support for access, correction or deactivation requests. The operator must approve retention periods, the privacy contact and final legal wording before public launch.</p></> : <><h2>Booking requests</h2><p className="muted">Requests await provider acceptance. Estimate-based jobs require customer acceptance of a final quotation. The saved booking preserves the price and fee values applicable when it was submitted.</p><h2>Payments and concerns</h2><p className="muted">Payments can be settled in cash or by a manual GCash transfer after service completion. For GCash, the customer sends the agreed amount to the recipient shown in booking details and submits the reference and receipt. An administrator checks the wallet transaction history before marking the payment paid. Uploading a receipt does not confirm payment. Cancellation and refund concerns require review; a request does not prove a refund.</p><h2>Operator policy approval</h2><p className="muted">The operator must supply approved service terms, fee policies, consumer disclosures and contact details before public operation.</p></>}<ButtonLink href="/support/" secondary>Contact support</ButtonLink></div></Card></>;
 }

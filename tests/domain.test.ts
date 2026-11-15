@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {canTransition,calculatePrice,normalizePhone,safeRedirect,validateUpload,eligibleReview,overlap,pesosToCentavos,escapeCsv} from '../src/lib/domain.ts';
+import {canTransition,calculatePrice,normalizePhone,safeRedirect,validateUpload,eligibleReview,overlap,percentToBps,pesosToCentavos,escapeCsv} from '../src/lib/domain.ts';
 import {readAndroidManifest} from '../src/lib/apk.ts';
 import {checkoutRequest,settlementLabel} from '../src/features/payments/adapter.ts';
 test('money uses integer centavos and deterministic half-up commission rounding',()=>{
@@ -8,6 +8,8 @@ test('money uses integer centavos and deterministic half-up commission rounding'
  assert.equal(calculatePrice(101,0,5000).commission_centavos,51);
  assert.equal(pesosToCentavos('123.45'),12345);assert.equal(pesosToCentavos('1.2'),120);
  for(const bad of ['1.234','-1','1e3','Infinity','NaN'])assert.throws(()=>pesosToCentavos(bad));
+ assert.equal(percentToBps('10'),1000);assert.equal(percentToBps('10.5'),1050);assert.equal(percentToBps('100'),10000);assert.equal(percentToBps('0'),0);
+ for(const bad of ['100.01','1000','-1','1.234','1e3'])assert.throws(()=>percentToBps(bad));
  assert.throws(()=>calculatePrice(0.1,0,0));assert.throws(()=>calculatePrice(-1,0,0));assert.throws(()=>calculatePrice(1,1,10001));
 });
 test('booking transitions enforce actor and source state',()=>{

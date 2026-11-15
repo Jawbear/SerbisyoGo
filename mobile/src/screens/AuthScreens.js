@@ -29,6 +29,7 @@ export function RegisterScreen({ navigation }) {
       if (error) throw error;
       navigation.replace(data.session ? 'Home' : 'VerifyEmail', { email: input.email });
     })} />
+    <Button title="Sign up with Google (Gmail)" secondary onPress={() => action.run(() => Linking.openURL(`${websiteUrl}/register/?next=/dashboard/`))} />
     <Button title="Already registered? Sign in" secondary onPress={() => navigation.replace('SignIn')} />
   </Card></Screen>;
 }

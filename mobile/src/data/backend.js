@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { createClient, processLock } from '@supabase/supabase-js';
 import snackConfig from '../../snack.config';
-import { validateRequest } from '../domain';
+import { validateRequest, withProviderNames } from '../domain';
 
 export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || snackConfig.supabaseUrl;
 export const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || snackConfig.supabasePublishableKey;
@@ -14,10 +14,11 @@ export async function boundedFetch(input, init = {}, timeoutMs = 15000) {
   const abort = () => controller.abort();
   if (init.signal?.aborted) abort();
   else init.signal?.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(abort, timeoutMs);
+  let timedOut = false;
+  const timeout = setTimeout(() => { timedOut = true; abort(); }, timeoutMs);
   try { return await fetch(input, { ...init, signal: controller.signal }); }
   catch (error) {
-    if (controller.signal.aborted) throw new Error('The connection took too long. Please check your connection and try again.');
+    if (timedOut) throw new Error('The connection took too long. Please check your connection and try again.');
     throw error;
   } finally { clearTimeout(timeout); init.signal?.removeEventListener('abort', abort); }
 }
@@ -99,9 +100,18 @@ export const liveApi = {
   submit: (draftId, expectedTotal) => result(db().rpc('confirm_booking', { p_draft: draftId, p_expected_total: expectedTotal })),
   bookings: async (userId, role) => {
     if (!userId) return [];
-    return result(db().from('bookings').select('*').eq(role === 'provider' ? 'provider_id' : 'customer_id', userId).order('created_at', { ascending: false }));
+    const rows = await result(db().from('bookings').select('*').eq(role === 'provider' ? 'provider_id' : 'customer_id', userId).order('created_at', { ascending: false }));
+    const providerIds = [...new Set(rows.map(row => row.provider_id).filter(Boolean))];
+    const providers = providerIds.length ? await result(db().from('provider_profiles').select('id,display_name').in('id', providerIds)) : [];
+    return withProviderNames(rows, providers);
   },
-  booking: id => id ? result(db().from('bookings').select('*').eq('id', id).maybeSingle()) : null,
+  booking: async id => {
+    if (!id) return null;
+    const row = await result(db().from('bookings').select('*').eq('id', id).maybeSingle());
+    if (!row) return null;
+    const provider = await result(db().from('provider_profiles').select('id,display_name').eq('id', row.provider_id).maybeSingle());
+    return withProviderNames([row], provider ? [provider] : [])[0];
+  },
   transition: (id, status, reason = '') => result(db().rpc('transition_booking', { p_booking: id, p_status: status, p_reason: reason })),
   quote: (id, labor, accept = false) => result(db().rpc('booking_quote', { p_booking: id, p_labor: labor, p_accept: accept })),
   gcash: async bookingId => {

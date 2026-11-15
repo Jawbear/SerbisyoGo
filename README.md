@@ -148,6 +148,7 @@ npm test
 npm run typecheck
 npm run lint
 npm run build
+npm run policy:check
 npm run test:db
 npx playwright install chromium
 npm run test:e2e

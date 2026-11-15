@@ -23,6 +23,31 @@ minimum_password_length = 12
 [auth.email]
 enable_signup = true
 enable_confirmations = true
+template = "./templates/confirmation.html"
+subjects_confirmation = "Verify your SerbisyoGo account"
+subjects_recovery = "Reset your SerbisyoGo password"
+subjects_email_change = "Confirm your email change — SerbisyoGo"
+
+[auth.email.template.confirmation]
+subject = "Verify your SerbisyoGo account"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your SerbisyoGo password"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your email change — SerbisyoGo"
+content_path = "./templates/email_change.html"
+
+# Production SMTP — configure in Supabase Dashboard > Auth > Email Templates > SMTP Settings
+# For local testing, Supabase uses Inbucket at http://localhost:54324
+# Example for Resend (recommended):
+#   SMTP Host: smtp.resend.com
+#   SMTP Port: 465
+#   SMTP User: resend
+#   SMTP Pass: re_YOUR_API_KEY
+#   Sender: noreply@serbisyogo.ph
 [storage]
 enabled = true
 file_size_limit = "50MiB"

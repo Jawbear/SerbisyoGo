@@ -1,5 +1,59 @@
 # Deployment handoff
 
+## Current deployment preparation
+
+`npm run deploy:guide` and `npm run email:guide` print instructions without
+changing hosted settings or sending email. After building with the intended
+public environment, run `npm run deploy:check` to check local configuration,
+email placeholders and required export files. This does not inspect the hosted
+database, validate SMTP delivery, or establish production readiness.
+
+The Cloudflare workflow validates pushes to `main` and uploads a
+`cloudflare-website` artifact. Publication requires a manual workflow run with
+`publish` enabled. Set repository `NEXT_PUBLIC_*` variables for the intended
+website and Supabase project, plus `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` secrets. Use an empty base path for the configured Worker.
+Supabase secrets remain outside the browser build. This workflow does not apply
+migrations or deploy Edge Functions.
+
+`public/_headers` supplies static response headers for Cloudflare Workers assets;
+Next.js `headers()` does not apply to static exports. Geolocation remains allowed
+on the same origin. See [Cloudflare static asset headers](https://developers.cloudflare.com/workers/static-assets/headers/).
+
+The templates in `supabase/templates/` must be copied into the intended project's
+Auth template settings. Configure a verified sender through
+[Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp), then test
+actual delivery and callback/recovery links. Printing a guide or validating a
+template does not configure the service. See the
+[Google SMTP runbook](google-smtp.md) for Workspace/Gmail settings, limits and
+troubleshooting; `npm run email:test -- you@example.com` requests one real recovery
+message through the configured project.
+
+Run [physical-device acceptance checks](physical-device-testing.md) and the
+[manual GCash rollout checks](alpha-beta-gcash.md) before accepting the build.
+The [policy approval gate](policy-approval.md) keeps `/terms/`, `/privacy/` and
+`/pricing/` marked as drafts until the operator completes
+`src/lib/policy-approval.ts`; the production preflight fails while the record is
+still a draft.
+
+## One-command Cloudflare deployment
+
+For a local deployment instead of the GitHub workflow:
+
+```powershell
+Copy-Item .env.production.example .env.production.local
+# fill in the public Supabase URL/key and the real Worker URL
+npx.cmd wrangler login
+npm.cmd run deploy:cloudflare -- --confirm
+```
+
+The script loads `.env.production.local`, builds with the production public
+environment, runs the existing preflight (including the approved-policy gate), and
+then runs `wrangler deploy --config wrangler.jsonc`. Add `--dry-run` to validate the
+build and Worker bundle without publishing. In CI, the same steps use repository
+`NEXT_PUBLIC_*` variables and the `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
+secrets. Never put `SUPABASE_SECRET_KEY` or the Google App Password in either place.
+
 ## GitHub Pages preview
 
 1. Push this repository to a GitHub repository whose default branch is `main`.
@@ -66,9 +120,58 @@ Both functions use `verify_jwt=false` because their public download/avatar GETs 
 
 Configure Auth Site URL, exact callback redirects, email confirmation and SMTP. Verify the private buckets, configured limits, publication/RLS and source-table Realtime settings after migrations. Create/verify the initial administrator and provision its protected role using the documented script. Set explicit fee/commission settings in the admin UI before accepting bookings.
 
+## Production SMTP & email delivery
+
+SerbisyoGo uses Supabase Auth for email verification, password recovery and email change. Production requires a real SMTP provider.
+
+### Quick setup
+
+```sh
+node scripts/configure-smtp.mjs
+```
+
+This prints a full step-by-step guide. The short version:
+
+1. **Choose an SMTP provider** — Resend (recommended), Brevo or SendGrid all have free tiers sufficient for alpha/beta.
+2. **Configure domain DNS** — Add SPF, DKIM and DMARC records for your sender domain.
+3. **Enable Custom SMTP in Supabase** — Dashboard → Authentication → Email Templates → SMTP Settings.
+4. **Deploy branded email templates** — Copy the HTML from `supabase/templates/` into the Supabase Dashboard:
+   - `confirmation.html` — Subject: "Verify your SerbisyoGo account"
+   - `recovery.html` — Subject: "Reset your SerbisyoGo password"
+   - `email_change.html` — Subject: "Confirm your email change — SerbisyoGo"
+5. **Set Auth redirect URLs** — Allow `https://serbisyogo.sg-team.workers.dev/auth/callback/`. Remove localhost for production.
+6. **Test** — Register a test account, verify the email arrives, click the link, test password recovery.
+
+Templates use the SerbisyoGo forest/ivory/sage/gold palette with bilingual English/Filipino messaging.
+
+### Cloudflare CI/CD
+
+The `.github/workflows/cloudflare-deploy.yml` workflow automatically deploys to Cloudflare Workers on every push to `main`:
+
+1. Installs dependencies, runs tests/lint/typecheck
+2. Builds the static export with `NEXT_PUBLIC_*` variables from repository variables
+3. Deploys to Cloudflare Workers using `wrangler deploy`
+
+**Required repository secrets** (Settings → Secrets and variables → Actions → Secrets):
+- `CLOUDFLARE_API_TOKEN` — Create at Cloudflare Dashboard → My Profile → API Tokens → Create Token → Edit Cloudflare Workers
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Dashboard → Workers & Pages → Account ID (right sidebar)
+
+**Required repository variables** (Settings → Secrets and variables → Actions → Variables):
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_SITE_URL` = `https://serbisyogo.sg-team.workers.dev`
+
+### Full production checklist
+
+```sh
+node scripts/production-deploy.mjs
+```
+
+Prints 35 items across 7 phases: pre-deployment, Supabase setup, SMTP/Auth, Cloudflare deployment, security hardening, post-deployment smoke tests and monitoring.
+
 ## Release gates
 
-Before a real launch, resolve the outstanding checks in `validation.md`, regenerate introspected types, commit a resolved package lock, and review applicable service terms and privacy notices. Configure sender reputation/rate limits, production map quotas, backups, monitoring and log retention. Run the two-customer/two-provider negative-access tests against staging. Supply an APK only after Android development and signing are complete; this task has not created one.
+Before a real launch, resolve the outstanding checks in `validation.md`, regenerate introspected types, commit a resolved package lock, and review the operator-approved terms/privacy/pricing policies at `/terms/`, `/privacy/` and `/pricing/`. Configure sender reputation/rate limits, production map quotas, backups, monitoring and log retention. Run the two-customer/two-provider negative-access tests against staging. Supply an APK only after Android development and signing are complete; this task has not created one.
 
 No source or database workflow automatically deploys a production Supabase project. The backend-check workflow starts an isolated local backend on a GitHub runner and tests it without production credentials.
 

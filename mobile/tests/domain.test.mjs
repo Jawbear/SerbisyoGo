@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findService, filterProviders, manilaDay, validateRequest } from '../src/domain.js';
+import { findService, filterProviders, manilaDay, validateRequest, withProviderNames } from '../src/domain.js';
 import { fixtureCatalog } from './fixtures/catalog.mjs';
 
 const now = new Date('2026-11-11T01:00:00Z');
@@ -29,4 +29,15 @@ test('request validation preserves details while rejecting invalid addresses and
 test('Manila date selection remains correct across a UTC midnight boundary', () => {
   assert.equal(manilaDay(new Date('2026-11-11T17:00:00Z')), '2026-11-12');
   assert.equal(manilaDay(new Date('2026-11-11T17:00:00Z'), 1), '2026-11-13');
+});
+
+test('booking cards receive provider display names without inventing missing profiles', () => {
+  const rows = withProviderNames(
+    [{ id: 'booking-1', provider_id: 'provider-1' }, { id: 'booking-2', provider_id: 'provider-2' }, { id: 'booking-3', provider_id: 'missing' }],
+    [{ id: 'provider-1', display_name: 'Francis Romay' }]
+  );
+  assert.equal(rows[0].provider_name, 'Francis Romay');
+  assert.equal(rows[1].provider_name, '');
+  assert.equal(rows[2].provider_name, '');
+  assert.equal(rows[0].id, 'booking-1');
 });

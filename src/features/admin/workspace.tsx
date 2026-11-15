@@ -8,7 +8,7 @@ import { adminNav } from '@/components/shell';
 import { ActionButton, Badge, ButtonLink, Card, DataTable, Dialog, Empty, ExportButton, Field, MutationForm, Notice, PageHeading, QueryState, Select, Stats, Textarea, useQuery } from '@/components/ui';
 import { list } from '@/lib/data';
 import { edge, rpc } from '@/lib/backend';
-import { manilaDate, money, pesosToCentavos } from '@/lib/domain';
+import { manilaDate, money, percentToBps, pesosToCentavos } from '@/lib/domain';
 import { releaseSchema } from '@/lib/schemas';
 import type { Booking } from '@/lib/types';
 import { BookingDetail } from '@/features/bookings/screens';
@@ -526,7 +526,7 @@ function SettingsPanel({
         p_action: action,
         p_data: {
           fee_centavos: pesosToCentavos(String(f.get('fee'))),
-          commission_bps: pesosToCentavos(String(f.get('commission'))),
+          commission_bps: percentToBps(String(f.get('commission'))),
           support_email: String(f.get('email')) || null
         }
       });

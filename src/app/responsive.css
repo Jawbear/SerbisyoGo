@@ -94,7 +94,7 @@
   .steps { flex-wrap: wrap; }
   .step-card .step-number { flex-shrink: 0; }
   .download-hero { grid-template-columns: minmax(0, 1fr); }
-  .download-hero h1 { font-size: 30px; }
+  .download-hero h1, .download-hero .download-title { font-size: 30px; }
   .map-frame { min-height: 360px; }
   .map-canvas { height: 360px; }
   .cta-panel { align-items: stretch; flex-direction: column; padding: 24px; }

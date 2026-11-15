@@ -47,6 +47,13 @@ export function pesosToCentavos(value: string) {
   if (!Number.isSafeInteger(result)) throw new Error('Amount is too large');
   return result;
 }
+export function percentToBps(value: string) {
+  if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(value.trim())) throw new Error('Enter a percentage with at most two decimal places');
+  const [whole, fraction = ''] = value.trim().split('.');
+  const bps = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+  if (!Number.isSafeInteger(bps) || bps < 0 || bps > 10000) throw new Error('Commission must be between 0 and 100 percent');
+  return bps;
+}
 export function manilaDate(value: string, dateOnly = false) {
   return new Intl.DateTimeFormat('en-PH', {
     timeZone: 'Asia/Manila',

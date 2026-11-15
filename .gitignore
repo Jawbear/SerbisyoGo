@@ -2,10 +2,12 @@ node_modules/
 .next/
 .env*
 !.env.example
+!.env.production.example
 .cache/
 .g/
 coverage/
 playwright-report/
+debug.log
 test-results/
 *.tsbuildinfo
 supabase/.temp/

@@ -31,7 +31,8 @@
   h2 { font-weight: 600; line-height: 1.4; letter-spacing: -.4px; text-wrap: balance; }
   h3 { font-weight: 600; line-height: 1.45; letter-spacing: -.15px; }
   .hero h1 { font-size: clamp(44px, 4.5vw, 68px); font-weight: 500; line-height: 1.08; letter-spacing: -1.5px; }
-  .auth-story h1, .download-hero h1 { font-family: var(--font-display); font-weight: 500; line-height: 1.15; }
+  .auth-story h1, .download-hero h1, .download-hero .download-title { font-family: var(--font-display); font-weight: 500; line-height: 1.15; }
+  .download-hero .download-title { font-size: clamp(32px, 3vw, 44px); letter-spacing: -.6px; text-wrap: balance; }
   .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.1px; line-height: 1.6; }
   .page-heading .eyebrow, .section-heading > a { color: var(--accent); }
   .sidebar, .topbar { border-color: var(--border); }

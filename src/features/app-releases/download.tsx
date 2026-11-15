@@ -35,7 +35,7 @@ export function DownloadPage() {
       <div>
         <div className="download-icon"><Smartphone size={44} /></div>
         <Badge>{`Android release ${release.version_name}`}</Badge>
-        <h1 style={{ marginTop: 16 }}>Take SerbisyoGo with you.</h1>
+        <h2 className="download-title" style={{ marginTop: 16 }}>Take SerbisyoGo with you.</h2>
         <p className="muted">Download the signed SerbisyoGo app. Expo Go and a running laptop are not required.</p>
         <dl className="definition-list" style={{ marginBottom: 24 }}>
           <div><dt>Published</dt><dd>{release.published_at ? manilaDate(release.published_at, true) : '—'}</dd></div>

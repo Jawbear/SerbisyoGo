@@ -54,3 +54,13 @@ export function filterProviders(catalog, search = '', categoryId = '') {
     return !term || text.includes(term);
   });
 }
+
+// Booking rows store the provider id, not the display name. Resolve the
+// approved public profile names in one lookup instead of showing a blank card.
+export function withProviderNames(bookings = [], providers = []) {
+  const names = new Map((providers || []).map(provider => [provider.id, provider.display_name]));
+  return (bookings || []).map(booking => ({
+    ...booking,
+    provider_name: names.get(booking.provider_id) || booking.provider_name || ''
+  }));
+}

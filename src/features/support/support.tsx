@@ -27,11 +27,15 @@ function SupportForm() {
     cases: await list('support_cases', {
       owner_id: s.user!.id
     }),
-    bookings: await list<{
+    bookings: s.role === 'admin' ? [] : await list<{
       id: string;
       reference: string;
       service_title: string;
-    }>('bookings')
+    }>('bookings', s.role === 'provider' ? {
+      provider_id: s.user!.id
+    } : {
+      customer_id: s.user!.id
+    })
   }), !!s.user);
   return <QueryState {...q}>{selected ? <CaseDetail id={selected} /> : <><Card><h2>Send a concern</h2><MutationForm submit="Submit support case" success="Support case created." onSubmit={async f => {
           const data = caseSchema.parse({

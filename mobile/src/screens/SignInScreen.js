@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Linking, Platform, View } from 'react-native';
+import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { liveAvailable, supabase, websiteUrl } from '../data/backend';
 import { useAction } from '../hooks';
-import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
+import { colors as c } from '../theme';
+import { Button, Card, Field, GoogleButton, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
 const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages']);
 
@@ -50,14 +51,39 @@ export default function SignInScreen({ navigation, route }) {
     });
   }
 
-  return <Screen footer={false}><View style={s.stack}><Label>Welcome back</Label><Title>Your home services, all together.</Title><Muted>Sign in with your existing SerbisyoGo account.</Muted></View><Card style={s.stack}>
-    <Field label="Email address" placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} />
-    <Field label="Password" secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
-    {action.error && <Notice error>{action.error}</Notice>}
-    {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
-    <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
-    <Button title="Continue with Google (Gmail)" secondary disabled={!liveAvailable} onPress={handleGoogleAuth} />
-    <Button title="Create an account" secondary onPress={() => navigation.navigate('Register')} />
-    <Button title="Forgot password?" secondary onPress={() => navigation.navigate('ForgotPassword')} />
-  </Card></Screen>;
+  return (
+    <Screen footer={false}>
+      <View style={s.stack}>
+        <Label>Welcome back</Label>
+        <Title>Your home services, all together.</Title>
+      </View>
+      <Card style={s.stack}>
+        <View style={{ gap: 4 }}>
+          <Text accessibilityRole="header" style={{ color: c.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4 }}>Sign in</Text>
+          <Muted>Your details stay with your account.</Muted>
+        </View>
+        <Field label="Email address" placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} />
+        <Field label="Password" secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Forgot password?" onPress={() => navigation.navigate('ForgotPassword')} style={{ alignSelf: 'flex-start' }}>
+          <Text style={{ color: c.green, fontSize: 13, fontWeight: '600' }}>Forgot password?</Text>
+        </Pressable>
+        {action.error && <Notice error>{action.error}</Notice>}
+        {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
+        <View style={s.actionsRow}>
+          <View style={s.flex}>
+            <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
+          </View>
+          <View style={{ flex: 1.25 }}>
+            <GoogleButton title="Continue with Gmail" disabled={!liveAvailable} onPress={handleGoogleAuth} />
+          </View>
+        </View>
+        <View style={[s.row, { justifyContent: 'center', marginTop: 10 }]}>
+          <Muted>New here? </Muted>
+          <Pressable accessibilityRole="button" accessibilityLabel="Create an account" onPress={() => navigation.navigate('Register')}>
+            <Text style={{ color: c.green, fontWeight: '700', fontSize: 13 }}>Create an account</Text>
+          </Pressable>
+        </View>
+      </Card>
+    </Screen>
+  );
 }

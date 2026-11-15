@@ -16,10 +16,17 @@ export function Card({ children, style }) { return <View style={[s.card, style]}
 export function Badge({ children }) { return <View style={s.badge}><Text style={s.badgeText}>{children}</Text></View>; }
 export function StatusBadge({ status }) { return <Badge>{statusLabels[status] || status}</Badge>; }
 
-export function Button({ title, onPress, secondary = false, danger = false, disabled = false, busy = false, icon, testID }) {
-  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [s.button, secondary && s.secondary, danger && {backgroundColor:c.error,borderColor:c.error}, (disabled || busy) && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
+export function Button({ title, onPress, secondary = false, danger = false, disabled = false, busy = false, icon, testID, style }) {
+  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [s.button, secondary && s.secondary, danger && {backgroundColor:c.error,borderColor:c.error}, (disabled || busy) && { opacity: 0.45 }, pressed && { opacity: 0.8 }, style]}>
     {busy ? <ActivityIndicator color={secondary ? c.green : c.buttonText} /> : icon ? <Icon name={icon} size={18} color={secondary ? c.green : c.buttonText} /> : null}
-    <Text style={[s.buttonText, secondary && { color: c.green }]}>{title}</Text>
+    <Text style={[s.buttonText, secondary && { color: c.green }]} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
+  </Pressable>;
+}
+
+export function GoogleButton({ title = "Continue with Gmail", onPress, disabled = false, busy = false, style, testID }) {
+  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [s.googleButton, (disabled || busy) && { opacity: 0.5 }, pressed && { opacity: 0.85 }, style]}>
+    {busy ? <ActivityIndicator size="small" color="#1f1f1f" /> : <Image source={require("../../assets/google.png")} style={s.googleIcon} resizeMode="contain" />}
+    <Text style={s.googleButtonText} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
   </Pressable>;
 }
 
@@ -93,9 +100,13 @@ export const s = StyleSheet.create({
   sectionTitle: { color: c.text, fontSize: 19, fontWeight: '700', letterSpacing: -0.3 },
   muted: { color: c.muted, fontSize: 13, lineHeight: 21 },
   card: { backgroundColor: c.panel, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 20 },
-  button: { minHeight: 50, paddingHorizontal: 18, paddingVertical: 14, backgroundColor: c.green, borderWidth: 1, borderColor: c.green, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  button: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: c.green, borderWidth: 1, borderColor: c.green, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   secondary: { backgroundColor: c.input, borderColor: c.border },
   buttonText: { color: c.buttonText, fontSize: 14, fontWeight: '700', textAlign: 'center', flexShrink: 1 },
+  googleButton: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#dadce0", borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
+  googleIcon: { width: 18, height: 18 },
+  googleButtonText: { color: "#1f1f1f", fontSize: 13, fontWeight: "700", textAlign: "center", flexShrink: 1 },
+  actionsRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
   field: { gap: 8 }, fieldLabel: { color: c.text, fontSize: 13, fontWeight: '600' },
   input: { color: c.text, backgroundColor: c.input, borderWidth: 1, borderColor: '#63776b', borderRadius: 12, minHeight: 50, padding: 14, fontSize: 16 },
   notice: { flexDirection: 'row', gap: 10, padding: 16, backgroundColor: '#142a1e', borderWidth: 1, borderColor: '#3c7859', borderRadius: 14, alignItems: 'flex-start' },

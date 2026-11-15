@@ -56,11 +56,7 @@ export function AuthScreen({
       const { error } = await client.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl(targetNext),
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account'
-          }
+          redirectTo: redirectUrl(targetNext)
         }
       });
       if (error) throw error;
@@ -196,8 +192,13 @@ export function AuthCallback() {
   const [error, setError] = useState('');
   useEffect(() => {
     const url = new URL(window.location.href);
-    const message = url.searchParams.get('error_description') || url.searchParams.get('error');
-    if (message) queueMicrotask(() => setError(message));
+    const rawError = url.searchParams.get('error_description') || url.searchParams.get('error');
+    if (rawError) {
+      const friendly = rawError.includes('Unable to exchange external code')
+        ? 'Google rejected the authentication token exchange. Please ensure your Google Cloud OAuth consent screen is Published (or your Gmail address is added under Test Users), and that the Client Secret in Supabase has no spaces.'
+        : rawError;
+      queueMicrotask(() => setError(friendly));
+    }
     const token_hash = url.searchParams.get('token_hash');
     const type = url.searchParams.get('type');
     const code = url.searchParams.get('code');

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking, Platform, View } from 'react-native';
 import { useApp } from '../AppContext';
-import { websiteUrl } from '../data/backend';
+import { liveAvailable, supabase, websiteUrl } from '../data/backend';
 import { useAction } from '../hooks';
 import { Button, Card, Field, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
@@ -22,13 +22,41 @@ export default function SignInScreen({ navigation, route }) {
       navigation.replace(destination, route.params?.routeParams);
     });
   }
+
+  async function handleGoogleAuth() {
+    await action.run(async () => {
+      if (!liveAvailable || !supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
+      if (Platform.OS === 'web') {
+        const redirect = typeof window !== 'undefined' ? `${window.location.origin}` : `${websiteUrl}/dashboard/`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirect
+          }
+        });
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: 'serbisyogo://sign-in'
+          }
+        });
+        if (error) throw error;
+        if (data?.url) {
+          await Linking.openURL(data.url);
+        }
+      }
+    });
+  }
+
   return <Screen footer={false}><View style={s.stack}><Label>Welcome back</Label><Title>Your home services, all together.</Title><Muted>Sign in with your existing SerbisyoGo account.</Muted></View><Card style={s.stack}>
     <Field label="Email address" placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} />
     <Field label="Password" secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
     {action.error && <Notice error>{action.error}</Notice>}
     {!liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
     <Button title="Sign in" disabled={!liveAvailable} busy={action.busy} onPress={submit} />
-    <Button title="Continue with Google (Gmail)" secondary onPress={() => action.run(() => Linking.openURL(`${websiteUrl}/login/?next=/dashboard/`))} />
+    <Button title="Continue with Google (Gmail)" secondary disabled={!liveAvailable} onPress={handleGoogleAuth} />
     <Button title="Create an account" secondary onPress={() => navigation.navigate('Register')} />
     <Button title="Forgot password?" secondary onPress={() => navigation.navigate('ForgotPassword')} />
   </Card></Screen>;

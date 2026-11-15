@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { Linking, Platform, Pressable, Text } from 'react-native';
 import { useApp } from '../AppContext';
 import { supabase, websiteUrl } from '../data/backend';
 import { registration } from '../auth';
@@ -13,6 +13,34 @@ export function RegisterScreen({ navigation }) {
   const [values, setValues] = useState({ name: '', email: '', phone: '', password: '', confirm: '', consent: false });
   const set = (key, value) => setValues(previous => ({ ...previous, [key]: value }));
   const action = useAction();
+
+  async function handleGoogleAuth() {
+    await action.run(async () => {
+      if (!liveAvailable || !supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
+      if (Platform.OS === 'web') {
+        const redirect = typeof window !== 'undefined' ? `${window.location.origin}` : `${websiteUrl}/dashboard/`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirect
+          }
+        });
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: 'serbisyogo://sign-in'
+          }
+        });
+        if (error) throw error;
+        if (data?.url) {
+          await Linking.openURL(data.url);
+        }
+      }
+    });
+  }
+
   return <Screen footer={false}><Title>Create your account</Title><Muted>Use the same account on the mobile app and website.</Muted><Card style={s.stack}>
     <Field label="Full name" value={values.name} onChangeText={value => set('name', value)} maxLength={100} autoComplete="name" />
     <Field label="Email address" value={values.email} onChangeText={value => set('email', value)} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
@@ -29,7 +57,7 @@ export function RegisterScreen({ navigation }) {
       if (error) throw error;
       navigation.replace(data.session ? 'Home' : 'VerifyEmail', { email: input.email });
     })} />
-    <Button title="Sign up with Google (Gmail)" secondary onPress={() => action.run(() => Linking.openURL(`${websiteUrl}/register/?next=/dashboard/`))} />
+    <Button title="Sign up with Google (Gmail)" secondary disabled={!liveAvailable} onPress={handleGoogleAuth} />
     <Button title="Already registered? Sign in" secondary onPress={() => navigation.replace('SignIn')} />
   </Card></Screen>;
 }

@@ -60,7 +60,7 @@ export async function installBackend(page) {
       }
       data = booking.id;
     } else {
-      const tables = { categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
+      const tables = { categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_profiles: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
       if (!(table in tables)) throw new Error(`Unexpected backend call: ${table}`);
       if (state.failCatalog && table === 'categories') return route.fulfill({ status: 503, json: { message: 'Services are temporarily unavailable.' } });
       let rows = tables[table];

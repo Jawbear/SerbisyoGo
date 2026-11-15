@@ -18,7 +18,8 @@ export function GCashSettings() {
   useEffect(() => {
     if (q.data?.recipient_phone) {
       if (q.data.qr_code_url) {
-        setPreviewQr(q.data.qr_code_url);
+        const url = q.data.qr_code_url;
+        queueMicrotask(() => setPreviewQr(url));
       } else {
         const payload = `https://get.gcash.com/pay?phone=${q.data.recipient_phone}&name=${encodeURIComponent(q.data.recipient_name)}`;
         QRCode.toDataURL(payload, { width: 220, margin: 2, color: { dark: '#005ce6', light: '#ffffff' } })
@@ -81,7 +82,8 @@ export function GCashPayment({ bookingId, completed }: { bookingId: string; comp
   useEffect(() => {
     if (data?.settings?.enabled && data.settings.recipient_phone) {
       if (data.settings.qr_code_url) {
-        setQrCodeUrl(data.settings.qr_code_url);
+        const url = data.settings.qr_code_url;
+        queueMicrotask(() => setQrCodeUrl(url));
       } else {
         const payload = `https://get.gcash.com/pay?phone=${data.settings.recipient_phone}&amount=${((data.payment?.amount_centavos || 0) / 100).toFixed(2)}`;
         QRCode.toDataURL(payload, { width: 220, margin: 2, color: { dark: '#005ce6', light: '#ffffff' } })

@@ -131,18 +131,39 @@ export function RegisterScreen({ navigation }) {
 
 export function VerifyEmailScreen({ navigation, route }) {
   const [email, setEmail] = useState(route.params?.email || '');
+  const [token, setToken] = useState('');
   const [sent, setSent] = useState(false);
   const action = useAction();
   const { liveAvailable } = useApp();
   return (
     <Screen footer={false}>
-      <Title>Check your email</Title>
-      <Notice>Open the verification link in your email, then return here to sign in. Check your spam folder too.</Notice>
+      <Title>Verify your email</Title>
+      <Notice>Enter the 6-digit verification code sent to your email to activate your account. Check your spam folder too.</Notice>
       <Card style={s.stack}>
         <Field label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Field label="6-digit verification code" value={token} onChangeText={setToken} keyboardType="number-pad" maxLength={8} placeholder="123456" />
         {action.error && <Notice error>{action.error}</Notice>}
-        {sent && <Notice>Verification email requested. Please check your inbox.</Notice>}
-        <Button title="Resend verification email" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
+        {sent && <Notice>A fresh 6-digit verification code was sent. Please check your inbox.</Notice>}
+        <Button title="Verify code & sign in" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
+          if (!email.trim()) throw new Error('Enter your email address.');
+          if (!token.trim()) throw new Error('Enter the 6-digit verification code.');
+          let { data, error } = await supabase.auth.verifyOtp({
+            email: email.trim(),
+            token: token.trim(),
+            type: 'signup'
+          });
+          if (error) {
+            const retry = await supabase.auth.verifyOtp({
+              email: email.trim(),
+              token: token.trim(),
+              type: 'email'
+            });
+            if (retry.error) throw new Error(error.message || retry.error.message || 'Invalid or expired verification code.');
+            data = retry.data;
+          }
+          navigation.replace('Home');
+        })} />
+        <Button title="Resend 6-digit code" secondary disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
           if (!email.trim()) throw new Error('Enter your email address.');
           const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: callback() } });
           if (error) throw error;

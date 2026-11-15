@@ -35,17 +35,19 @@ export function AuthScreen({
   const session = useSession();
   const admin = mode === 'admin';
   const [sent, setSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendNotice, setResendNotice] = useState('');
   const [oauthLoading, setOauthLoading] = useState(false);
   const [oauthError, setOauthError] = useState('');
   const headings = {
     login: ['Welcome back', 'Your home services, all together.', 'Sign in to manage bookings, messages, and your service history.'],
     admin: ['Admin workspace', 'A trusted community starts with you.', 'Oversee service quality, support local providers, and keep every booking accountable.'],
     register: ['Join your local community', 'A little help starts here.', 'Create your customer account to request home services.'],
-    verify: ['One last step', 'Check your inbox.', 'Use the verification link sent to your email address to finish setting up your account.'],
+    verify: ['Email verification', 'Enter your 6-digit code.', 'Enter the verification code sent to your email to activate your account.'],
     forgot: ['Account recovery', 'Let’s get you back in.', 'Request a secure password reset link.'],
     reset: ['Account security', 'Choose a new password.', 'Set a strong password for your SerbisyoGo account.']
   }[mode];
-  const title = admin ? 'Administrator sign in' : mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create an account' : mode === 'verify' ? 'Verify your email' : mode === 'forgot' ? 'Reset password' : 'Update password';
+  const title = admin ? 'Administrator sign in' : mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create an account' : mode === 'verify' ? 'Verify your account' : mode === 'forgot' ? 'Reset password' : 'Update password';
 
   const handleGoogleAuth = async () => {
     try {
@@ -66,9 +68,9 @@ export function AuthScreen({
     }
   };
 
-  return <div className="auth-layout"><div className="auth-story"><p className="eyebrow green">{headings[0]}</p><h1>{headings[1]}</h1><p>{headings[2]}</p><div className="auth-benefits"><div><ShieldCheck size={20} /><span>{admin ? 'Review provider applications' : 'Compare provider profiles'}</span></div><div><CalendarDays size={20} /><span>{admin ? 'Monitor bookings and settlements' : 'Schedule around your day'}</span></div><div><MessagesSquare size={20} /><span>{admin ? 'Resolve concerns with clear records' : 'Keep your service records'}</span></div></div></div><Card className="auth-card"><h2>{title}</h2><p className="small muted">{admin ? 'Use your authorized administrator account.' : mode === 'verify' ? 'Email verification is enabled. No SMS code is required.' : 'Your details stay with your account.'}</p>{!backendConfigured && <Notice>Authentication is unavailable until Supabase is configured.</Notice>}{sent && <Notice>Check your email for the secure link. If the account is eligible, a message will arrive shortly.</Notice>}{oauthError && <Notice error>{oauthError}</Notice>}
+  return <div className="auth-layout"><div className="auth-story"><p className="eyebrow green">{headings[0]}</p><h1>{headings[1]}</h1><p>{headings[2]}</p><div className="auth-benefits"><div><ShieldCheck size={20} /><span>{admin ? 'Review provider applications' : 'Compare provider profiles'}</span></div><div><CalendarDays size={20} /><span>{admin ? 'Monitor bookings and settlements' : 'Schedule around your day'}</span></div><div><MessagesSquare size={20} /><span>{admin ? 'Resolve concerns with clear records' : 'Keep your service records'}</span></div></div></div><Card className="auth-card"><h2>{title}</h2><p className="small muted">{admin ? 'Use your authorized administrator account.' : mode === 'verify' ? 'Check your email inbox or spam folder for your 6-digit code.' : 'Your details stay with your account.'}</p>{!backendConfigured && <Notice>Authentication is unavailable until Supabase is configured.</Notice>}{sent && <Notice>Check your email for the secure link or code. If the account is eligible, a message will arrive shortly.</Notice>}{resendNotice && <Notice>{resendNotice}</Notice>}{oauthError && <Notice error>{oauthError}</Notice>}
 
-<MutationForm key={mode} submit={mode === 'verify' ? 'Resend verification email' : mode === 'forgot' ? 'Send reset link' : title} disabled={!backendConfigured} extraActions={!admin && (mode === 'login' || mode === 'register') ? (
+<MutationForm key={mode} submit={mode === 'verify' ? 'Verify code & sign in' : mode === 'forgot' ? 'Send reset link' : title} disabled={!backendConfigured} extraActions={!admin && (mode === 'login' || mode === 'register') ? (
   <button
     type="button"
     className="google-btn"
@@ -80,7 +82,7 @@ export function AuthScreen({
     <GoogleIcon />
     <span>{oauthLoading ? 'Connecting…' : mode === 'register' ? 'Sign up with Gmail' : 'Continue with Gmail'}</span>
   </button>
-) : undefined} success={mode === 'reset' ? 'Password updated successfully.' : mode === 'verify' || mode === 'forgot' ? 'Email request submitted.' : 'Account request completed.'} onSubmit={async f => {
+) : undefined} success={mode === 'reset' ? 'Password updated successfully.' : mode === 'verify' ? 'Account verified successfully.' : mode === 'forgot' ? 'Email request submitted.' : 'Account request completed.'} onSubmit={async f => {
         const client = requireDb();
         const email = String(f.get('email') || '').trim();
         const password = String(f.get('password') || '');
@@ -107,8 +109,8 @@ export function AuthScreen({
               }
               throw new Error(availability.error || 'Registration details are not available.');
             }
-          } catch (checkErr: any) {
-            if (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken')) {
+          } catch (checkErr: unknown) {
+            if (checkErr instanceof Error && (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken'))) {
               throw checkErr;
             }
           }
@@ -172,17 +174,25 @@ export function AuthScreen({
           if (error) throw error;
           setSent(true);
         } else if (mode === 'verify') {
-          const {
-            error
-          } = await client.auth.resend({
-            type: 'signup',
+          const token = String(f.get('token') || '').trim();
+          if (!token) throw new Error('Please enter the 6-digit verification code.');
+          const { error: otpError } = await client.auth.verifyOtp({
             email,
-            options: {
-              emailRedirectTo: redirectUrl()
-            }
+            token,
+            type: 'signup'
           });
-          if (error) throw error;
-          setSent(true);
+          if (otpError) {
+            const { error: retryError } = await client.auth.verifyOtp({
+              email,
+              token,
+              type: 'email'
+            });
+            if (retryError) {
+              throw new Error(otpError.message || retryError.message || 'Invalid or expired verification code. Please check your email or click Resend code below.');
+            }
+          }
+          session.refresh();
+          router.push('/dashboard/');
         } else {
           if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
           if (!/[^A-Za-z0-9]/.test(password)) throw new Error('Password must contain at least one special character.');
@@ -205,11 +215,50 @@ export function AuthScreen({
       }}>
  {mode === 'register' && <><Field label="Full name" name="full_name" autoComplete="name" required minLength={2} maxLength={100} /><Field label="Philippine mobile number" name="phone" type="tel" autoComplete="tel" placeholder="09XXXXXXXXX" required /></>}
  {mode !== 'reset' && <Field label={admin ? 'Work email' : 'Email address'} name="email" type="email" autoComplete="email" placeholder="you@example.com" defaultValue={mode === 'verify' ? params.get('email') || '' : ''} maxLength={254} required />}
+ {mode === 'verify' && <Field label="6-digit verification code" name="token" type="text" inputMode="numeric" placeholder="123456" autoComplete="one-time-code" maxLength={8} required />}
  {['login', 'admin', 'register', 'reset'].includes(mode) && <Field label={mode === 'reset' ? 'New password' : 'Password'} name="password" type="password" autoComplete={mode === 'register' || mode === 'reset' ? 'new-password' : 'current-password'} minLength={mode === 'register' || mode === 'reset' ? 8 : undefined} required />}
  {['register', 'reset'].includes(mode) && <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" required minLength={8} />}
  {mode === 'register' && <label className="check-field"><input type="checkbox" name="consent" required /><span>I consent to processing my account and booking information as described in the <Link href="/privacy/">privacy notice</Link> and acknowledge the <Link href="/terms/">service terms</Link>.</span></label>}
  {(mode === 'login' || admin) && <Link className="small" href="/forgot-password/">Forgot password?</Link>}
- </MutationForm><div className="small" style={{
+ </MutationForm>
+ {mode === 'verify' && (
+   <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+     <p className="small muted">Didn’t receive the 6-digit code or did it expire?</p>
+     <button
+       type="button"
+       className="button secondary compact"
+       style={{ marginTop: 8 }}
+       disabled={!backendConfigured || resending}
+       onClick={async () => {
+         const input = document.querySelector<HTMLInputElement>('input[name="email"]');
+         const targetEmail = (input?.value || params.get('email') || '').trim();
+         if (!targetEmail) {
+           setResendNotice('Please enter your email address above first.');
+           return;
+         }
+         try {
+           setResending(true);
+           setResendNotice('');
+           const client = requireDb();
+           const { error: resendErr } = await client.auth.resend({
+             type: 'signup',
+             email: targetEmail,
+             options: { emailRedirectTo: redirectUrl() }
+           });
+           if (resendErr) throw resendErr;
+           setResendNotice(`A fresh 6-digit verification code was sent to ${targetEmail}. Please check your inbox.`);
+         } catch (err: unknown) {
+           setResendNotice(err instanceof Error ? err.message : 'Unable to resend verification code.');
+         } finally {
+           setResending(false);
+         }
+       }}
+     >
+       {resending ? 'Sending new code…' : 'Resend 6-digit code'}
+     </button>
+   </div>
+ )}
+ <div className="small" style={{
         marginTop: 24
       }}>{mode === 'login' ? <>New here? <Link href="/register/">Create an account</Link></> : mode === 'register' ? <>Already have an account? <Link href="/login/">Sign in</Link></> : <Link href="/login/">Back to sign in</Link>}</div>{mode === 'register' && <p className="small muted" style={{
         marginTop: 16

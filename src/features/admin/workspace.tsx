@@ -299,8 +299,8 @@ function AdminDetail({
   row,
   applications,
   restrictions,
-  categories = [],
-  providers = [],
+  categories: _categories = [],
+  providers: _providers = [],
   onClose
 }: {
   tab: AdminTab;

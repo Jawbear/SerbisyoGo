@@ -85,11 +85,34 @@ export function AuthScreen({
         const email = String(f.get('email') || '').trim();
         const password = String(f.get('password') || '');
         if (mode === 'register') {
-          if (password.length < 12 || password !== f.get('confirm')) throw new Error('Use at least 12 characters and matching passwords.');
+          if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
+          if (!/[^A-Za-z0-9]/.test(password)) throw new Error('Password must contain at least one special character.');
+          if (password !== f.get('confirm')) throw new Error('Passwords must match.');
           if (!f.get('consent')) throw new Error('Please confirm your consent to create an account.');
           const phone = normalizePhone(String(f.get('phone')));
           const full_name = String(f.get('full_name')).trim();
           if (full_name.length < 2) throw new Error('Please enter your full name.');
+
+          try {
+            const availability = await rpc<{ available: boolean; field?: string; error?: string }>(
+              'check_registration_availability',
+              { p_email: email, p_full_name: full_name }
+            );
+            if (availability && !availability.available) {
+              if (availability.field === 'email' || availability.error?.toLowerCase().includes('email')) {
+                throw new Error('This email address is already in use or registered. Please sign in or use another email.');
+              }
+              if (availability.field === 'name' || availability.error?.toLowerCase().includes('name')) {
+                throw new Error('This name is already taken. Please choose a unique name.');
+              }
+              throw new Error(availability.error || 'Registration details are not available.');
+            }
+          } catch (checkErr: any) {
+            if (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken')) {
+              throw checkErr;
+            }
+          }
+
           const {
             data, error
           } = await client.auth.signUp({
@@ -105,10 +128,17 @@ export function AuthScreen({
             }
           });
           if (error) {
-            if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
-              throw new Error('An account with this email already exists. Please sign in or use password recovery.');
+            const msg = error.message.toLowerCase();
+            if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already registered') || msg.includes('email_exists')) {
+              throw new Error('This email address is already in use or registered. Please sign in or use another email.');
+            }
+            if (msg.includes('profiles_full_name_unique_idx') || (msg.includes('name') && msg.includes('unique'))) {
+              throw new Error('This name is already taken. Please choose a unique name.');
             }
             throw error;
+          }
+          if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            throw new Error('This email address is already in use or registered. Please sign in or use another email.');
           }
           router.push(data.session ? '/dashboard/' : `/verify/?email=${encodeURIComponent(email)}`);
           session.refresh();
@@ -154,7 +184,9 @@ export function AuthScreen({
           if (error) throw error;
           setSent(true);
         } else {
-          if (password.length < 12 || password !== f.get('confirm')) throw new Error('Use at least 12 characters and matching passwords.');
+          if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
+          if (!/[^A-Za-z0-9]/.test(password)) throw new Error('Password must contain at least one special character.');
+          if (password !== f.get('confirm')) throw new Error('Passwords must match.');
           const {
             data: {
               user
@@ -173,8 +205,8 @@ export function AuthScreen({
       }}>
  {mode === 'register' && <><Field label="Full name" name="full_name" autoComplete="name" required minLength={2} maxLength={100} /><Field label="Philippine mobile number" name="phone" type="tel" autoComplete="tel" placeholder="09XXXXXXXXX" required /></>}
  {mode !== 'reset' && <Field label={admin ? 'Work email' : 'Email address'} name="email" type="email" autoComplete="email" placeholder="you@example.com" defaultValue={mode === 'verify' ? params.get('email') || '' : ''} maxLength={254} required />}
- {['login', 'admin', 'register', 'reset'].includes(mode) && <Field label={mode === 'reset' ? 'New password' : 'Password'} name="password" type="password" autoComplete={mode === 'register' || mode === 'reset' ? 'new-password' : 'current-password'} minLength={mode === 'register' || mode === 'reset' ? 12 : undefined} required />}
- {['register', 'reset'].includes(mode) && <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" required minLength={12} />}
+ {['login', 'admin', 'register', 'reset'].includes(mode) && <Field label={mode === 'reset' ? 'New password' : 'Password'} name="password" type="password" autoComplete={mode === 'register' || mode === 'reset' ? 'new-password' : 'current-password'} minLength={mode === 'register' || mode === 'reset' ? 8 : undefined} required />}
+ {['register', 'reset'].includes(mode) && <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" required minLength={8} />}
  {mode === 'register' && <label className="check-field"><input type="checkbox" name="consent" required /><span>I consent to processing my account and booking information as described in the <Link href="/privacy/">privacy notice</Link> and acknowledge the <Link href="/terms/">service terms</Link>.</span></label>}
  {(mode === 'login' || admin) && <Link className="small" href="/forgot-password/">Forgot password?</Link>}
  </MutationForm><div className="small" style={{

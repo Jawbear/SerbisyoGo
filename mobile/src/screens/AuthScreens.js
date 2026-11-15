@@ -76,8 +76,41 @@ export function RegisterScreen({ navigation }) {
           <View style={s.flex}>
             <Button title="Create account" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
               const input = registration(values);
+              if (supabase) {
+                try {
+                  const { data: availability } = await supabase.rpc('check_registration_availability', {
+                    p_email: input.email,
+                    p_full_name: input.data.full_name
+                  });
+                  if (availability && !availability.available) {
+                    if (availability.field === 'email' || availability.error?.toLowerCase().includes('email')) {
+                      throw new Error('This email address is already in use or registered. Please sign in or use another email.');
+                    }
+                    if (availability.field === 'name' || availability.error?.toLowerCase().includes('name')) {
+                      throw new Error('This name is already taken. Please choose a unique name.');
+                    }
+                    throw new Error(availability.error || 'Registration details are not available.');
+                  }
+                } catch (checkErr) {
+                  if (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken')) {
+                    throw checkErr;
+                  }
+                }
+              }
               const { data, error } = await supabase.auth.signUp({ email: input.email, password: input.password, options: { data: input.data, emailRedirectTo: callback() } });
-              if (error) throw error;
+              if (error) {
+                const msg = error.message?.toLowerCase() || '';
+                if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already registered') || msg.includes('email_exists')) {
+                  throw new Error('This email address is already in use or registered. Please sign in or use another email.');
+                }
+                if (msg.includes('profiles_full_name_unique_idx') || (msg.includes('name') && msg.includes('unique'))) {
+                  throw new Error('This name is already taken. Please choose a unique name.');
+                }
+                throw error;
+              }
+              if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+                throw new Error('This email address is already in use or registered. Please sign in or use another email.');
+              }
               navigation.replace(data.session ? 'Home' : 'VerifyEmail', { email: input.email });
             })} />
           </View>

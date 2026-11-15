@@ -60,6 +60,7 @@ export function AdminWorkspace({
   const [status, setStatus] = useState('');
   const [selected, setSelected] = useState<RecordRow | null>(null);
   const [create, setCreate] = useState(false);
+  const [createType, setCreateType] = useState<'category' | 'service' | 'announcement'>('category');
   const params = useSearchParams();
   const start = from + 'T00:00:00+08:00';
   const endTime = new Date(to + 'T00:00:00+08:00').getTime();
@@ -81,6 +82,7 @@ export function AdminWorkspace({
       rows,
       applications: tab === 'providers' ? await list('provider_applications') : [],
       services: tab === 'services' ? await list('provider_services') : [],
+      providers: tab === 'services' ? await list('provider_profiles') : [],
       settings: tab === 'settings' || tab === 'payouts' ? await list('app_settings') : [],
       releases: tab === 'settings' ? await list('app_releases') : [],
       refunds: tab === 'transactions' ? await list('refund_requests') : [],
@@ -129,7 +131,7 @@ export function AdminWorkspace({
         note: 'Authorized settlements, less recorded refunds'
       }]} />}<div className={tab === 'dashboard' ? 'split' : 'stack'}><div className="stack">{tab === 'reports' ? <Reports report={metrics} /> : tab === 'settings' ? <><GCashSettings /><SettingsPanel settings={q.data?.settings || []} /><ReleaseManagement releases={q.data?.releases || []} /><Card><h2>Administrator activity</h2><AdminTable tab={tab} rows={rows} select={onRow} /></Card></> : <Card><div className="row between" style={{
               marginBottom: 20
-            }}><h2>{tab === 'dashboard' ? 'Recent bookings' : title}</h2>{['services', 'announcements'].includes(tab) && <button className="button compact" onClick={() => setCreate(true)}>+ {tab === 'services' ? 'Add category' : 'Create announcement'}</button>}</div><AdminTable tab={tab} rows={rows} select={onRow} /></Card>}{tab === 'services' && <Card><h2>Provider service rates</h2><DataTable rows={q.data?.services || []} columns={[{
+            }}><h2>{tab === 'dashboard' ? 'Recent bookings' : title}</h2>{tab === 'services' && <div className="row" style={{ gap: 8 }}><button className="button compact" onClick={() => { setCreateType('category'); setCreate(true); }}>+ Add category</button><button className="button compact secondary" onClick={() => { setCreateType('service'); setCreate(true); }}>+ Add service</button></div>}{tab === 'announcements' && <button className="button compact" onClick={() => { setCreateType('announcement'); setCreate(true); }}>+ Create announcement</button>}</div><AdminTable tab={tab} rows={rows} select={onRow} /></Card>}{tab === 'services' && <Card><h2>Provider service rates</h2><DataTable rows={q.data?.services || []} columns={[{
               key: 'title',
               label: 'Service'
             }, {
@@ -142,7 +144,7 @@ export function AdminWorkspace({
             }, {
               key: 'active',
               label: 'Active'
-            }]} actions={r => <ServicePricing row={r} />} /></Card>}{tab === 'payouts' && <><Card><h2>Commission & settlement ledger</h2><p className="small muted" style={{
+            }]} actions={r => <ServicePricing row={r} categories={q.data?.rows || []} providers={q.data?.providers || []} />} /></Card>}{tab === 'payouts' && <><Card><h2>Commission & settlement ledger</h2><p className="small muted" style={{
                 marginBottom: 24
               }}>Cash jobs are collected by providers. Their commission is receivable, not held funds. Only manual platform settlements produce a payout balance.</p><DataTable rows={q.data?.ledger || []} columns={[{
                 key: 'booking_id',
@@ -175,7 +177,7 @@ export function AdminWorkspace({
               key: 'status',
               label: 'Status',
               render: r => <Badge>{String(r.status)}</Badge>
-            }]} actions={r => <RefundReview row={r} />} /></Card>}</div>{tab === 'dashboard' && metrics && <div className="stack"><Card><h2>Action center</h2><div className="stack"><Link href="/admin/providers/">{metrics.pending_providers} provider profiles to review →</Link><Link href="/admin/complaints/">{metrics.open_cases} open concerns →</Link><Link href="/admin/payouts/">{metrics.requested_payouts} payout requests →</Link></div></Card><Card><h2>Metric definitions</h2><p className="small muted">Platform fees are commissions plus booking fees from authorized settlement ledger entries in the date range. Reversed entries are excluded. These records are operational figures, not bank reconciliation or verified accounting revenue.</p><p className="small muted">The date range includes both selected Manila dates. No sample statistics are shown as live operations.</p><ButtonLink href="/admin/reports/" secondary className="compact">View reports</ButtonLink></Card></div>}</div>{(selectedRow || create) && <Dialog title={create ? tab === 'services' ? 'Create service category' : 'Create announcement' : 'Record details'} onClose={close}>{create ? tab === 'services' ? <CategoryEditor /> : <AnnouncementEditor /> : selectedRow && <AdminDetail tab={tab} row={selectedRow} applications={q.data?.applications || []} restrictions={q.data?.restrictions || []} />}</Dialog>}</QueryState></>;
+            }]} actions={r => <RefundReview row={r} />} /></Card>}</div>{tab === 'dashboard' && metrics && <div className="stack"><Card><h2>Action center</h2><div className="stack"><Link href="/admin/providers/">{metrics.pending_providers} provider profiles to review →</Link><Link href="/admin/complaints/">{metrics.open_cases} open concerns →</Link><Link href="/admin/payouts/">{metrics.requested_payouts} payout requests →</Link></div></Card><Card><h2>Metric definitions</h2><p className="small muted">Platform fees are commissions plus booking fees from authorized settlement ledger entries in the date range. Reversed entries are excluded. These records are operational figures, not bank reconciliation or verified accounting revenue.</p><p className="small muted">The date range includes both selected Manila dates. No sample statistics are shown as live operations.</p><ButtonLink href="/admin/reports/" secondary className="compact">View reports</ButtonLink></Card></div>}</div>{(selectedRow || create) && <Dialog title={create ? createType === 'category' ? 'Create service category' : createType === 'service' ? 'Add provider service' : 'Create announcement' : 'Record details'} onClose={close}>{create ? createType === 'category' ? <CategoryEditor onClose={close} /> : createType === 'service' ? <ServiceEditor categories={q.data?.rows || []} providers={q.data?.providers || []} onClose={close} /> : <AnnouncementEditor onClose={close} /> : selectedRow && <AdminDetail tab={tab} row={selectedRow} applications={q.data?.applications || []} restrictions={q.data?.restrictions || []} categories={q.data?.rows || []} providers={q.data?.providers || []} onClose={close} />}</Dialog>}</QueryState></>;
 }
 function AdminTable({
   tab,
@@ -296,17 +298,23 @@ function AdminDetail({
   tab,
   row,
   applications,
-  restrictions
+  restrictions,
+  categories = [],
+  providers = [],
+  onClose
 }: {
   tab: AdminTab;
   row: RecordRow;
   applications: RecordRow[];
   restrictions: RecordRow[];
+  categories?: RecordRow[];
+  providers?: RecordRow[];
+  onClose?: () => void;
 }) {
   const id = String(row.id);
   if (tab === 'dashboard' || tab === 'bookings') return <BookingDetail booking={row as unknown as Booking} admin />;
-  if (tab === 'services') return <CategoryEditor row={row} />;
-  if (tab === 'announcements') return <AnnouncementEditor row={row} />;
+  if (tab === 'services') return <CategoryEditor row={row} onClose={onClose} />;
+  if (tab === 'announcements') return <AnnouncementEditor row={row} onClose={onClose} />;
   if (tab === 'complaints') return <div className="stack"><CaseDetail id={id} admin /><Card><h2>Review & resolution</h2><MutationForm submit="Update case" onSubmit={async f => {
         await rpc('admin_action', {
           p_entity: 'case',
@@ -416,9 +424,11 @@ function ReasonAction({
   }}><Select label="Action" name="action">{actions.map(a => <option key={a}>{a}</option>)}</Select><Textarea label="Reason" name="reason" required minLength={5} maxLength={1000} /></MutationForm>;
 }
 function CategoryEditor({
-  row
+  row,
+  onClose
 }: {
   row?: RecordRow;
+  onClose?: () => void;
 }) {
   return <div className="stack"><MutationForm submit={row ? 'Save category' : 'Create category'} onSubmit={async f => {
       await rpc('admin_action', {
@@ -433,38 +443,99 @@ function CategoryEditor({
           active: !!f.get('active')
         }
       });
-    }}><Field label="Category name" name="name" required minLength={2} maxLength={100} defaultValue={String(row?.name || '')} /><Field label="URL identifier" name="slug" required pattern="[a-z0-9-]+" disabled={!!row} defaultValue={String(row?.slug || '')} /><Textarea label="Description" name="description" maxLength={1000} defaultValue={String(row?.description || '')} />{!row && <Select label="Service icon" name="icon">{['wrench', 'zap', 'droplets', 'hammer', 'plug', 'wind'].map(i => <option key={i}>{i}</option>)}</Select>}<label className="check-field"><input type="checkbox" name="active" defaultChecked={Boolean(row?.active ?? true)} /><span>Available for service discovery</span></label></MutationForm>{row && <ActionButton secondary confirm="Archive this category? Existing bookings and financial history will be retained." action={() => rpc('admin_action', {
-      p_entity: 'category',
-      p_id: row.id,
-      p_action: 'archive'
-    })}>Archive category</ActionButton>}</div>;
+      if (onClose) onClose();
+    }}><Field label="Category name" name="name" required minLength={2} maxLength={100} defaultValue={String(row?.name || '')} /><Field label="URL identifier" name="slug" required pattern="[a-z0-9-]+" disabled={!!row} defaultValue={String(row?.slug || '')} /><Textarea label="Description" name="description" maxLength={1000} defaultValue={String(row?.description || '')} />{!row && <Select label="Service icon" name="icon">{['wrench', 'zap', 'droplets', 'hammer', 'plug', 'wind'].map(i => <option key={i}>{i}</option>)}</Select>}<label className="check-field"><input type="checkbox" name="active" defaultChecked={Boolean(row?.active ?? true)} /><span>Available for service discovery</span></label></MutationForm>{row && <div className="row" style={{ gap: 8, marginTop: 12 }}><ActionButton secondary confirm="Archive this category? It will be hidden from new bookings." action={async () => {
+      await rpc('admin_action', { p_entity: 'category', p_id: row.id, p_action: 'archive' });
+      if (onClose) onClose();
+    }}>Archive category</ActionButton><ActionButton secondary confirm="Permanently delete this category? This cannot be undone." action={async () => {
+      await rpc('admin_action', { p_entity: 'category', p_id: row.id, p_action: 'delete' });
+      if (onClose) onClose();
+    }}>Delete category</ActionButton></div>}</div>;
 }
-function ServicePricing({
-  row
-}: {
-  row: RecordRow;
-}) {
-  const [open, setOpen] = useState(false);
-  return <><button className="button secondary compact" onClick={() => setOpen(true)}>Edit pricing</button>{open && <Dialog title={String(row.title)} onClose={() => setOpen(false)}><MutationForm submit="Save future service pricing" onSubmit={async f => {
-        await rpc('admin_action', {
-          p_entity: 'service',
-          p_id: row.id,
-          p_action: 'save',
-          p_data: {
-            rate_centavos: pesosToCentavos(String(f.get('rate'))),
-            duration_minutes: Number(f.get('duration')),
-            pricing_mode: f.get('mode'),
-            active: !!f.get('active')
-          }
-        });
-      }}><Field label="Labor amount / estimate (₱)" name="rate" defaultValue={(Number(row.rate_centavos) / 100).toFixed(2)} required inputMode="decimal" /><Field label="Duration (minutes)" name="duration" type="number" min={30} max={480} defaultValue={Number(row.duration_minutes)} required /><Select label="Pricing model" name="mode" defaultValue={String(row.pricing_mode)}><option value="fixed">Fixed labor</option><option value="quote">Quotation required</option></Select><label className="check-field"><input type="checkbox" name="active" defaultChecked={Boolean(row.active)} /><span>Offer this service</span></label><Notice>Existing booking and invoice snapshots are preserved.</Notice></MutationForm></Dialog>}</>;
-}
-function AnnouncementEditor({
-  row
+
+function ServiceEditor({
+  row,
+  categories = [],
+  providers = [],
+  onClose
 }: {
   row?: RecordRow;
+  categories?: RecordRow[];
+  providers?: RecordRow[];
+  onClose?: () => void;
 }) {
-  return <div className="stack"><MutationForm submit="Save announcement" onSubmit={async f => {
+  return <div className="stack"><MutationForm submit={row ? 'Save service' : 'Add service'} onSubmit={async f => {
+      const rate = pesosToCentavos(String(f.get('rate') || 0));
+      await rpc('admin_action', {
+        p_entity: 'service',
+        p_id: row?.id || null,
+        p_action: 'save',
+        p_data: {
+          category_id: row ? undefined : f.get('category_id'),
+          provider_id: row ? undefined : f.get('provider_id'),
+          title: f.get('title'),
+          rate_centavos: rate,
+          duration_minutes: Number(f.get('duration') || 60),
+          pricing_mode: f.get('mode') || 'fixed',
+          active: !!f.get('active')
+        }
+      });
+      if (onClose) onClose();
+    }}>
+      {!row && categories.length > 0 && <Select label="Service category" name="category_id" required>
+        {categories.map(c => <option key={String(c.id)} value={String(c.id)}>{String(c.name)}</option>)}
+      </Select>}
+      {!row && providers.length > 0 && <Select label="Assigned provider profile" name="provider_id" required>
+        {providers.map(p => <option key={String(p.id)} value={String(p.id)}>{String(p.display_name || p.id)}</option>)}
+      </Select>}
+      <Field label="Service title" name="title" required minLength={2} maxLength={120} defaultValue={String(row?.title || '')} />
+      <Field label="Labor amount / estimate (₱)" name="rate" defaultValue={row ? (Number(row.rate_centavos) / 100).toFixed(2) : '500.00'} required inputMode="decimal" />
+      <Field label="Estimated duration (minutes)" name="duration" type="number" min={15} max={480} defaultValue={row ? Number(row.duration_minutes || 60) : 60} required />
+      <Select label="Pricing model" name="mode" defaultValue={String(row?.pricing_mode || 'fixed')}>
+        <option value="fixed">Fixed labor</option>
+        <option value="hourly">Hourly rate</option>
+        <option value="quote">Quotation required</option>
+      </Select>
+      <label className="check-field">
+        <input type="checkbox" name="active" defaultChecked={Boolean(row?.active ?? true)} />
+        <span>Offer this service on platform</span>
+      </label>
+      <Notice>Existing booking and invoice snapshots are preserved.</Notice>
+    </MutationForm>
+    {row && <div className="row" style={{ gap: 8, marginTop: 12 }}>
+      <ActionButton secondary confirm="Archive this service item? It will be hidden from new bookings." action={async () => {
+        await rpc('admin_action', { p_entity: 'service', p_id: row.id, p_action: 'archive' });
+        if (onClose) onClose();
+      }}>Archive service</ActionButton>
+      <ActionButton secondary confirm="Permanently delete this service item? This cannot be undone." action={async () => {
+        await rpc('admin_action', { p_entity: 'service', p_id: row.id, p_action: 'delete' });
+        if (onClose) onClose();
+      }}>Delete service</ActionButton>
+    </div>}
+  </div>;
+}
+
+function ServicePricing({
+  row,
+  categories = [],
+  providers = []
+}: {
+  row: RecordRow;
+  categories?: RecordRow[];
+  providers?: RecordRow[];
+}) {
+  const [open, setOpen] = useState(false);
+  return <><button className="button secondary compact" onClick={() => setOpen(true)}>Edit / Manage</button>{open && <Dialog title={String(row.title)} onClose={() => setOpen(false)}><ServiceEditor row={row} categories={categories} providers={providers} onClose={() => setOpen(false)} /></Dialog>}</>;
+}
+
+function AnnouncementEditor({
+  row,
+  onClose
+}: {
+  row?: RecordRow;
+  onClose?: () => void;
+}) {
+  return <div className="stack"><MutationForm submit={row ? 'Save announcement' : 'Create announcement'} onSubmit={async f => {
       const date = String(f.get('date'));
       await rpc('admin_action', {
         p_entity: 'announcement',
@@ -478,11 +549,19 @@ function AnnouncementEditor({
           publish_at: date ? new Date(date + ':00+08:00').toISOString() : null
         }
       });
-    }}><Field label="Title" name="title" required minLength={3} maxLength={160} defaultValue={String(row?.title || '')} /><Select label="Audience" name="audience" defaultValue={String(row?.audience || 'everyone')}><option value="everyone">Everyone, including visitors</option><option value="customers">Signed-in customers</option><option value="providers">Approved providers</option></Select><Textarea label="Announcement message" name="body" required minLength={5} maxLength={5000} defaultValue={String(row?.body || '')} /><Select label="Publication state" name="status" defaultValue={String(row?.status === 'published' ? 'published' : 'draft')}><option value="draft">Draft — private to administrators</option><option value="published">Publish at scheduled time</option></Select><Field label="Publication time · Asia/Manila" name="date" type="datetime-local" defaultValue={row?.publish_at ? new Date(new Date(String(row.publish_at)).getTime() + 8 * 3600000).toISOString().slice(0, 16) : ''} /></MutationForm>{row && <ActionButton secondary confirm="Archive this announcement?" action={() => rpc('admin_action', {
-      p_entity: 'announcement',
-      p_id: row.id,
-      p_action: 'archive'
-    })}>Archive announcement</ActionButton>}</div>;
+      if (onClose) onClose();
+    }}><Field label="Title" name="title" required minLength={3} maxLength={160} defaultValue={String(row?.title || '')} /><Select label="Audience" name="audience" defaultValue={String(row?.audience || 'everyone')}><option value="everyone">Everyone, including visitors</option><option value="customers">Signed-in customers</option><option value="providers">Approved providers</option></Select><Textarea label="Announcement message" name="body" required minLength={5} maxLength={5000} defaultValue={String(row?.body || '')} /><Select label="Publication state" name="status" defaultValue={String(row?.status === 'published' ? 'published' : 'draft')}><option value="draft">Draft — private to administrators</option><option value="published">Publish at scheduled time</option></Select><Field label="Publication time · Asia/Manila" name="date" type="datetime-local" defaultValue={row?.publish_at ? new Date(new Date(String(row.publish_at)).getTime() + 8 * 3600000).toISOString().slice(0, 16) : ''} /></MutationForm>
+    {row && <div className="row" style={{ gap: 8, marginTop: 12 }}>
+      <ActionButton secondary confirm="Archive this announcement?" action={async () => {
+        await rpc('admin_action', { p_entity: 'announcement', p_id: row.id, p_action: 'archive' });
+        if (onClose) onClose();
+      }}>Archive announcement</ActionButton>
+      <ActionButton secondary confirm="Permanently delete this announcement? This cannot be undone." action={async () => {
+        await rpc('admin_action', { p_entity: 'announcement', p_id: row.id, p_action: 'delete' });
+        if (onClose) onClose();
+      }}>Delete announcement</ActionButton>
+    </div>}
+  </div>;
 }
 function SettlementForm({
   row

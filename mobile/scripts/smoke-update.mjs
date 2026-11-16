@@ -38,7 +38,11 @@ const end=Date.now()+90000;let upgraded=false;
 while(Date.now()<end){if(new RegExp(`versionCode=${metadata.versionCode}\\b`).test(adb('shell','dumpsys','package',metadata.packageName))){upgraded=true;break;}await sleep(1000);}
 if(!upgraded)throw new Error('Android did not install the newer version.');
 if(!adb('shell','cat',`/data/data/${metadata.packageName}/files/update-retained-data.txt`).includes('retained-through-in-place-update'))throw new Error('Private application data was not retained during the update.');
-adb('shell','am','start','-W','-n',`${metadata.packageName}/.MainActivity`);
+xml=await waitFor(value=>value.includes('App installed.')||value.includes('App updates')||value.includes('Find a professional'),'installer completes after upgrade');
+// Android's completion dialog can remain above an activity started with adb.
+// Follow the real installer Open action before checking the updated app UI.
+if(xml.includes('App installed.')&&/text="Open"/.test(xml))tap(xml,'Open');
+else adb('shell','am','start','-W','-n',`${metadata.packageName}/.MainActivity`);
 await waitFor(value=>value.includes('App updates')||value.includes('Find a professional'),'updated app launches');
 metadata.emulatorSmoke.inAppUpdate={fromVersionCode:metadata.versionCode-1,toVersionCode:metadata.versionCode,optionalPrompt:true,laterKeepsAppUsable:true,downloadVerified:true,permissionFlow:true,androidConfirmation:true,privateDataRetained:true};
 writeFileSync('builds/build-metadata.json',JSON.stringify(metadata,null,2)+'\n');

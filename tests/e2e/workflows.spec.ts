@@ -28,7 +28,7 @@ test('recipient verification is enforced through the real API before enabling GC
  const disabled=await admin.from('gcash_settings').select('enabled,recipient_verified_at').single();expect(disabled.data?.enabled).toBe(false);expect(disabled.data?.recipient_verified_at).toBeNull();
 });
 
-test('real credential uploads, private access and provider review require all credential groups',async()=>{
+test('one real credential upload permits admin review without requiring other groups',async()=>{
  const applicant=await signed('pendingProvider'),admin=await signed('admin');
  const {data:{session}}=await applicant.auth.getSession();
  const headers={apikey:key!,Authorization:`Bearer ${session!.access_token}`};
@@ -37,8 +37,9 @@ test('real credential uploads, private access and provider review require all cr
  expect((await upload('')).status).toBe(400);expect((await upload('invented-category')).status).toBe(400);
  const application=await admin.from('provider_applications').select('id').eq('provider_id',fixtures.accounts.pendingProvider.id).eq('status','pending').single();expect(application.error).toBeNull();
  const review={p_entity:'provider',p_id:application.data!.id,p_action:'approve',p_data:{reason:'Inspected harmless fictional test pixels in disposable staging'}};
- for(const category of ['gov_id','prc_license']){const response=await upload(category);const body=await response.json();expect(response.ok,JSON.stringify(body)).toBe(true);expect((await admin.rpc('admin_action',review)).error).toBeTruthy();}
- const clearance=await upload('clearance');expect(clearance.ok).toBe(true);
+ expect((await admin.rpc('admin_action',review)).error).toBeTruthy();
+ const response=await upload('gov_id');const uploaded=await response.json();expect(response.ok,JSON.stringify(uploaded)).toBe(true);
+ const pending=await applicant.from('provider_profiles').select('status').eq('id',fixtures.accounts.pendingProvider.id).single();expect(pending.data?.status).toBe('pending');
  expect((await applicant.rpc('admin_action',review)).error).toBeTruthy();expect((await admin.rpc('admin_action',review)).error).toBeNull();
  const context=await applicant.rpc('user_context');expect(context.data?.role).toBe('provider');
  const extra=await upload('business_permit');const file=await extra.json();expect(extra.ok,JSON.stringify(file)).toBe(true);

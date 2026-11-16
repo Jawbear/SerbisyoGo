@@ -380,7 +380,7 @@ function ProviderReviewForm({
           style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
           onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please upload your valid Government ID (PhilSys National ID, Driver\'s License, or Passport).')}
         >
-          + Missing Gov ID
+          + Request ID
         </button>
         <button
           type="button"
@@ -388,7 +388,7 @@ function ProviderReviewForm({
           style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
           onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please submit your TESDA NC I / NC II certificate or PRC License to certify your trade skills.')}
         >
-          + Missing TESDA/PRC
+          + Request trade proof
         </button>
         <button
           type="button"
@@ -396,7 +396,7 @@ function ProviderReviewForm({
           style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
           onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please upload a valid Barangay or Police Clearance.')}
         >
-          + Missing Clearance
+          + Request clearance
         </button>
         <button
           type="button"
@@ -410,9 +410,9 @@ function ProviderReviewForm({
           type="button"
           className="button secondary compact"
           style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
-          onClick={() => setReason('All credentials (Government ID, proof of profession, and clearance) have been verified.')}
+          onClick={() => setReason('I reviewed the submitted ID or credential and verified the applicant for approval.')}
         >
-          + All verified
+          + Document reviewed
         </button>
       </div>
       <Textarea
@@ -424,7 +424,7 @@ function ProviderReviewForm({
         maxLength={1000}
         required
       />
-      <Notice>Approval requires private verification documents, at least one active service and weekly availability.</Notice>
+      <Notice>Approval requires inspection of at least one accepted private ID or credential, an active service and weekly availability. Additional documents are optional.</Notice>
     </MutationForm>
   );
 }
@@ -463,11 +463,11 @@ function ProviderVerificationData({
           <div>
             <h3 style={{ marginBottom: 4 }}>Credential verification & compliance</h3>
             <p className="small muted">
-              Official verification requirements for provider profile approval.
+              One accepted ID or credential is enough. Inspect the document before approving; extra documents are optional.
             </p>
           </div>
           <Badge>
-            {completeness.isComplete ? 'All required credentials uploaded' : `${completeness.totalUploaded} uploaded · Incomplete`}
+            {completeness.isComplete ? 'Document uploaded · Ready for review' : 'One accepted document needed'}
           </Badge>
         </div>
 
@@ -475,24 +475,13 @@ function ProviderVerificationData({
           <strong className="small" style={{ textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--muted)' }}>
             Compliance Checklist
           </strong>
+          <div className="row between" style={{ gap: 8 }}><span className="small">1. At least one accepted ID or credential:</span><Badge>{completeness.isComplete ? 'Uploaded' : 'Needed'}</Badge></div>
           <div className="row between" style={{ gap: 8 }}>
-            <span className="small">1. Government-Issued Valid ID:</span>
-            <Badge>{completeness.hasGovId ? 'Uploaded' : 'Missing'}</Badge>
-          </div>
-          <div className="row between" style={{ gap: 8 }}>
-            <span className="small">2. Proof of Profession (TESDA NC I/II, PRC, or Trade Cert):</span>
-            <Badge>{completeness.hasProfProof ? 'Uploaded' : 'Missing'}</Badge>
-          </div>
-          <div className="row between" style={{ gap: 8 }}>
-            <span className="small">3. Barangay or Police Clearance:</span>
-            <Badge>{completeness.hasClearance ? 'Uploaded' : 'Missing'}</Badge>
-          </div>
-          <div className="row between" style={{ gap: 8 }}>
-            <span className="small">4. Active Service Offerings:</span>
+            <span className="small">2. Active Service Offerings:</span>
             <Badge>{activeServices.length > 0 ? `${activeServices.length} active` : 'None'}</Badge>
           </div>
           <div className="row between" style={{ gap: 8 }}>
-            <span className="small">5. Weekly Availability:</span>
+            <span className="small">3. Weekly Availability:</span>
             <Badge>{weekWindows.length > 0 ? `${weekWindows.length} windows set` : 'None'}</Badge>
           </div>
         </div>

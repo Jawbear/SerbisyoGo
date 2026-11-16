@@ -1,5 +1,8 @@
 # Staging validation — 17 November 2026
 
+This records the staging phase. The subsequent source push and hosted backend
+rollout are documented in [update rollout](release-2026-11-17.md).
+
 Validation used a disposable Supabase stack in GitHub Actions, including actual
 Auth, PostgreSQL, Storage, Edge Functions and a local email inbox. Hosted user
 accounts, payment settings and production data were not modified. No new public

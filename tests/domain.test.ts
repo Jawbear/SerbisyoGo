@@ -84,17 +84,17 @@ test('provider verification documents parse categories, format filenames and eva
   // Completeness check
   const emptyCheck = checkVerificationCompleteness([]);
   assert.equal(emptyCheck.isComplete, false);
-  assert.equal(emptyCheck.missing.length, 3);
+  assert.equal(emptyCheck.missing.length, 1);
 
   const partialCheck = checkVerificationCompleteness([
     { original_name: '[Government ID] Driver License.png', verification_category: 'gov_id' },
     { original_name: '[TESDA NC II] Electrical NC2.pdf', verification_category: 'tesda_nc2' }
   ]);
-  assert.equal(partialCheck.isComplete, false);
+  assert.equal(partialCheck.isComplete, true);
   assert.equal(partialCheck.hasGovId, true);
   assert.equal(partialCheck.hasProfProof, true);
   assert.equal(partialCheck.hasClearance, false);
-  assert.deepEqual(partialCheck.missing, ['Barangay or Police Clearance']);
+  assert.deepEqual(partialCheck.missing, []);
 
   const completeCheck = checkVerificationCompleteness([
     { original_name: '[Government ID] Passport.jpg', verification_category: 'gov_id' },
@@ -116,4 +116,16 @@ test('provider verification documents parse categories, format filenames and eva
     { original_name: '[PRC License] pretend.pdf' },
     { original_name: '[Clearance] pretend.pdf' }
   ]).isComplete, false, 'filenames alone cannot satisfy credential requirements');
+});
+
+test('any one accepted credential satisfies submission, with admin review still separate', () => {
+  for (const category of ["gov_id","tesda_nc2","tesda_nc1","tesda_coc","prc_license","clearance","training_cert","employment_proof","business_permit"]) {
+    const result = checkVerificationCompleteness([{original_name:'document.pdf', verification_category:category}]);
+    assert.equal(result.isComplete, true, category);
+    assert.equal(result.acceptedCount, 1);
+    assert.deepEqual(result.missing, []);
+  }
+  for (const category of ['other_proof', 'invented', null]) {
+    assert.equal(checkVerificationCompleteness([{original_name:'[Government ID] misleading.pdf', verification_category:category}]).isComplete, false);
+  }
 });

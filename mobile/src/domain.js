@@ -71,7 +71,6 @@ export const VERIFICATION_DOC_CATEGORIES = [
     name: 'Government-Issued Valid ID',
     badge: 'Government ID',
     description: "PhilSys National ID, Driver's License, Passport, UMID, Postal ID, PRC ID, or Voter's ID.",
-    isRequired: true,
   },
   {
     id: 'tesda_nc2',
@@ -106,7 +105,6 @@ export const VERIFICATION_DOC_CATEGORIES = [
     name: 'Barangay, Police, or NBI Clearance',
     badge: 'Clearance',
     description: 'Recent Barangay Clearance or Police/NBI Clearance certifying good standing.',
-    isRequired: true,
   },
   {
     id: 'training_cert',
@@ -178,18 +176,17 @@ export function checkVerificationCompleteness(files = []) {
   const hasClearance = categories.some(category => category?.id === 'clearance');
 
   const totalUploaded = files.length;
-  const isComplete = hasGovId && hasProfProof && hasClearance;
+  const acceptedCount = categories.filter(category => category && category.id !== 'other_proof').length;
+  const isComplete = acceptedCount > 0;
 
-  const missing = [];
-  if (!hasGovId) missing.push('Government ID');
-  if (!hasProfProof) missing.push('Proof of Profession (TESDA NC I/II, PRC License, or Trade Cert)');
-  if (!hasClearance) missing.push('Barangay or Police Clearance');
+  const missing = isComplete ? [] : ['At least one accepted ID or credential'];
 
   return {
     hasGovId,
     hasProfProof,
     hasClearance,
     totalUploaded,
+    acceptedCount,
     isComplete,
     missing
   };

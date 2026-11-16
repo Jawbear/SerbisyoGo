@@ -68,13 +68,13 @@ test('provider upload sends its category and legacy filenames do not complete th
     return route.fulfill({ status: 201, json: { id: 'categorized-file' } });
   });
   await page.goto('/provider/apply/');
-  await expect(page.getByText('1. Valid Government ID (Required)', { exact: true })).toBeVisible();
+  await expect(page.getByText('One accepted document needed', { exact: true })).toBeVisible();
   await expect(page.getByText('Category required — upload again', { exact: true })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Credential requirement / document category', exact: true }).selectOption('Government ID');
+  await page.getByRole('combobox', { name: 'Document category (choose any one)', exact: true }).selectOption('Government ID');
   await page.getByLabel('Document title or specification (optional)', { exact: true }).fill('Test ID');
   await page.getByLabel('Select JPG, PNG, WebP or PDF (up to 10 MB)', { exact: true }).setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=', 'base64') });
   await page.getByRole('button', { name: 'Upload verification credential', exact: true }).click();
-  await expect(page.getByText('1. Valid Government ID (Uploaded)', { exact: true })).toBeVisible();
+  await expect(page.getByText('Document uploaded · Awaiting review', { exact: true })).toBeVisible();
   expect(uploads).toBe(1);
 });
 

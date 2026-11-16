@@ -1,5 +1,6 @@
 import {createClient} from 'npm:@supabase/supabase-js@2';
 import {corsHeaders} from './cors.ts';
+export {limitedFile} from './upload.ts';
 export function cors(req:Request) {
   return corsHeaders(req,Deno.env.get('ALLOWED_ORIGINS')||'http://localhost:3000');
 }
@@ -27,14 +28,4 @@ export function requireData<T>(result:{data:T;error:{message:string}|null}):NonN
   const data=unwrap(result);
   if(data===null||data===undefined)throw new Error('The storage operation returned no data.');
   return data;
-}
-export async function limitedFile(req:Request,max:number) {
-  const length=Number(req.headers.get('content-length')||0);
-  if(length>max+1048576)throw new Error('Upload exceeds configured size limit');
-  // Stream into a bounded buffer before parsing multipart (limits chunked requests too).
-  const reader=req.body?.getReader();if(!reader)throw new Error('File is required');
-  const chunks:Uint8Array[]=[];let size=0;
-  while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max+1048576){await reader.cancel();throw new Error('Upload exceeds configured size limit');}chunks.push(value);}
-  const body=new Uint8Array(size);let offset=0;for(const c of chunks){body.set(c,offset);offset+=c.length;}
-  return new Request(req.url,{method:'POST',headers:{'Content-Type':req.headers.get('content-type')||''},body}).formData();
 }

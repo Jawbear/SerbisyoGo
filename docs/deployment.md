@@ -113,10 +113,12 @@ Review the migration plan. An explicitly authorized operator can then run `supab
 ```sh
 npx supabase functions deploy files
 npx supabase functions deploy releases
-npx supabase secrets set ALLOWED_ORIGINS=https://your-domain.example APK_MAX_BYTES=52428800
+npx supabase secrets set ALLOWED_ORIGINS=https://your-domain.example APK_MAX_BYTES=67108864
 ```
 
 Both functions use `verify_jwt=false` because their public download/avatar GETs must work without a user session and new publishable keys are not JWTs. **Every protected branch independently validates the access token with Supabase Auth and checks database role/ownership before elevated access.** Do not remove those checks.
+
+The APK bucket and global project Storage limit must both permit 64 MiB. Hosted plan limits may prevent that setting; check the actual project before rollout. The admin uploader creates an unverified draft, then sends the binary APK to `releases?id=...`; the function checks its manifest and stored SHA-256 before allowing publication. Large APKs must use this binary path; legacy multipart uploads are limited to 16 MiB. If an internal gateway/proxy is used, set `PUBLIC_SUPABASE_URL` to the browser-accessible Supabase API root. Otherwise it defaults to `SUPABASE_URL`. Signed Storage URLs retain their path and token; server-side read-back still uses the internal service address.
 
 Configure Auth Site URL, exact callback redirects, email confirmation and SMTP. Verify the private buckets, configured limits, publication/RLS and source-table Realtime settings after migrations. Create/verify the initial administrator and provision its protected role using the documented script. Set explicit fee/commission settings in the admin UI before accepting bookings.
 

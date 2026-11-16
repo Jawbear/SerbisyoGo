@@ -1,5 +1,10 @@
 # Project audit — 17 November 2026
 
+Continuation: [staging validation](staging-validation-2026-11-17.md) records the
+latest fixes, actual service tests and signed Android artifact. The APK manifest,
+payment recipient and credential findings below have been addressed in source;
+production rollout remains outstanding. The original audit evidence is retained.
+
 Follow-up: the payment defaults and backend credential checks below have now
 been fixed in source, with 168 embedded PostgreSQL assertions passing. See
 [payment and credential hardening](payment-credential-hardening.md) for the

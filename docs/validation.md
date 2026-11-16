@@ -1,5 +1,9 @@
 # Validation report
 
+The [provider document policy correction](provider-document-policy.md) changes
+submission readiness to one accepted ID or credential, followed by administrator
+review. The prior three-group rule in older validation records is superseded.
+
 The [17 November update rollout](release-2026-11-17.md) records the subsequent
 main-branch push, hosted migrations/Edge Functions and Android publication status.
 

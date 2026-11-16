@@ -19,13 +19,13 @@ test('credential upload sends an explicit category and updates the checklist', a
   await page.goto('/sign-in');
   await signIn(page);
   await page.goto('/provider/verification');
-  await expect(page.getByText('1. Valid Government ID (Required)', { exact: true })).toBeVisible();
+  await expect(page.getByText('One accepted document needed', { exact: true })).toBeVisible();
   await expect(page.getByText('Category required — upload again', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'Credential title or specification', exact: true }).fill('Test ID');
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Choose document or image', exact: true }).click();
   await (await chooser).setFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=', 'base64') });
   await page.getByRole('button', { name: 'Upload credential document', exact: true }).click();
-  await expect(page.getByText('1. Valid Government ID (Uploaded)', { exact: true })).toBeVisible();
+  await expect(page.getByText('Document uploaded · Awaiting review', { exact: true })).toBeVisible();
   expect(uploads).toBe(1);
 });

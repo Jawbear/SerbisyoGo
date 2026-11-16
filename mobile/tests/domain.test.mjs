@@ -62,11 +62,23 @@ test('mobile provider verification documents parse categories, format filenames 
   const incomplete = checkVerificationCompleteness([
     { original_name: '[Government ID] Passport.jpg', verification_category: 'gov_id' }
   ]);
-  assert.equal(incomplete.isComplete, false);
-  assert.equal(incomplete.missing.length, 2);
+  assert.equal(incomplete.isComplete, true);
+  assert.equal(incomplete.missing.length, 0);
   assert.equal(checkVerificationCompleteness([
     { original_name: '[Government ID] misleading.pdf' },
     { original_name: '[TESDA NC II] misleading.pdf' },
     { original_name: '[Clearance] misleading.pdf' }
   ]).isComplete, false);
+});
+
+test('any one accepted credential satisfies submission, with admin review still separate', () => {
+  for (const category of ["gov_id","tesda_nc2","tesda_nc1","tesda_coc","prc_license","clearance","training_cert","employment_proof","business_permit"]) {
+    const result = checkVerificationCompleteness([{original_name:'document.pdf', verification_category:category}]);
+    assert.equal(result.isComplete, true, category);
+    assert.equal(result.acceptedCount, 1);
+    assert.deepEqual(result.missing, []);
+  }
+  for (const category of ['other_proof', 'invented', null]) {
+    assert.equal(checkVerificationCompleteness([{original_name:'[Government ID] misleading.pdf', verification_category:category}]).isComplete, false);
+  }
 });

@@ -5,7 +5,7 @@ import { useApp } from '../AppContext';
 import { useAction, useData } from '../hooks';
 import { checkVerificationCompleteness, formatVerificationFileName, parseDocInfo, VERIFICATION_DOC_CATEGORIES } from '../domain';
 import { colors as c, statusLabels } from '../theme';
-import { Badge, Button, Card, Chip, Field, Icon, Label, Muted, Notice, Query, Screen, s } from '../components/ui';
+import { Badge, Button, Card, Chip, Field, Label, Muted, Notice, Query, Screen, s } from '../components/ui';
 
 export default function ProviderVerificationScreen({ navigation }) {
   const { identity, api, refresh } = useApp();
@@ -59,51 +59,18 @@ export default function ProviderVerificationScreen({ navigation }) {
                 {application?.reason ? (
                   <Notice>{`Administrative feedback: ${application.reason}`}</Notice>
                 ) : application?.status === 'pending' ? (
-                  <Notice>Your provider application is awaiting review. Make sure to upload all required verification documents below.</Notice>
+                  <Notice>Your provider application is awaiting review. Upload at least one accepted ID or credential below. Extra documents are optional.</Notice>
                 ) : null}
 
                 {/* Requirements Checklist Card */}
                 <Card style={s.stack}>
                   <View style={s.between}>
-                    <Text style={s.sectionTitle}>Verification Checklist</Text>
-                    <Badge>{completeness.isComplete ? 'All required credentials uploaded' : `${completeness.totalUploaded} uploaded · Incomplete`}</Badge>
+                    <Text style={s.sectionTitle}>Choose any one ID or credential</Text>
+                    <Badge>{completeness.isComplete ? 'Document uploaded · Awaiting review' : 'One accepted document needed'}</Badge>
                   </View>
-                  <Muted>SerbisyoGo requires all service providers to verify their identity, professional competence, and background before approval.</Muted>
+                  <Muted>Upload one accepted ID or credential. You do not need every document. An administrator reviews your submission before approval.</Muted>
 
-                  <View style={styles.checklist}>
-                    {/* Item 1 */}
-                    <View style={styles.checkItem}>
-                      <Icon name={completeness.hasGovId ? 'checkmark-circle' : 'ellipse-outline'} color={completeness.hasGovId ? c.green : c.muted} size={22} />
-                      <View style={s.flex}>
-                        <Text style={[styles.checkTitle, completeness.hasGovId && { color: c.green }]}>
-                          1. Valid Government ID {completeness.hasGovId ? '(Uploaded)' : '(Required)'}
-                        </Text>
-                        <Muted>PhilSys National ID, Driver&apos;s License, Passport, UMID, PRC ID, or Postal ID.</Muted>
-                      </View>
-                    </View>
-
-                    {/* Item 2 */}
-                    <View style={styles.checkItem}>
-                      <Icon name={completeness.hasProfProof ? 'checkmark-circle' : 'ellipse-outline'} color={completeness.hasProfProof ? c.green : c.muted} size={22} />
-                      <View style={s.flex}>
-                        <Text style={[styles.checkTitle, completeness.hasProfProof && { color: c.green }]}>
-                          2. Proof of Profession & Competency {completeness.hasProfProof ? '(Uploaded)' : '(Required)'}
-                        </Text>
-                        <Muted>TESDA NC II, TESDA NC I, Certificate of Competency (COC), PRC License, or Trade Training Certificate.</Muted>
-                      </View>
-                    </View>
-
-                    {/* Item 3 */}
-                    <View style={styles.checkItem}>
-                      <Icon name={completeness.hasClearance ? 'checkmark-circle' : 'ellipse-outline'} color={completeness.hasClearance ? c.green : c.muted} size={22} />
-                      <View style={s.flex}>
-                        <Text style={[styles.checkTitle, completeness.hasClearance && { color: c.green }]}>
-                          3. Barangay or Police Clearance {completeness.hasClearance ? '(Uploaded)' : '(Required)'}
-                        </Text>
-                        <Muted>Recent clearance certifying good moral standing within your community.</Muted>
-                      </View>
-                    </View>
-                  </View>
+                  <View style={styles.checklist}>{VERIFICATION_DOC_CATEGORIES.filter(category => category.id !== 'other_proof').map(category => <Text key={category.id} style={styles.checkTitle}>• {category.name}</Text>)}</View><Muted>Work photos and portfolio evidence are optional supporting documents.</Muted>
                 </Card>
 
                 {/* Upload Form Card */}
@@ -111,7 +78,7 @@ export default function ProviderVerificationScreen({ navigation }) {
                   <Text style={s.sectionTitle}>Upload Credential Document</Text>
                   <Muted>Select the credential category, attach a document or photo (PDF, JPG, PNG, WebP up to 10 MB), and submit.</Muted>
 
-                  <Text style={s.fieldLabel}>Select credential requirement:</Text>
+                  <Text style={s.fieldLabel}>Choose a document category:</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                     {VERIFICATION_DOC_CATEGORIES.map(cat => (
                       <Chip
@@ -171,7 +138,7 @@ export default function ProviderVerificationScreen({ navigation }) {
                 <Card style={s.stack}>
                   <Text style={s.sectionTitle}>Uploaded Documents ({files.length})</Text>
                   {files.length === 0 ? (
-                    <Muted>No documents uploaded yet. Upload your Government ID, TESDA NC1/NC2 / PRC License, and clearance above.</Muted>
+                    <Muted>No documents uploaded yet. Choose any one accepted ID or credential above.</Muted>
                   ) : (
                     files.map(file => {
                       const info = parseDocInfo(file.original_name);
@@ -216,7 +183,7 @@ export default function ProviderVerificationScreen({ navigation }) {
               /* Provider Application Form when !profile */
               <Card style={s.stack}>
                 <Text style={s.sectionTitle}>Apply to become a Service Provider</Text>
-                <Muted>Join our verified network of skilled professionals. Submit your application details below, then upload your verification credentials (ID, TESDA NC1/NC2, PRC License, and Clearances).</Muted>
+                <Muted>Join our verified network of skilled professionals. Submit your application details below, then upload any one accepted ID or credential. Additional documents are optional.</Muted>
 
                 <Field
                   label="Public display name"

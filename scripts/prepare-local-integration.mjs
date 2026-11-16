@@ -27,7 +27,7 @@ const values = {
 if (Object.values(values).some(value => /[\r\n]/.test(value))) throw new Error('Invalid local test configuration.');
 mkdirSync('.cache', { recursive: true });
 writeFileSync('.cache/local-integration.env', Object.entries(values).map(([name, value]) => `${name}=${JSON.stringify(value)}`).join('\n') + '\n', { mode: 0o600 });
-writeFileSync('.cache/edge-test.env', 'ALLOWED_ORIGINS=http://localhost:3000\nAPK_MAX_BYTES=67108864\n', { mode: 0o600 });
+writeFileSync('.cache/edge-test.env', `ALLOWED_ORIGINS=http://localhost:3000\nAPK_MAX_BYTES=67108864\nPUBLIC_SUPABASE_URL=${url}\n`, { mode: 0o600 });
 if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_ENV) {
   for (const value of [key, secret]) console.log(`::add-mask::${value}`);
   appendFileSync(process.env.GITHUB_ENV, Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n') + '\n');

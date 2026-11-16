@@ -94,3 +94,38 @@ test('customer payment controls stay closed for an unverified recipient', async 
   await expect(page.getByText('Unverified Wallet', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('GCash transaction reference', { exact: true })).toHaveCount(0);
 });
+
+test('admin retries a binary APK request against the same unverified draft', async ({ page }) => {
+  await sessionFixture(page, 'admin');
+  const id = '40000000-0000-4000-8000-000000000011';
+  let drafts = 0, uploads = 0;
+  // Request-shape fixture only. It is intercepted and never stored as an APK.
+  const bytes = Buffer.from('Controlled browser upload request fixture');
+  await page.route('**/rest/v1/**', route => {
+    const table = new URL(route.request().url()).pathname.split('/').pop();
+    if (table === 'user_context') return route.fallback();
+    if (table === 'admin_report') return route.fulfill({ json: { customers: 0, providers: 0, bookings: 0, daily: [], status: [] } });
+    if (table === 'create_release_draft') { drafts++; return route.fulfill({ json: { id } }); }
+    return route.fulfill({ json: [] });
+  });
+  await page.route('**/functions/v1/releases*', route => {
+    expect(new URL(route.request().url()).searchParams.get('id')).toBe(id);
+    expect(route.request().headers()['content-type']).toBe('application/vnd.android.package-archive');
+    expect(route.request().postDataBuffer()).toEqual(bytes);
+    uploads++;
+    return route.fulfill(uploads === 1 ? { status: 503, json: { error: 'Temporary upload failure' } } : { status: 201, json: { id, status: 'draft' } });
+  });
+  await page.goto('/admin/settings/');
+  const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Upload & verify draft APK', exact: true }) });
+  await form.getByLabel('APK version name', { exact: true }).fill('9.9.9');
+  await form.getByLabel('APK version code', { exact: true }).fill('999');
+  await form.getByLabel('Minimum Android version', { exact: true }).fill('7.0');
+  await form.getByLabel('Release notes', { exact: true }).fill('Controlled browser upload request fixture');
+  await form.getByLabel('Actual APK file (maximum 64 MiB, subject to project limits)', { exact: true }).setInputFiles({ name: 'request-fixture.apk', mimeType: 'application/vnd.android.package-archive', buffer: bytes });
+  await form.getByRole('button', { name: 'Upload & verify draft APK', exact: true }).click();
+  await expect(form.getByRole('alert')).toContainText('Temporary upload failure');
+  expect(drafts).toBe(1);
+  await form.getByRole('button', { name: 'Upload & verify draft APK', exact: true }).click();
+  await expect.poll(() => uploads).toBe(2);
+  expect(drafts).toBe(1);
+});

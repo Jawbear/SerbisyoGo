@@ -1,4 +1,4 @@
-import {authorize,clients,cors,json,limitedFile,unwrap,requireData} from '../_shared/http.ts';
+import {authorize,clients,cors,json,limitedFile,unwrap,requireData,browserStorageUrl} from '../_shared/http.ts';
 import {validateUpload,VERIFICATION_DOC_CATEGORIES} from '../../../src/lib/domain.ts';
 const signatures=(b:Uint8Array,m:string)=>m==='application/pdf'?new TextDecoder().decode(b.slice(0,5))==='%PDF-':m==='image/png'?b[0]===137&&b[1]===80&&b[2]===78&&b[3]===71:m==='image/jpeg'?b[0]===255&&b[1]===216&&b[2]===255:m==='image/webp'?new TextDecoder().decode(b.slice(0,4))==='RIFF'&&new TextDecoder().decode(b.slice(8,12))==='WEBP':false;
 Deno.serve(async req=>{
@@ -11,7 +11,7 @@ Deno.serve(async req=>{
    const active=unwrap(await privileged.from('profiles').select('status').eq('id',pid).maybeSingle());
    if(!p?.avatar_path||active?.status!=='active')return json({error:'Avatar unavailable'},headers,404);
    const signed=requireData(await privileged.storage.from('avatars').createSignedUrl(p.avatar_path,60));
-   return new Response(null,{status:302,headers:{...headers,Location:signed.signedUrl,'Cache-Control':'no-store'}});
+   return new Response(null,{status:302,headers:{...headers,Location:browserStorageUrl(signed.signedUrl),'Cache-Control':'no-store'}});
  }
  const {user,privileged,identity}=await authorize(req);
  if(req.method==='GET'&&url.searchParams.has('my_avatar')){
@@ -22,7 +22,7 @@ Deno.serve(async req=>{
    const file=unwrap(await user.from('files').select('id').eq('owner_id',identity.id).eq('kind','avatar').eq('bucket','avatars').eq('path',path).maybeSingle());
    if(!file)return json({error:'Avatar unavailable'},headers,404);
    const signed=requireData(await privileged.storage.from('avatars').createSignedUrl(path,60));
-   return json({url:signed.signedUrl,expires_in:60},headers);
+   return json({url:browserStorageUrl(signed.signedUrl),expires_in:60},headers);
  }
  if(req.method==='GET'){
    const id=url.searchParams.get('id');if(!id)return json({error:'File ID required'},headers,400);
@@ -30,7 +30,7 @@ Deno.serve(async req=>{
    if(!f)return json({error:'File not found'},headers,404);
    const inline=url.searchParams.get('inline')==='true'||url.searchParams.get('preview')==='true';
    const signed=requireData(await privileged.storage.from(f.bucket).createSignedUrl(f.path,60,inline?{}:{download:f.original_name}));
-   return json({url:signed.signedUrl,expires_in:60},headers);
+   return json({url:browserStorageUrl(signed.signedUrl),expires_in:60},headers);
  }
  if(req.method==='DELETE'){
    const id=url.searchParams.get('id');if(!id)return json({error:'File ID required'},headers,400);

@@ -1,5 +1,9 @@
 import {createClient} from 'npm:@supabase/supabase-js@2';
 import {corsHeaders} from './cors.ts';
+import {publicStorageUrl} from './storage-url.ts';
+export function browserStorageUrl(url:string) {
+  return publicStorageUrl(url,Deno.env.get('SUPABASE_URL')!,Deno.env.get('PUBLIC_SUPABASE_URL')||Deno.env.get('SUPABASE_URL')!);
+}
 export {limitedFile} from './upload.ts';
 export function cors(req:Request) {
   return corsHeaders(req,Deno.env.get('ALLOWED_ORIGINS')||'http://localhost:3000');

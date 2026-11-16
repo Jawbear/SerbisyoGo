@@ -1,6 +1,6 @@
 import {unzipSync} from 'npm:fflate@0.8.2';
 import {createHash} from 'node:crypto';
-import {authorize,clients,cors,json,limitedFile,unwrap,requireData} from '../_shared/http.ts';
+import {authorize,clients,cors,json,limitedFile,unwrap,requireData,browserStorageUrl} from '../_shared/http.ts';
 import {validateUpload} from '../../../src/lib/domain.ts';
 import {readAndroidManifest,androidVersions,APK_MAX_BYTES} from '../../../src/lib/apk.ts';
 import {limitedBytes} from '../_shared/upload.ts';
@@ -22,7 +22,7 @@ Deno.serve(async req=>{
    const artifact=await privileged.storage.from('android-releases').info(r.artifact_path);
    if(artifact.error||Number(artifact.data.size)!==Number(r.byte_size))return json({error:'This download is temporarily unavailable. Please try again later.'},headers,503);
    const signed=requireData(await privileged.storage.from('android-releases').createSignedUrl(r.artifact_path,60,{download:`SERBISYOGO-${r.version_name}.apk`}));
-   return json({url:signed.signedUrl,expires_in:60},headers);
+   return json({url:browserStorageUrl(signed.signedUrl),expires_in:60},headers);
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
  const {user,privileged}=await authorize(req,true);

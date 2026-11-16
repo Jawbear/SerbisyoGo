@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { limitedFile, limitedBytes } from '../supabase/functions/_shared/upload.ts';
+import { publicStorageUrl } from '../supabase/functions/_shared/storage-url.ts';
+
+test('browser Storage URLs preserve signed paths and query using configured origins', () => {
+  const signed = 'http://kong:8000/storage/v1/object/sign/private/package.apk?token=signed&download=app.apk';
+  assert.equal(publicStorageUrl(signed, 'http://kong:8000', 'http://127.0.0.1:54321'), 'http://127.0.0.1:54321/storage/v1/object/sign/private/package.apk?token=signed&download=app.apk');
+  const hosted = 'https://project.supabase.co/storage/v1/object/sign/private/file?token=signed';
+  assert.equal(publicStorageUrl(hosted, 'https://project.supabase.co'), hosted);
+  assert.throws(() => publicStorageUrl('https://other.example/storage/v1/file', 'http://kong:8000', 'https://public.example'), /Unexpected/);
+  assert.throws(() => publicStorageUrl(signed, 'http://kong:8000', 'file:///tmp'), /Invalid/);
+});
 
 test('bounded multipart parsing preserves file bytes and metadata', async () => {
   const form = new FormData();

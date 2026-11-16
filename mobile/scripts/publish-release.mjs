@@ -11,7 +11,7 @@ const probe=spawnSync('gh',['api',`repos/${repository}/releases/tags/${tag}`],{e
 if(probe.status===0){
  const release=JSON.parse(probe.stdout),apk=release.assets.find(asset=>asset.name===build.fileName),metadata=release.assets.find(asset=>asset.name==='build-metadata.json');
  if(release.draft||release.tag_name!==tag||apk?.size!==build.sizeBytes||apk?.digest!==`sha256:${build.sha256}`||!metadata||metadata.size>1048576||metadata.browser_download_url!==`https://github.com/${repository}/releases/download/${tag}/build-metadata.json`)throw new Error('Existing release differs from the tested APK; refusing to overwrite.');
- const response=await fetch(metadata.browser_download_url,{signal:AbortSignal.timeout(30000)});if(!response.ok)throw new Error('Existing release metadata is unavailable.');
+ const response=await fetch(metadata.browser_download_url,{signal:globalThis.AbortSignal.timeout(30000)});if(!response.ok)throw new Error('Existing release metadata is unavailable.');
  const saved=await response.json();
  for(const field of ['sourceCommit','sha256','sizeBytes','packageName','version','versionCode','certificateSha256'])if(saved[field]!==build[field])throw new Error(`Existing release ${field} differs from the tested APK.`);
  console.log('Existing public release matches the tested APK; resuming upgrade verification.');

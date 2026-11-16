@@ -29,15 +29,16 @@ export async function result<T>(query: PromiseLike<{
 export async function rpc<T = unknown>(name: string, args: Record<string, unknown> = {}) {
   return result(requireDb().rpc(name, args)) as Promise<T>;
 }
-export async function edge<T>(name: string, body?: FormData, query = ''): Promise<T> {
+export async function edge<T>(name: string, body?: FormData, query = '', options?: { method?: string }): Promise<T> {
   const client = requireDb();
   const {
     data: {
       session
     }
   } = await client.auth.getSession();
+  const method = options?.method || (body ? 'POST' : 'GET');
   const res = await fetchWithTimeout(`${config.supabaseUrl}/functions/v1/${name}${query}`, {
-    method: body ? 'POST' : 'GET',
+    method,
     headers: {
       apikey: config.supabaseKey,
       ...(session ? {

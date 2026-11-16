@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {canTransition,calculatePrice,normalizePhone,safeRedirect,validateUpload,eligibleReview,overlap,percentToBps,pesosToCentavos,escapeCsv} from '../src/lib/domain.ts';
+import {canTransition,calculatePrice,normalizePhone,safeRedirect,validateUpload,eligibleReview,overlap,percentToBps,pesosToCentavos,escapeCsv,parseDocInfo,formatVerificationFileName,checkVerificationCompleteness} from '../src/lib/domain.ts';
 import {readAndroidManifest} from '../src/lib/apk.ts';
 import {checkoutRequest,settlementLabel} from '../src/features/payments/adapter.ts';
 test('money uses integer centavos and deterministic half-up commission rounding',()=>{
@@ -63,4 +63,50 @@ test('APK binary manifest reader extracts literal version and minimum SDK',()=>{
  const strings=['manifest','versionName','1.0.0','versionCode','uses-sdk','minSdkVersion'];const encoder=new TextEncoder();const encoded=strings.map(s=>{const x=encoder.encode(s);return new Uint8Array([s.length,x.length,...x,0]);});const poolSize=Math.ceil((28+strings.length*4+encoded.reduce((n,s)=>n+s.length,0))/4)*4;const pool=new Uint8Array(poolSize);const pv=new DataView(pool.buffer);pv.setUint16(0,1,true);pv.setUint16(2,28,true);pv.setUint32(4,poolSize,true);pv.setUint32(8,strings.length,true);pv.setUint32(16,256,true);const dataStart=28+strings.length*4;pv.setUint32(20,dataStart,true);let offset=0;encoded.forEach((s,i)=>{pv.setUint32(28+i*4,offset,true);pool.set(s,dataStart+offset);offset+=s.length;});
  function tag(name:number,attributes:{name:number;type:number;value:number}[]){const result=new Uint8Array(36+attributes.length*20);const v=new DataView(result.buffer);v.setUint16(0,258,true);v.setUint16(2,16,true);v.setUint32(4,result.length,true);v.setUint32(20,name,true);v.setUint16(24,20,true);v.setUint16(26,20,true);v.setUint16(28,attributes.length,true);attributes.forEach((a,i)=>{const p=36+i*20;v.setUint32(p,0xffffffff,true);v.setUint32(p+4,a.name,true);v.setUint32(p+8,0xffffffff,true);v.setUint16(p+12,8,true);result[p+15]=a.type;v.setUint32(p+16,a.value,true);});return result;}
  const manifest=tag(0,[{name:1,type:3,value:2},{name:3,type:16,value:7}]),sdk=tag(4,[{name:5,type:16,value:26}]);const bytes=new Uint8Array(8+pool.length+manifest.length+sdk.length);const v=new DataView(bytes.buffer);v.setUint16(0,3,true);v.setUint16(2,8,true);v.setUint32(4,bytes.length,true);bytes.set(pool,8);bytes.set(manifest,8+pool.length);bytes.set(sdk,8+pool.length+manifest.length);assert.deepEqual(readAndroidManifest(bytes),{version_name:'1.0.0',version_code:7,min_sdk:26});
+});
+test('provider verification documents parse categories, format filenames and evaluate completeness',()=>{
+  const formatted = formatVerificationFileName('TESDA NC II', 'Electrical Installation & Maintenance', 'my_scan.pdf');
+  assert.equal(formatted, '[TESDA NC II] Electrical Installation  Maintenance.pdf');
+  assert.doesNotThrow(() => validateUpload('verification', 1024, 'application/pdf', formatted));
+
+  const parsed = parseDocInfo('[Government ID] PhilSys National ID.jpg');
+  assert.equal(parsed.isCategorized, true);
+  assert.equal(parsed.badge, 'Government ID');
+  assert.equal(parsed.title, 'PhilSys National ID.jpg');
+  assert.equal(parsed.category?.id, 'gov_id');
+
+  const legacy = parseDocInfo('identity.pdf');
+  assert.equal(legacy.isCategorized, false);
+  assert.equal(legacy.badge, 'Document');
+
+  // Completeness check
+  const emptyCheck = checkVerificationCompleteness([]);
+  assert.equal(emptyCheck.isComplete, false);
+  assert.equal(emptyCheck.missing.length, 3);
+
+  const partialCheck = checkVerificationCompleteness([
+    { original_name: '[Government ID] Driver License.png' },
+    { original_name: '[TESDA NC II] Electrical NC2.pdf' }
+  ]);
+  assert.equal(partialCheck.isComplete, false);
+  assert.equal(partialCheck.hasGovId, true);
+  assert.equal(partialCheck.hasProfProof, true);
+  assert.equal(partialCheck.hasClearance, false);
+  assert.deepEqual(partialCheck.missing, ['Barangay or Police Clearance']);
+
+  const completeCheck = checkVerificationCompleteness([
+    { original_name: '[Government ID] Passport.jpg' },
+    { original_name: '[TESDA NC I] Shielded Metal Arc Welding.pdf' },
+    { original_name: '[Clearance] 2026 NBI Clearance.pdf' }
+  ]);
+  assert.equal(completeCheck.isComplete, true);
+  assert.equal(completeCheck.missing.length, 0);
+
+  // PRC License also counts as professional proof
+  const prcCheck = checkVerificationCompleteness([
+    { original_name: '[Government ID] UMID.jpg' },
+    { original_name: '[PRC License] Master Electrician.pdf' },
+    { original_name: '[Clearance] Barangay Clearance.pdf' }
+  ]);
+  assert.equal(prcCheck.isComplete, true);
 });

@@ -8,7 +8,7 @@ import { adminNav } from '@/components/shell';
 import { ActionButton, Badge, ButtonLink, Card, DataTable, Dialog, Empty, ExportButton, Field, MutationForm, Notice, PageHeading, QueryState, Select, Stats, Textarea, useQuery } from '@/components/ui';
 import { list } from '@/lib/data';
 import { edge, rpc } from '@/lib/backend';
-import { manilaDate, money, percentToBps, pesosToCentavos } from '@/lib/domain';
+import { manilaDate, money, percentToBps, pesosToCentavos, checkVerificationCompleteness } from '@/lib/domain';
 import { releaseSchema } from '@/lib/schemas';
 import type { Booking } from '@/lib/types';
 import { BookingDetail } from '@/features/bookings/screens';
@@ -299,8 +299,6 @@ function AdminDetail({
   row,
   applications,
   restrictions,
-  categories: _categories = [],
-  providers: _providers = [],
   onClose
 }: {
   tab: AdminTab;
@@ -327,20 +325,9 @@ function AdminDetail({
           }
         });
       }}><Select label="Priority" name="priority" defaultValue={String(row.priority)}>{['low', 'normal', 'high', 'urgent'].map(s => <option key={s}>{s}</option>)}</Select><Select label="Case status" name="status" defaultValue={String(row.status)}>{['open', 'reviewing', 'resolved', 'closed'].map(s => <option key={s}>{s}</option>)}</Select><Textarea label="Recorded resolution (visible to case owner)" name="resolution" defaultValue={String(row.resolution || '')} maxLength={5000} /></MutationForm></Card></div>;
-  if (tab === 'providers') return <div className="stack"><ButtonLink href={`/admin/accounts/?id=${id}`} secondary>Edit or delete user account</ButtonLink><h2>{String(row.display_name)}</h2><Badge>{String(row.status)}</Badge><p className="muted">{String(row.headline)}</p><p>{String(row.bio)}</p><Card><h3>Verification documents · private</h3><FileList ownerId={id} kind="verification" /></Card><ProviderVerificationData id={id} />{applications.filter(a => a.provider_id === id).map(a => <Card key={String(a.id)}><div className="row between"><h3>Profile application</h3><Badge>{String(a.status)}</Badge></div><dl className="definition-list" style={{
+  if (tab === 'providers') return <div className="stack"><ButtonLink href={`/admin/accounts/?id=${id}`} secondary>Edit or delete user account</ButtonLink><h2>{String(row.display_name)}</h2><Badge>{String(row.status)}</Badge><p className="muted">{String(row.headline)}</p><p>{String(row.bio)}</p><ProviderVerificationData id={id} />{applications.filter(a => a.provider_id === id).map(a => <Card key={String(a.id)}><div className="row between"><h3>Profile application</h3><Badge>{String(a.status)}</Badge></div><dl className="definition-list" style={{
         margin: '20px 0'
-      }}>{Object.entries((a.proposed_profile || {}) as RecordRow).map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{Array.isArray(v) ? v.join(', ') : String(v)}</dd></div>)}</dl>{a.reason ? <p className="small muted">Review: {String(a.reason)}</p> : null}{a.status === 'pending' && <MutationForm submit="Record verification decision" onSubmit={async f => {
-        const action = String(f.get('decision'));
-        if (!window.confirm(`Record this provider review as ${action.replaceAll('_', ' ')}?`)) return false;
-        await rpc('admin_action', {
-          p_entity: 'provider',
-          p_id: a.id,
-          p_action: action,
-          p_data: {
-            reason: f.get('reason')
-          }
-        });
-      }}><Select label="Decision" name="decision"><option value="request_changes">Request changes</option><option value="approve">Approve application</option></Select><Textarea label="Review reason" name="reason" minLength={5} maxLength={1000} required /><Notice>Approval requires private verification documents, at least one active service and weekly availability.</Notice></MutationForm>}</Card>)}{row.status !== 'suspended' && <ReasonAction entity="provider" id={id} actions={['suspend']} label="Suspend provider" />}</div>;
+      }}>{Object.entries((a.proposed_profile || {}) as RecordRow).map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{Array.isArray(v) ? v.join(', ') : String(v)}</dd></div>)}</dl>{a.reason ? <p className="small muted">Review: {String(a.reason)}</p> : null}{a.status === 'pending' && <ProviderReviewForm applicationId={String(a.id)} />}</Card>)}{row.status !== 'suspended' && <ReasonAction entity="provider" id={id} actions={['suspend']} label="Suspend provider" />}</div>;
   if (tab === 'customers') return <div className="stack"><ButtonLink href={`/admin/accounts/?id=${id}`} secondary>Edit or delete user account</ButtonLink><h2>{String(row.full_name)}</h2><dl className="definition-list"><div><dt>Mobile</dt><dd>{String(row.phone || 'Not supplied')}</dd></div><div><dt>Status</dt><dd><Badge>{String(row.status)}</Badge></dd></div><div><dt>Registered</dt><dd>{manilaDate(String(row.created_at))}</dd></div></dl><ReasonAction entity="customer" id={id} actions={['restrict', 'activate', 'deactivate']} label="Record account action" /><Card><h3>Restriction history</h3>{restrictions.filter(r => r.user_id === id).map(r => <div className="faq" key={String(r.id)}><Badge>{String(r.status)}</Badge><p className="small">{String(r.reason)}</p><p className="small muted">{manilaDate(String(r.created_at))}</p></div>)}</Card></div>;
   if (tab === 'payouts') return <div className="stack"><h2>{money(Number(row.amount_centavos))} requested</h2><Notice>Approval does not initiate a bank or wallet transfer. Record an actual external transfer only after it has been independently completed.</Notice><MutationForm submit="Record payout review" onSubmit={async f => {
       const action = String(f.get('action'));
@@ -358,6 +345,88 @@ function AdminDetail({
   if (tab === 'transactions') return <div className="stack"><h2>Payment settlement</h2><dl className="definition-list"><div><dt>Booking</dt><dd>{String(row.booking_id)}</dd></div><div><dt>Recorded amount</dt><dd>{money(Number(row.amount_centavos))}</dd></div><div><dt>State</dt><dd><Badge>{String(row.status)}</Badge></dd></div></dl><Notice>Use this only to record independently verified cash/manual settlement or an actual refund. This action does not collect money or return funds.</Notice><GCashReview paymentId={id} /><SettlementForm row={row} /><Link href={`/admin/bookings/?id=${row.booking_id}`}>Inspect booking →</Link></div>;
   return <dl className="definition-list">{Object.entries(row).map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}</dd></div>)}</dl>;
 }
+function ProviderReviewForm({
+  applicationId
+}: {
+  applicationId: string;
+}) {
+  const [reason, setReason] = useState('');
+  return (
+    <MutationForm
+      submit="Record verification decision"
+      onSubmit={async f => {
+        const action = String(f.get('decision'));
+        if (!window.confirm(`Record this provider review as ${action.replaceAll('_', ' ')}?`)) return false;
+        await rpc('admin_action', {
+          p_entity: 'provider',
+          p_id: applicationId,
+          p_action: action,
+          p_data: {
+            reason: f.get('reason')
+          }
+        });
+      }}
+    >
+      <Select label="Decision" name="decision">
+        <option value="request_changes">Request changes</option>
+        <option value="approve">Approve application</option>
+      </Select>
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '4px 0 8px' }}>
+        <span className="small muted">Quick templates:</span>
+        <button
+          type="button"
+          className="button secondary compact"
+          style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
+          onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please upload your valid Government ID (PhilSys National ID, Driver\'s License, or Passport).')}
+        >
+          + Missing Gov ID
+        </button>
+        <button
+          type="button"
+          className="button secondary compact"
+          style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
+          onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please submit your TESDA NC I / NC II certificate or PRC License to certify your trade skills.')}
+        >
+          + Missing TESDA/PRC
+        </button>
+        <button
+          type="button"
+          className="button secondary compact"
+          style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
+          onClick={() => setReason(r => (r ? `${r} ` : '') + 'Please upload a valid Barangay or Police Clearance.')}
+        >
+          + Missing Clearance
+        </button>
+        <button
+          type="button"
+          className="button secondary compact"
+          style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
+          onClick={() => setReason(r => (r ? `${r} ` : '') + 'The uploaded document image is blurry or unreadable. Please upload a clear photo or PDF.')}
+        >
+          + Blurry document
+        </button>
+        <button
+          type="button"
+          className="button secondary compact"
+          style={{ fontSize: 11, padding: '4px 8px', minHeight: 28 }}
+          onClick={() => setReason('All credentials (Government ID, proof of profession, and clearance) have been verified.')}
+        >
+          + All verified
+        </button>
+      </div>
+      <Textarea
+        label="Review reason"
+        name="reason"
+        value={reason}
+        onChange={e => setReason(e.target.value)}
+        minLength={5}
+        maxLength={1000}
+        required
+      />
+      <Notice>Approval requires private verification documents, at least one active service and weekly availability.</Notice>
+    </MutationForm>
+  );
+}
 function ProviderVerificationData({
   id
 }: {
@@ -369,36 +438,125 @@ function ProviderVerificationData({
     }),
     week: await list('weekly_availability', {
       provider_id: id
+    }),
+    files: await list<{
+      id: string;
+      original_name: string;
+      byte_size: number;
+      mime_type: string;
+      created_at: string;
+    }>('files', {
+      owner_id: id,
+      kind: 'verification'
     })
   }));
-  return <QueryState {...q}><Card><h3>Services & availability</h3><DataTable rows={q.data?.services || []} columns={[{
-        key: 'title',
-        label: 'Service'
-      }, {
-        key: 'rate_centavos',
-        label: 'Labor / estimate',
-        render: r => money(Number(r.rate_centavos))
-      }, {
-        key: 'pricing_mode',
-        label: 'Type'
-      }, {
-        key: 'active',
-        label: 'Active'
-      }]} /><div style={{
-        marginTop: 20
-      }}><DataTable rows={q.data?.week || []} columns={[{
-          key: 'weekday',
-          label: 'Day',
-          render: r => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][Number(r.weekday)]
-        }, {
-          key: 'starts_minute',
-          label: 'From (Manila)',
-          render: r => `${String(Math.floor(Number(r.starts_minute) / 60)).padStart(2, '0')}:${String(Number(r.starts_minute) % 60).padStart(2, '0')}`
-        }, {
-          key: 'ends_minute',
-          label: 'Until (Manila)',
-          render: r => `${String(Math.floor(Number(r.ends_minute) / 60)).padStart(2, '0')}:${String(Number(r.ends_minute) % 60).padStart(2, '0')}`
-        }]} /></div></Card></QueryState>;
+  const completeness = checkVerificationCompleteness(q.data?.files || []);
+  const activeServices = (q.data?.services || []).filter(s => s.active);
+  const weekWindows = q.data?.week || [];
+
+  return (
+    <QueryState {...q}>
+      <Card>
+        <div className="row between" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ marginBottom: 4 }}>Credential verification & compliance</h3>
+            <p className="small muted">
+              Official verification requirements for provider profile approval.
+            </p>
+          </div>
+          <Badge>
+            {completeness.isComplete ? 'All required credentials uploaded' : `${completeness.totalUploaded} uploaded · Incomplete`}
+          </Badge>
+        </div>
+
+        <div className="stack" style={{ gap: 8, marginBottom: 20, padding: 14, borderRadius: 8, background: 'var(--subtle, #151f19)', border: '1px solid var(--border)' }}>
+          <strong className="small" style={{ textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--muted)' }}>
+            Compliance Checklist
+          </strong>
+          <div className="row between" style={{ gap: 8 }}>
+            <span className="small">1. Government-Issued Valid ID:</span>
+            <Badge>{completeness.hasGovId ? 'Uploaded' : 'Missing'}</Badge>
+          </div>
+          <div className="row between" style={{ gap: 8 }}>
+            <span className="small">2. Proof of Profession (TESDA NC I/II, PRC, or Trade Cert):</span>
+            <Badge>{completeness.hasProfProof ? 'Uploaded' : 'Missing'}</Badge>
+          </div>
+          <div className="row between" style={{ gap: 8 }}>
+            <span className="small">3. Barangay or Police Clearance:</span>
+            <Badge>{completeness.hasClearance ? 'Uploaded' : 'Missing'}</Badge>
+          </div>
+          <div className="row between" style={{ gap: 8 }}>
+            <span className="small">4. Active Service Offerings:</span>
+            <Badge>{activeServices.length > 0 ? `${activeServices.length} active` : 'None'}</Badge>
+          </div>
+          <div className="row between" style={{ gap: 8 }}>
+            <span className="small">5. Weekly Availability:</span>
+            <Badge>{weekWindows.length > 0 ? `${weekWindows.length} windows set` : 'None'}</Badge>
+          </div>
+        </div>
+
+        {completeness.missing.length > 0 && (
+          <Notice>
+            Missing verification documents: {completeness.missing.join(', ')}. Review applicant documents carefully before deciding.
+          </Notice>
+        )}
+
+        <div style={{ marginTop: 20 }}>
+          <h4 style={{ fontSize: 13, marginBottom: 12 }}>Uploaded verification credentials</h4>
+          <FileList ownerId={id} kind="verification" />
+        </div>
+      </Card>
+
+      <Card>
+        <h3>Services & availability</h3>
+        <DataTable
+          rows={q.data?.services || []}
+          columns={[
+            {
+              key: 'title',
+              label: 'Service'
+            },
+            {
+              key: 'rate_centavos',
+              label: 'Labor / estimate',
+              render: r => money(Number(r.rate_centavos))
+            },
+            {
+              key: 'pricing_mode',
+              label: 'Type'
+            },
+            {
+              key: 'active',
+              label: 'Active',
+              render: r => (r.active ? 'Yes' : 'No')
+            }
+          ]}
+        />
+        <div style={{ marginTop: 20 }}>
+          <DataTable
+            rows={q.data?.week || []}
+            columns={[
+              {
+                key: 'weekday',
+                label: 'Day',
+                render: r => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][Number(r.weekday)]
+              },
+              {
+                key: 'starts_minute',
+                label: 'From (Manila)',
+                render: r => `${String(Math.floor(Number(r.starts_minute) / 60)).padStart(2, '0')}:${String(Number(r.starts_minute) % 60).padStart(2, '0')}`
+              },
+              {
+                key: 'ends_minute',
+                label: 'Until (Manila)',
+                render: r => `${String(Math.floor(Number(r.ends_minute) / 60)).padStart(2, '0')}:${String(Number(r.ends_minute) % 60).padStart(2, '0')}`
+              }
+            ]}
+          />
+        </div>
+      </Card>
+    </QueryState>
+  );
 }
 function ReasonAction({
   entity,

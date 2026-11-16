@@ -28,8 +28,19 @@ Deno.serve(async req=>{
    const id=url.searchParams.get('id');if(!id)return json({error:'File ID required'},headers,400);
    const f=unwrap(await user.from('files').select('*').eq('id',id).maybeSingle());
    if(!f)return json({error:'File not found'},headers,404);
-   const signed=requireData(await privileged.storage.from(f.bucket).createSignedUrl(f.path,60,{download:f.original_name}));
+   const inline=url.searchParams.get('inline')==='true'||url.searchParams.get('preview')==='true';
+   const signed=requireData(await privileged.storage.from(f.bucket).createSignedUrl(f.path,60,inline?{}:{download:f.original_name}));
    return json({url:signed.signedUrl,expires_in:60},headers);
+ }
+ if(req.method==='DELETE'){
+   const id=url.searchParams.get('id');if(!id)return json({error:'File ID required'},headers,400);
+   const f=unwrap(await privileged.from('files').select('*').eq('id',id).maybeSingle());
+   if(!f)return json({error:'File not found'},headers,404);
+   const admin=unwrap(await user.rpc('is_admin'));
+   if(f.owner_id!==identity.id&&!admin)return json({error:'Forbidden'},headers,403);
+   unwrap(await privileged.storage.from(f.bucket).remove([f.path]));
+   unwrap(await privileged.from('files').delete().eq('id',id));
+   return json({deleted:true},headers,200);
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
  const form=await limitedFile(req,10485760);const file=form.get('file');const kind=String(form.get('kind')||'');

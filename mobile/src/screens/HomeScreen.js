@@ -42,6 +42,24 @@ export default function HomeScreen({ navigation }) {
       <Section title="A reliable helping hand"><ProviderGrid providers={query.data.providers.slice(0, 4)} /><Button title="See all professionals" secondary onPress={() => navigation.navigate('FindProfessionals', { categoryId: '' })} /></Section>
     </>}</Query>
     <Card style={s.stack}><Label>Your service records</Label><Text style={s.sectionTitle}>A little less to worry about.</Text><Muted>Review requests you have saved and keep your next appointment close at hand.</Muted><Button title="Open my bookings" secondary icon="calendar-outline" onPress={() => navigation.navigate('MyBookings')} /></Card>
+    {app.identity?.role === 'provider' ? (
+      <Card style={s.stack}>
+        <Label>Provider Workspace</Label>
+        <View style={s.between}>
+          <Text style={s.sectionTitle}>Credentials & Verification</Text>
+          <Badge>Provider</Badge>
+        </View>
+        <Muted>Upload and manage your required verification documents (Government ID, TESDA NC1/NC2, PRC License, and Clearances).</Muted>
+        <Button title="Manage verification credentials" secondary icon="shield-checkmark-outline" onPress={() => navigation.navigate('ProviderVerification')} />
+      </Card>
+    ) : app.identity?.role === 'customer' ? (
+      <Card style={s.stack}>
+        <Label>Offer your skills</Label>
+        <Text style={s.sectionTitle}>Become a Service Provider</Text>
+        <Muted>Join our local community of verified technicians, plumbers, and home artisans. Submit your profile and upload verification credentials for administrative review.</Muted>
+        <Button title="Apply to become a provider" secondary icon="ribbon-outline" onPress={() => navigation.navigate('ProviderVerification')} />
+      </Card>
+    ) : null}
     <Card style={s.stack}>
       <View style={s.between}><Text style={s.sectionTitle}>{app.identity ? `Hello, ${app.identity.profile.full_name.split(' ')[0]}` : 'Your SerbisyoGo account'}</Text>{app.identity && <Badge>{roleLabels[app.identity.role]}</Badge>}</View>
       <Muted>Manage your home-service requests and keep your appointments together.</Muted>

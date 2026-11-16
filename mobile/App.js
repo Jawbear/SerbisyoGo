@@ -18,6 +18,7 @@ import { UpdateProvider } from './src/updates/UpdateContext';
 import UpdateScreen from './src/updates/UpdateScreen';
 import { RegisterScreen, VerifyEmailScreen, ForgotPasswordScreen } from './src/screens/AuthScreens';
 import MessagesScreen from './src/screens/MessagesScreen';
+import ProviderVerificationScreen from './src/screens/ProviderVerificationScreen';
 
 const Stack = createNativeStackNavigator();
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, primary: c.green, background: c.background, card: c.background, text: c.text, border: c.border } };
@@ -27,7 +28,7 @@ const linking = {
     Home: '', FindProfessionals: 'find', ProviderDetails: 'providers/:providerId',
     BookingForm: 'book/:providerId/:serviceId', BookingReview: 'review/:draftId',
     MyBookings: 'bookings', BookingRecord: 'bookings/:bookingId', SignIn: 'sign-in',
-    Register: 'register', VerifyEmail: 'verify-email', ForgotPassword: 'forgot-password', Messages: 'messages/:bookingId', AppUpdates: 'app-updates'
+    Register: 'register', VerifyEmail: 'verify-email', ForgotPassword: 'forgot-password', Messages: 'messages/:bookingId', AppUpdates: 'app-updates', ProviderVerification: 'provider/verification'
   } }
 };
 
@@ -52,6 +53,7 @@ function Navigator() {
       <Stack.Screen name="Messages" component={MessagesScreen} options={{title:'Booking conversation'}} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{title:'Verify email'}} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{title:'Reset password'}} />
+      <Stack.Screen name="ProviderVerification" component={ProviderVerificationScreen} options={{title:'Provider credentials'}} />
     </Stack.Navigator>
   </NavigationContainer>;
 }

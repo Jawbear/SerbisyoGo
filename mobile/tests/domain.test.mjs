@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findService, filterProviders, manilaDay, validateRequest, withProviderNames } from '../src/domain.js';
+import { findService, filterProviders, manilaDay, validateRequest, withProviderNames, parseDocInfo, formatVerificationFileName, checkVerificationCompleteness } from '../src/domain.js';
 import { fixtureCatalog } from './fixtures/catalog.mjs';
 
 const now = new Date('2026-11-11T01:00:00Z');
@@ -40,4 +40,28 @@ test('booking cards receive provider display names without inventing missing pro
   assert.equal(rows[1].provider_name, '');
   assert.equal(rows[2].provider_name, '');
   assert.equal(rows[0].id, 'booking-1');
+});
+
+test('mobile provider verification documents parse categories, format filenames and evaluate completeness', () => {
+  const formatted = formatVerificationFileName('TESDA NC II', 'Electrical Installation & Maintenance', 'scan.pdf');
+  assert.equal(formatted, '[TESDA NC II] Electrical Installation  Maintenance.pdf');
+
+  const parsed = parseDocInfo('[Government ID] National ID.jpg');
+  assert.equal(parsed.isCategorized, true);
+  assert.equal(parsed.badge, 'Government ID');
+  assert.equal(parsed.category?.id, 'gov_id');
+
+  const completeness = checkVerificationCompleteness([
+    { original_name: '[Government ID] Passport.jpg' },
+    { original_name: '[TESDA NC II] Plumbing NC2.pdf' },
+    { original_name: '[Clearance] Police Clearance.pdf' }
+  ]);
+  assert.equal(completeness.isComplete, true);
+  assert.equal(completeness.missing.length, 0);
+
+  const incomplete = checkVerificationCompleteness([
+    { original_name: '[Government ID] Passport.jpg' }
+  ]);
+  assert.equal(incomplete.isComplete, false);
+  assert.equal(incomplete.missing.length, 2);
 });

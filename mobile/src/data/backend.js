@@ -35,11 +35,12 @@ async function result(query) {
   if (response.error) throw new Error(response.error.message);
   return response.data;
 }
-export async function fileRequest(body, query = '') {
+export async function fileRequest(body, query = '', options = {}) {
   const { data: { session }, error } = await db().auth.getSession();
   if (error || !session) throw new Error('Sign in to access your private files.');
+  const method = options.method || (body ? 'POST' : 'GET');
   const response = await boundedFetch(`${supabaseUrl}/functions/v1/files${query}`, {
-    method: body ? 'POST' : 'GET', headers: { apikey: publishableKey, Authorization: `Bearer ${session.access_token}` }, body
+    method, headers: { apikey: publishableKey, Authorization: `Bearer ${session.access_token}` }, body
   }, body ? 120000 : 15000);
   const value = await response.json();
   if (!response.ok) throw new Error(value.error || 'The file operation failed.');
@@ -131,5 +132,27 @@ export const liveApi = {
     const messages = conversation ? await result(db().from('messages').select('*').eq('conversation_id', conversation.id).order('created_at')) : [];
     return { conversation, messages };
   },
-  sendMessage: (conversationId, body, nonce) => result(db().rpc('send_message', { p_conversation: conversationId, p_body: body.trim(), p_nonce: nonce }))
+  sendMessage: (conversationId, body, nonce) => result(db().rpc('send_message', { p_conversation: conversationId, p_body: body.trim(), p_nonce: nonce })),
+  providerVerification: async userId => {
+    if (!userId) return null;
+    const [profile, applications, files] = await Promise.all([
+      result(db().from('provider_profiles').select('*').eq('id', userId).maybeSingle()),
+      result(db().from('provider_applications').select('*').eq('provider_id', userId).order('created_at', { ascending: false })),
+      result(db().from('files').select('*').eq('owner_id', userId).eq('kind', 'verification').order('created_at', { ascending: false }))
+    ]);
+    return { profile, applications: applications || [], files: files || [] };
+  },
+  submitProviderApplication: profile => result(db().rpc('submit_provider', { p_profile: profile })),
+  uploadVerificationDoc: async (asset, formattedName) => {
+    const form = new FormData();
+    form.append('kind', 'verification');
+    form.append('file', Platform.OS === 'web' ? asset.file : {
+      uri: asset.uri,
+      name: formattedName,
+      type: asset.mimeType || (formattedName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')
+    });
+    return fileRequest(form);
+  },
+  deleteVerificationDoc: fileId => fileRequest(null, `?id=${fileId}`, { method: 'DELETE' }),
+  getFileUrl: (fileId, inline = true) => fileRequest(null, `?id=${fileId}&inline=${inline}`)
 };

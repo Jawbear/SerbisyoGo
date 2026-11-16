@@ -51,7 +51,7 @@ Deno.serve(async req=>{
  const reader=stored.body.getReader();const savedHash=createHash('sha256');let savedSize=0;
  try{while(true){const {done,value}=await reader.read();if(done)break;savedSize+=value.byteLength;if(savedSize>bytes.length){await reader.cancel();throw new Error('Stored artifact size mismatch. Draft remains unpublished.');}savedHash.update(value);}}finally{reader.releaseLock();}
  if(savedHash.digest('hex')!==checksum||savedSize!==bytes.length)throw new Error('Stored artifact verification failed. Draft remains unpublished.');
- unwrap(await privileged.from('app_releases').update({byte_size:saved.length,sha256:checksum,verified_at:new Date().toISOString()}).eq('id',release.id).eq('status','draft'));
- return json({id:release.id,sha256:checksum,byte_size:saved.length,status:'draft'},headers,201);
+ unwrap(await privileged.from('app_releases').update({byte_size:savedSize,sha256:checksum,verified_at:new Date().toISOString()}).eq('id',release.id).eq('status','draft'));
+ return json({id:release.id,sha256:checksum,byte_size:savedSize,status:'draft'},headers,201);
  }catch(error){return json({error:error instanceof Error?error.message:'Release operation failed'},headers,400);}
 });

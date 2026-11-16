@@ -34,6 +34,8 @@ jobs:
       - run: node scripts/report-ci-command.mjs deno check --config supabase/functions/deno.json supabase/functions/files/index.ts supabase/functions/releases/index.ts supabase/functions/admin-accounts/index.ts
       - name: Prepare isolated browser test configuration
         run: node scripts/report-ci-command.mjs node scripts/prepare-local-integration.mjs
+      - name: Verify the actual public APK for isolated private-release tests
+        run: node scripts/report-ci-command.mjs npm run apk:verify:published
       - name: Install browser and system dependencies
         run: npx playwright install --with-deps chromium
       - name: Serve local Edge Functions

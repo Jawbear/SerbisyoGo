@@ -1,4 +1,5 @@
 /** Minimal bounded Android binary XML reader. Reads package identity, never executes package content. */
+export const APK_MAX_BYTES = 64 * 1024 * 1024;
 export function readAndroidManifest(bytes: Uint8Array) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const u16 = (p: number) => view.getUint16(p, true),

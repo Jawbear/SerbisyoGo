@@ -1,7 +1,7 @@
 import {unzipSync} from 'npm:fflate@0.8.2';
 import {authorize,clients,cors,json,limitedFile,unwrap,requireData} from '../_shared/http.ts';
 import {validateUpload} from '../../../src/lib/domain.ts';
-import {readAndroidManifest,androidVersions} from '../../../src/lib/apk.ts';
+import {readAndroidManifest,androidVersions,APK_MAX_BYTES} from '../../../src/lib/apk.ts';
 Deno.serve(async req=>{
  let headers:Record<string,string>={};try{
  headers=cors(req);if(req.method==='OPTIONS')return new Response(null,{headers});
@@ -17,7 +17,9 @@ Deno.serve(async req=>{
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
  const {user,privileged}=await authorize(req,true);
- const max=Math.min(Number(Deno.env.get('APK_MAX_BYTES')||52428800),52428800);
+ const configuredMax=Number(Deno.env.get('APK_MAX_BYTES')||APK_MAX_BYTES);
+ if(!Number.isSafeInteger(configuredMax)||configuredMax<=0)throw new Error('Invalid server APK upload limit');
+ const max=Math.min(configuredMax,APK_MAX_BYTES);
  const form=await limitedFile(req,max);const file=form.get('file');
  if(!(file instanceof File))throw new Error('APK file required');validateUpload('apk',file.size,file.type||'application/octet-stream',file.name,max);
  const version=String(form.get('version_name')||''),code=Number(form.get('version_code')),minimum=String(form.get('min_android')||''),notes=String(form.get('release_notes')||'');

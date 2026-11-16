@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {canTransition,calculatePrice,normalizePhone,safeRedirect,validateUpload,eligibleReview,overlap,percentToBps,pesosToCentavos,escapeCsv,parseDocInfo,formatVerificationFileName,checkVerificationCompleteness} from '../src/lib/domain.ts';
-import {readAndroidManifest} from '../src/lib/apk.ts';
+import {readAndroidManifest,APK_MAX_BYTES} from '../src/lib/apk.ts';
 import {checkoutRequest,settlementLabel} from '../src/features/payments/adapter.ts';
 test('money uses integer centavos and deterministic half-up commission rounding',()=>{
  assert.deepEqual(calculatePrice(45000,5000,1000),{labor_centavos:45000,fee_centavos:5000,commission_centavos:4500,total_centavos:50000,provider_net_centavos:40500});
@@ -39,6 +39,8 @@ test('file validators reject type spoofing by extension, empty uploads and exces
  assert.throws(()=>validateUpload('apk',100,'application/octet-stream','something.zip'));
  assert.throws(()=>validateUpload('apk',0,'application/octet-stream','app.apk'));
  assert.throws(()=>validateUpload('verification',10485761,'application/pdf','identity.pdf'));
+ assert.doesNotThrow(()=>validateUpload('apk',53680280,'application/vnd.android.package-archive','SerbisyoGo-0.3.1.apk',APK_MAX_BYTES));
+ assert.throws(()=>validateUpload('apk',APK_MAX_BYTES+1,'application/vnd.android.package-archive','oversize.apk',APK_MAX_BYTES));
 });
 test('review eligibility requires the completed booking customer and no previous review',()=>{
  assert.equal(eligibleReview({status:'completed',customer_id:'customer-a'},'customer-b',false),false);

@@ -801,7 +801,7 @@ function ReleaseManagement({
           release_notes: f.get('release_notes')
         });
         await edge('releases', f);
-      }}><div className="grid-3"><Field label="APK version name" name="version_name" required placeholder="From your actual package" /><Field label="APK version code" name="version_code" type="number" min={1} required /><Field label="Minimum Android version" name="min_android" required placeholder="For example, 8.0" /></div><Textarea label="Release notes" name="release_notes" minLength={10} maxLength={10000} required /><Field label="Actual APK file (maximum 50 MB, subject to project limits)" name="file" type="file" accept=".apk,application/vnd.android.package-archive" required /></MutationForm></div><div style={{
+      }}><div className="grid-3"><Field label="APK version name" name="version_name" required placeholder="From your actual package" /><Field label="APK version code" name="version_code" type="number" min={1} required /><Field label="Minimum Android version" name="min_android" required placeholder="For example, 8.0" /></div><Textarea label="Release notes" name="release_notes" minLength={10} maxLength={10000} required /><Field label="Actual APK file (maximum 64 MiB, subject to project limits)" name="file" type="file" accept=".apk,application/vnd.android.package-archive" required /></MutationForm></div><div style={{
       marginTop: 32
     }}><DataTable rows={releases} columns={[{
         key: 'version_name',

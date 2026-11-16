@@ -43,7 +43,7 @@ cm('npx supabase functions deploy files');
 cm('npx supabase functions deploy releases');
 cm('npx supabase functions deploy admin-accounts');
 ck('Secrets set');
-cm('npx supabase secrets set ALLOWED_ORIGINS=http://localhost:3000,https://serbisyogo.sg-team.workers.dev APK_MAX_BYTES=52428800');
+cm('npx supabase secrets set ALLOWED_ORIGINS=http://localhost:3000,https://serbisyogo.sg-team.workers.dev APK_MAX_BYTES=67108864');
 ck('Types regenerated'); cm('npm run db:types');
 ck('Admin provisioned'); cm('npm run admin:provision -- admin@email.com --confirm admin@email.com');
 ck('Fee/commission/GCash configured in admin dashboard');

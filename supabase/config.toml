@@ -49,7 +49,7 @@ content_path = "./supabase/templates/email_change.html"
 #   Sender: noreply@serbisyogo.ph
 [storage]
 enabled = true
-file_size_limit = "50MiB"
+file_size_limit = "64MiB"
 [functions.files]
 verify_jwt = false
 [functions.releases]

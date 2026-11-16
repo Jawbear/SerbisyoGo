@@ -24,8 +24,31 @@ create unique index profiles_full_name_normalized_unique_idx
  where public.account_name_key(full_name) <> '';
 drop index if exists public.profiles_full_name_unique_idx;
 alter index public.profiles_full_name_normalized_unique_idx rename to profiles_full_name_unique_idx;
-create unique index auth_users_normalized_email_unique_idx
- on auth.users(lower(btrim(email))) where btrim(coalesce(email,'')) <> '';
+-- Supabase's migration role cannot create indexes on managed auth.users.
+-- Reserve normalized emails in an application-owned, inaccessible registry.
+create table public.account_identity_emails (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ email_key text not null check(email_key<>''),
+ constraint account_identity_emails_email_unique unique(email_key)
+);
+alter table public.account_identity_emails enable row level security;
+revoke all on public.account_identity_emails from public,anon,authenticated,service_role;
+insert into public.account_identity_emails(user_id,email_key)
+ select id,lower(btrim(email)) from auth.users where btrim(coalesce(email,''))<>'';
+create function public.reserve_account_email() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+ if btrim(coalesce(new.email,''))='' then
+  delete from public.account_identity_emails where user_id=new.id;
+ else
+  insert into public.account_identity_emails(user_id,email_key) values(new.id,lower(btrim(new.email)))
+   on conflict(user_id) do update set email_key=excluded.email_key;
+ end if;
+ return new;
+end $$;
+revoke execute on function public.reserve_account_email() from public,anon,authenticated,service_role;
+create trigger auth_account_email_reserved after insert or update of email on auth.users
+ for each row execute function public.reserve_account_email();
 
 create or replace function public.validate_account_name() returns trigger
 language plpgsql security definer set search_path='' as $$

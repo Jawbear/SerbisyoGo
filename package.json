@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
     "test:db:embedded": "node scripts/test-db-embedded.mjs",
+    "apk:verify:published": "node --experimental-strip-types scripts/verify-published-apk.mjs",
     "deploy:guide": "node scripts/production-deploy.mjs",
     "deploy:check": "node --experimental-strip-types --env-file=.env.production.local scripts/production-deploy.mjs --check --require-build",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",

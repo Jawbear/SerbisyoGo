@@ -1,9 +1,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2';
+import {corsHeaders} from './cors.ts';
 export function cors(req:Request) {
-  const origin=req.headers.get('origin')||'';
-  const allowed=(Deno.env.get('ALLOWED_ORIGINS')||'http://localhost:3000').split(',').map(s=>s.trim());
-  if(origin&&!allowed.includes(origin)) throw new Error('Origin is not allowed');
-  return {'Access-Control-Allow-Origin':origin||allowed[0],'Access-Control-Allow-Headers':'authorization, apikey, x-client-info, content-type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'};
+  return corsHeaders(req,Deno.env.get('ALLOWED_ORIGINS')||'http://localhost:3000');
 }
 export function json(data:unknown,headers:Record<string,string>,status=200) {return new Response(JSON.stringify(data),{status,headers:{...headers,'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})}
 export function clients(req:Request) {

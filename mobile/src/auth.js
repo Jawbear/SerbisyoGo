@@ -18,8 +18,8 @@ export function validatePassword(password) {
 }
 
 export function registration(values) {
-  const full_name = (values.name || '').trim();
-  const email = (values.email || '').trim();
+  const full_name = (values.name || '').trim().replace(/\s+/g, ' ');
+  const email = (values.email || '').trim().toLowerCase();
   if (full_name.length < 2 || full_name.length > 100) throw new Error('Enter your full name (2–100 characters).');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
   validatePassword(values.password);

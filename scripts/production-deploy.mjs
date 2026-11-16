@@ -3,6 +3,20 @@
  * SerbisyoGo — Production Deployment Checklist
  * Usage: node scripts/production-deploy.mjs
  */
+import { fileURLToPath } from 'node:url';
+
+const args = process.argv.slice(2);
+if (args.some(arg => !['--check', '--require-build'].includes(arg)) || (args.includes('--require-build') && !args.includes('--check'))) {
+  console.error('Usage: node --experimental-strip-types scripts/production-deploy.mjs [--check [--require-build]]');
+  process.exit(1);
+}
+if (args.includes('--check')) {
+  const { deploymentProblems } = await import('./deployment-readiness.mjs');
+  const problems = deploymentProblems(fileURLToPath(new URL('../', import.meta.url)), process.env, args.includes('--require-build'));
+  for (const problem of problems) console.error(`FAIL ${problem}`);
+  console.log(problems.length ? 'Deployment readiness failed; nothing was deployed.' : 'Deployment readiness passed. Hosted SMTP, migrations and device behavior require separate verification.');
+  process.exit(problems.length ? 1 : 0);
+}
 
 const R = '\x1b[0m', B = '\x1b[1m', G = '\x1b[32m', X = '\x1b[31m', C = '\x1b[36m', D = '\x1b[2m';
 const h = t => console.log(`\n${B}${G}═══ ${t} ═══${R}\n`);

@@ -33,7 +33,7 @@ export default function GCashPayment({ booking }) {
               <Notice>Refund recorded.</Notice>
             ) : booking.status !== 'completed' ? (
               <Notice>Pay after the provider completes your service. Do not send payment yet.</Notice>
-            ) : !data.settings?.enabled ? (
+            ) : !data.settings?.enabled || !data.settings.recipient_verified_at ? (
               <Notice>GCash is not enabled. Contact support for payment instructions.</Notice>
             ) : (
               <>

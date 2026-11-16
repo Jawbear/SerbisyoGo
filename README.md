@@ -150,11 +150,18 @@ npm run lint
 npm run build
 npm run policy:check
 npm run test:db
+npm run test:db:embedded
 npx playwright install chromium
 npm run test:e2e
 ```
 
 Domain tests use Node's TypeScript stripping and run without installed dependencies. Database tests require local Supabase/Postgres and roll back all fixtures. Browser integration tests require local `TEST_SUPABASE_*` variables, running Edge Functions, and `.cache/demo-users.json`; they intentionally skip without that setup. Registration verification also needs a local Inbucket inbox API. The valid-release test requires `TEST_APK_PATH` pointing to an actual test APK and runs only against loopback Supabase. Use a fresh reset/seed for each full integration run. Tests cover two customers and two providers, direct backend denial, quote/transition rules, schedule conflicts, invoice/review eligibility, private notes/files, payment idempotency and APK draft restrictions. See [validation.md](docs/validation.md) for the checks actually executed here.
+
+`npm run test:db:embedded` runs the actual SQL migrations and pgTAP tests in a
+disposable embedded PostgreSQL engine without Docker. Supabase Auth/Storage SQL
+shapes are emulated; full service/HTTP integration still requires local Supabase.
+See [payment and credential hardening](docs/payment-credential-hardening.md) for
+the recipient-verification rollout, credential categories and validation limits.
 
 ## Design sources and handoff
 

@@ -16,7 +16,7 @@ test('registration submits shared customer details and offers email verification
   await installBackend(page); let submitted;
   await page.route('**/auth/v1/signup*', async route => {
     submitted = route.request().postDataJSON();
-    return route.fulfill({ json: { id: '10000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: submitted.email, identities: [], user_metadata: submitted.data } });
+    return route.fulfill({ json: { id: '10000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: submitted.email, identities: [{ provider: 'email' }], user_metadata: submitted.data } });
   });
   await page.goto('/register');
   await page.getByRole('textbox', { name: 'Full name', exact: true }).fill('New Tester');
@@ -46,3 +46,25 @@ test('registration keeps fields and displays an error when the server rejects si
   await expect(page.getByRole('alert')).toContainText('stronger password');
   await expect(page.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue('New Tester');
 });
+
+for (const scenario of ['email', 'name', 'unavailable', 'malformed']) {
+  test(`registration blocks signup when availability reports ${scenario}`, async ({ page }) => {
+    await installBackend(page);
+    let signups = 0;
+    await page.route('**/auth/v1/signup*', route => { signups++; return route.fulfill({ json: {} }); });
+    await page.route('**/rest/v1/rpc/check_registration_availability', route => route.fulfill(
+      scenario === 'unavailable' ? { status: 503, json: { message: 'Account check temporarily unavailable' } }
+        : { json: scenario === 'malformed' ? {} : { available: false, error: `This ${scenario} is already registered.` } }
+    ));
+    await page.goto('/register');
+    await page.getByRole('textbox', { name: 'Full name', exact: true }).fill('New Tester');
+    await page.getByRole('textbox', { name: 'Email address', exact: true }).fill('new-tester@example.test');
+    await page.getByRole('textbox', { name: 'Philippine mobile number', exact: true }).fill('09171234567');
+    await page.getByLabel('Password', { exact: true }).fill('TestingPassword123!');
+    await page.getByLabel('Confirm password', { exact: true }).fill('TestingPassword123!');
+    await page.getByRole('checkbox', { name: 'Accept privacy notice and service terms' }).click();
+    await page.getByRole('button', { name: 'Create account', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText(scenario === 'unavailable' ? 'temporarily unavailable' : scenario === 'malformed' ? 'Unable to check' : 'already registered');
+    expect(signups).toBe(0);
+  });
+}

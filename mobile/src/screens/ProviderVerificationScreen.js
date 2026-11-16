@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useApp } from '../AppContext';
 import { useAction, useData } from '../hooks';
 import { checkVerificationCompleteness, formatVerificationFileName, parseDocInfo, VERIFICATION_DOC_CATEGORIES } from '../domain';
 import { colors as c, statusLabels } from '../theme';
-import { Badge, Button, Card, Chip, Field, Icon, Label, Muted, Notice, Query, Screen, Section, s } from '../components/ui';
+import { Badge, Button, Card, Chip, Field, Icon, Label, Muted, Notice, Query, Screen, s } from '../components/ui';
 
 export default function ProviderVerificationScreen({ navigation }) {
   const { identity, api, refresh } = useApp();
@@ -157,7 +157,9 @@ export default function ProviderVerificationScreen({ navigation }) {
                     onPress={() => action.run(async () => {
                       if (!asset) throw new Error('Select a document or image to upload.');
                       const formattedName = formatVerificationFileName(selectedCategory, docTitle, asset.name);
-                      await api.uploadVerificationDoc(asset, formattedName);
+                      const category = VERIFICATION_DOC_CATEGORIES.find(item => item.badge === selectedCategory)?.id;
+                      if (!category) throw new Error('Choose a valid credential category.');
+                      await api.uploadVerificationDoc(asset, formattedName, category);
                       setAsset(null);
                       setDocTitle('');
                       refresh();
@@ -173,11 +175,12 @@ export default function ProviderVerificationScreen({ navigation }) {
                   ) : (
                     files.map(file => {
                       const info = parseDocInfo(file.original_name);
+                      const category = VERIFICATION_DOC_CATEGORIES.find(item => item.id === file.verification_category);
                       return (
                         <View key={file.id} style={styles.fileRow}>
                           <View style={s.stack}>
                             <View style={s.row}>
-                              {info.isCategorized && <Badge>{info.badge}</Badge>}
+                              <Badge>{category?.badge || 'Category required — upload again'}</Badge>
                               <Text style={styles.fileName}>{info.title}</Text>
                             </View>
                             <Muted>{(Number(file.byte_size) / 1024).toFixed(0)} KB · {file.mime_type === 'application/pdf' ? 'PDF Document' : 'Image'}</Muted>

@@ -17,6 +17,7 @@ async function loginFixture(page: Page, role: 'customer' | 'admin') {
   await page.route('**/auth/v1/token?*', route => route.fulfill({ json: session }));
   await page.route('**/auth/v1/user', route => route.fulfill({ json: user }));
   await page.route('**/auth/v1/logout*', route => route.fulfill({ status: 204 }));
+  await page.route('**/rest/v1/rpc/check_registration_availability', route => route.fulfill({ json: { available: true } }));
   await page.route('**/rest/v1/rpc/user_context', route => route.fulfill({ json: {
     role, profile: { id: user.id, full_name: 'Navigation Test', status: 'active', preferences: {} }
   } }));
@@ -67,12 +68,57 @@ test('admin sign-in rejects a customer before following the return destination',
   await expect(page).toHaveURL(/\/admin\/login\//);
 });
 
+test('administrator navigation stays focused on admin work on the account page', async ({ page, isMobile }) => {
+  await loginFixture(page, 'admin');
+  await page.goto('/admin/login/');
+  await page.getByLabel('Work email', { exact: true }).fill('navigation@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('FixturePasswordOnly123!');
+  await page.getByRole('button', { name: 'Administrator sign in', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/$/);
+  await page.goto('/account/');
+  await expect(page.getByRole('heading', { name: 'Personal information' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saved addresses' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Apply as a service provider' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Book a service', exact: true })).toHaveCount(0);
+  if (isMobile) await page.getByRole('button', { name: 'Open navigation' }).click();
+  const nav = isMobile ? page.getByRole('dialog').getByRole('navigation', { name: 'Administration' }) : page.locator('aside').getByRole('navigation', { name: 'Administration' });
+  await expect(nav.getByRole('link', { name: 'User accounts', exact: true })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'My account', exact: true })).toHaveAttribute('aria-current', 'page');
+  for (const name of ['Find a professional', 'My bookings', 'Invoices', 'Provider portal']) {
+    await expect(nav.getByRole('link', { name, exact: true })).toHaveCount(0);
+  }
+  if (isMobile) await expect(page.getByRole('dialog').getByRole('link', { name: 'Download Android app' })).toHaveCount(0);
+});
+
+for (const scenario of ['email', 'name', 'unavailable'] as const) {
+  test(`registration stops before signup when duplicate check reports ${scenario}`, async ({ page }) => {
+    await publicFixtures(page);
+    let signups = 0;
+    await page.route('**/auth/v1/signup*', route => { signups++; return route.fulfill({ json: {} }); });
+    await page.route('**/rest/v1/rpc/check_registration_availability', route => route.fulfill(scenario === 'unavailable'
+      ? { status: 503, json: { message: 'Account check temporarily unavailable' } }
+      : { json: { available: false, field: scenario, error: `This ${scenario === 'email' ? 'email address' : 'full name'} is already registered.` } }));
+    await page.goto('/register/');
+    await page.getByLabel('Full name', { exact: true }).fill('Shared Firstname');
+    await page.getByLabel('Philippine mobile number', { exact: true }).fill('09171234567');
+    await page.getByLabel('Email address', { exact: true }).fill('duplicate@example.test');
+    await page.getByLabel('Password', { exact: true }).fill('TestingPassword123!');
+    await page.getByLabel('Confirm password', { exact: true }).fill('TestingPassword123!');
+    await page.getByRole('checkbox').check();
+    await page.getByRole('button', { name: 'Create an account', exact: true }).click();
+    await expect(page.getByRole('main').getByRole('alert')).toContainText(scenario === 'unavailable' ? 'temporarily unavailable' : 'already registered');
+    expect(signups).toBe(0);
+    await expect(page).toHaveURL(/\/register\/$/);
+  });
+}
+
 
 test('website registration preserves the email for verification and normalizes customer details', async ({ page }) => {
   await publicFixtures(page); let input: Record<string, unknown> | undefined;
+  await page.route('**/rest/v1/rpc/check_registration_availability', route => route.fulfill({ json: { available: true } }));
   await page.route('**/auth/v1/signup*', route => {
     input = route.request().postDataJSON();
-    return route.fulfill({ json: { id: '40000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: input!.email, identities: [], user_metadata: input!.data } });
+    return route.fulfill({ json: { id: '40000000-0000-4000-8000-000000000002', aud: 'authenticated', role: 'authenticated', email: input!.email, identities: [{ provider: 'email' }], user_metadata: input!.data } });
   });
   await page.goto('/register/');
   await page.getByLabel('Full name', { exact: true }).fill('New Web Tester');

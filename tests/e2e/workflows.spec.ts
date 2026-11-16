@@ -15,6 +15,38 @@ async function signIn(page:Page,who:string){await page.goto('/login/');await pag
 function client(who?:string){const c=createClient(url!,who?key!:secret!,{auth:{persistSession:false}});return c;}
 async function signed(who:string){const c=client(who);const {error}=await c.auth.signInWithPassword(fixtures.accounts[who]);if(error)throw error;return c;}
 
+test('recipient verification is enforced through the real API before enabling GCash',async()=>{
+ const admin=await signed('admin'),customer=await signed('customerA');
+ const settings={p_name:'Isolated Fictional Wallet',p_phone:'09170000001',p_instructions:'Disposable local service validation',p_enabled:true,p_qr_url:null,p_recipient_verified:false};
+ expect((await admin.rpc('save_gcash_settings',settings)).error?.message).toContain('Verify the recipient');
+ expect((await customer.rpc('save_gcash_settings',{...settings,p_recipient_verified:true})).error).toBeTruthy();
+ expect((await admin.rpc('save_gcash_settings',{...settings,p_recipient_verified:true})).error).toBeNull();
+ const verified=await admin.from('gcash_settings').select('enabled,recipient_verified_at,recipient_verified_by').single();
+ expect(verified.error).toBeNull();expect(verified.data?.enabled).toBe(true);expect(verified.data?.recipient_verified_at).toBeTruthy();expect(verified.data?.recipient_verified_by).toBe(fixtures.accounts.admin.id);
+ expect((await admin.rpc('save_gcash_settings',{...settings,p_phone:'09170000002'})).error?.message).toContain('Verify the recipient');
+ expect((await admin.rpc('save_gcash_settings',{...settings,p_phone:'09170000002',p_enabled:false})).error).toBeNull();
+ const disabled=await admin.from('gcash_settings').select('enabled,recipient_verified_at').single();expect(disabled.data?.enabled).toBe(false);expect(disabled.data?.recipient_verified_at).toBeNull();
+});
+
+test('real credential uploads, private access and provider review require all credential groups',async()=>{
+ const applicant=await signed('pendingProvider'),admin=await signed('admin');
+ const {data:{session}}=await applicant.auth.getSession();
+ const headers={apikey:key!,Authorization:`Bearer ${session!.access_token}`};
+ const bytes=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=','base64'));
+ const upload=async(category:string)=>{const form=new FormData();form.set('kind','verification');form.set('verification_category',category);form.set('file',new File([bytes.buffer],`fictional-${category||'uncategorized'}.png`,{type:'image/png'}));return fetch(`${url}/functions/v1/files`,{method:'POST',headers,body:form});};
+ expect((await upload('')).status).toBe(400);expect((await upload('invented-category')).status).toBe(400);
+ const application=await admin.from('provider_applications').select('id').eq('provider_id',fixtures.accounts.pendingProvider.id).eq('status','pending').single();expect(application.error).toBeNull();
+ const review={p_entity:'provider',p_id:application.data!.id,p_action:'approve',p_data:{reason:'Inspected harmless fictional test pixels in disposable staging'}};
+ for(const category of ['gov_id','prc_license']){const response=await upload(category);const body=await response.json();expect(response.ok,JSON.stringify(body)).toBe(true);expect((await admin.rpc('admin_action',review)).error).toBeTruthy();}
+ const clearance=await upload('clearance');expect(clearance.ok).toBe(true);
+ expect((await applicant.rpc('admin_action',review)).error).toBeTruthy();expect((await admin.rpc('admin_action',review)).error).toBeNull();
+ const context=await applicant.rpc('user_context');expect(context.data?.role).toBe('provider');
+ const extra=await upload('business_permit');const file=await extra.json();expect(extra.ok,JSON.stringify(file)).toBe(true);
+ const preflight=await fetch(`${url}/functions/v1/files?id=${file.id}`,{method:'OPTIONS',headers:{Origin:'http://localhost:3000','Access-Control-Request-Method':'DELETE','Access-Control-Request-Headers':'authorization,apikey'}});expect(preflight.headers.get('access-control-allow-methods')).toContain('DELETE');
+ const deletion=await fetch(`${url}/functions/v1/files?id=${file.id}`,{method:'DELETE',headers});expect(deletion.ok).toBe(true);
+ expect((await applicant.from('files').select('id').eq('id',file.id)).data).toEqual([]);
+});
+
 test('administrator creates, edits and permanently erases a disposable account through the protected endpoint',async()=>{
  const admin=await signed('admin');const customer=await signed('customerA');
  const {data:{session}}=await admin.auth.getSession();const {data:{session:other}}=await customer.auth.getSession();
@@ -83,7 +115,7 @@ test('private verification uploads require ownership for signed file access',asy
  const provider=await signed('providerA');const {data:{session}}=await provider.auth.getSession();
  // A harmless test pixel, explicitly not an identity document.
  const bytes=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=','base64'));
- const form=new FormData();form.set('file',new File([bytes.buffer],'test-pixel.png',{type:'image/png'}));form.set('kind','verification');
+ const form=new FormData();form.set('file',new File([bytes.buffer],'test-pixel.png',{type:'image/png'}));form.set('kind','verification');form.set('verification_category','gov_id');
  const uploaded=await fetch(`${url}/functions/v1/files`,{method:'POST',headers:{apikey:key!,Authorization:`Bearer ${session!.access_token}`},body:form});const file=await uploaded.json();expect(uploaded.ok,JSON.stringify(file)).toBe(true);
  const own=await fetch(`${url}/functions/v1/files?id=${file.id}`,{headers:{apikey:key!,Authorization:`Bearer ${session!.access_token}`}});expect(own.ok).toBe(true);
  for(const who of ['providerB','customerA','customerB']){const outsider=await signed(who);const {data:{session:s}}=await outsider.auth.getSession();expect((await outsider.from('files').select('*').eq('id',file.id)).data).toEqual([]);const denied=await fetch(`${url}/functions/v1/files?id=${file.id}`,{headers:{apikey:key!,Authorization:`Bearer ${s!.access_token}`}});expect(denied.status).toBe(404);}

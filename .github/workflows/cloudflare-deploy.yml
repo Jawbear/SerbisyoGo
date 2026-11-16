@@ -33,7 +33,14 @@ jobs:
           NEXT_PUBLIC_MAP_ATTRIBUTION_URL: ${{ vars.NEXT_PUBLIC_MAP_ATTRIBUTION_URL }}
           NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL }}
       - name: Deploy to Cloudflare Workers
-        run: npx wrangler deploy --config wrangler.jsonc
+        # Keep the same public configuration for the export and readiness check.
+        run: |
+          node --experimental-strip-types scripts/production-deploy.mjs --check --require-build
+          npx wrangler deploy --config wrangler.jsonc
         env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_BASE_PATH: ''
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

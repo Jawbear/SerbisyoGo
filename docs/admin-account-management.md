@@ -4,6 +4,33 @@ The website's **Administration → User accounts** and the mobile app's **Open a
 
 Every operation checks the signed-in user on the server. Auth administration and Storage deletion use server credentials only. Client bundles contain the publishable Supabase key. An administrator cannot remove their own access or delete their own account; the last active administrator is also protected. Profile changes include an updated timestamp to reject stale edits.
 
+## Account identity checks
+
+Registration on web and mobile, and administrator account creation, check email
+and full-name availability before creating an identity. A failed availability
+request stops signup so the user can retry. Shared first names remain allowed;
+the complete name is compared ignoring case and repeated whitespace.
+
+Migration `202611170017_account_identity_uniqueness.sql` strengthens the database
+indexes and rejects duplicate names during signup and profile edits instead of
+appending a numeric suffix. It stops if existing identities conflict, leaving
+resolution to the operator. Database constraints also protect concurrent writes.
+
+For a read-only hosted account audit, configure `ACCOUNT_AUDIT_EMAIL` and
+`ACCOUNT_AUDIT_PASSWORD` for an administrator, then run:
+
+```sh
+node --env-file=.env.local scripts/audit-accounts.mjs --output .cache/account-audit.json
+```
+
+The report contains conflicting account IDs and normalized names/emails; keep it
+private. Exit status 2 means duplicates were found, and 1 means the audit failed.
+Resolve any reported conflicts before applying the migration. Deploy the updated
+`admin-accounts` Edge Function with the backend rollout.
+
+Administrator navigation retains the administration menu on the account page,
+where saved addresses and the provider application prompt are hidden.
+
 ## Permanent deletion
 
 An administrator reviews the affected-record counts, types the selected account's email, supplies a reason and acknowledges irreversible removal. This removes the login and the related application records and files, including shared bookings, messages, reviews, support cases and financial records. Other people's accounts remain. Global settings remain with the deleted person's attribution removed. This deliberately removes financial history for the selected account, following the requested permanent-erasure behavior.

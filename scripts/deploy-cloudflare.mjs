@@ -59,7 +59,7 @@ const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 if (!process.env.CLOUDFLARE_API_TOKEN) {
-  const whoami = spawnSync(npx, ['wrangler', 'whoami'], { cwd: root, encoding: 'utf8', shell: false });
+  const whoami = spawnSync(npx, ['wrangler', 'whoami'], { cwd: root, encoding: 'utf8', shell: process.platform === 'win32' });
   const output = `${whoami.stdout || ''}${whoami.stderr || ''}`;
   if (whoami.status !== 0 || /not authenticated/i.test(output)) {
     console.error('Wrangler is not authenticated. Run `npx wrangler login` or set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.');
@@ -67,7 +67,7 @@ if (!process.env.CLOUDFLARE_API_TOKEN) {
   }
 }
 
-const build = spawnSync(npm, ['run', 'build'], { cwd: root, stdio: 'inherit' });
+const build = spawnSync(npm, ['run', 'build'], { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
 if (build.status !== 0) process.exit(build.status ?? 1);
 
 const preflight = spawnSync(process.execPath, ['--experimental-strip-types', 'scripts/production-deploy.mjs', '--check', '--require-build'], {
@@ -81,7 +81,7 @@ if (preflight.status !== 0) {
 
 const deployArgs = ['wrangler', 'deploy', '--config', 'wrangler.jsonc'];
 if (dryRun) deployArgs.push('--dry-run');
-const deploy = spawnSync(npx, deployArgs, { cwd: root, stdio: 'inherit' });
+const deploy = spawnSync(npx, deployArgs, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
 if (deploy.status !== 0) process.exit(deploy.status ?? 1);
 
 console.log(dryRun ? 'Cloudflare dry run completed; nothing was published.' : `Published ${site}`);

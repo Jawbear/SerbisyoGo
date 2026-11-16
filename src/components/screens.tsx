@@ -1,22 +1,29 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Guard, Card, PageHeading, Notice, ButtonLink, Badge, DataTable, Stats } from './ui';
 import { Landing, Find, Services, ProviderProfile, ProviderCard } from '@/features/services/catalog';
 import { AuthScreen, AuthCallback } from '@/features/auth/screens';
-import { BookingFlow } from '@/features/bookings/flow';
-import { BookingList, BookingRecord } from '@/features/bookings/screens';
-import { Messages } from '@/features/messaging/messages';
-import { ProviderDashboard, ProviderProfileEditor, Availability } from '@/features/providers/workspace';
-import { Account, Notifications } from '@/features/account/account';
-import { Support } from '@/features/support/support';
-import { DownloadPage } from '@/features/app-releases/download';
-import { AdminWorkspace, type AdminTab } from '@/features/admin/workspace';
-import { AdminAccounts } from '@/features/admin/accounts';
+import type { AdminTab } from '@/features/admin/workspace';
 import { PolicyPage } from '@/features/policies/policy-page';
 import { termsOfService, privacyPolicy, pricingPolicy } from '@/lib/policies';
 import { demoProviders } from '@/lib/data';
+
+const BookingFlow = dynamic(() => import('@/features/bookings/flow').then(module => module.BookingFlow));
+const BookingList = dynamic(() => import('@/features/bookings/screens').then(module => module.BookingList));
+const BookingRecord = dynamic(() => import('@/features/bookings/screens').then(module => module.BookingRecord));
+const Messages = dynamic(() => import('@/features/messaging/messages').then(module => module.Messages));
+const ProviderDashboard = dynamic(() => import('@/features/providers/workspace').then(module => module.ProviderDashboard));
+const ProviderProfileEditor = dynamic(() => import('@/features/providers/workspace').then(module => module.ProviderProfileEditor));
+const Availability = dynamic(() => import('@/features/providers/workspace').then(module => module.Availability));
+const Account = dynamic(() => import('@/features/account/account').then(module => module.Account));
+const Notifications = dynamic(() => import('@/features/account/account').then(module => module.Notifications));
+const Support = dynamic(() => import('@/features/support/support').then(module => module.Support));
+const DownloadPage = dynamic(() => import('@/features/app-releases/download').then(module => module.DownloadPage));
+const AdminWorkspace = dynamic(() => import('@/features/admin/workspace').then(module => module.AdminWorkspace));
+const AdminAccounts = dynamic(() => import('@/features/admin/accounts').then(module => module.AdminAccounts));
 export function Screen({
   name
 }: {

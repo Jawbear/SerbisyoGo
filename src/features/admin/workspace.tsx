@@ -442,6 +442,7 @@ function ProviderVerificationData({
     files: await list<{
       id: string;
       original_name: string;
+      verification_category: string | null;
       byte_size: number;
       mime_type: string;
       created_at: string;

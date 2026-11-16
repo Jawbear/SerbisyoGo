@@ -40,6 +40,7 @@ export async function installBackend(page) {
     let data;
     if (table === 'user_context') data = { profile: { id: user.id, full_name: 'Test Account', status: 'active' }, role: state.role };
     else if (table === 'is_admin') data = state.role==='admin';
+    else if (table === 'check_registration_availability') data = { available: true };
     else if (table === 'available_slots') data = [8, 10, 13].map(hour => ({ starts_at: new Date(`${body.p_day}T${String(hour).padStart(2, '0')}:00:00+08:00`).toISOString() }));
     else if (table === 'save_booking_draft') {
       const draft = { id: body.p_id || '20000000-0000-4000-8000-000000000001', customer_id: user.id, provider_service_id: body.p_service, description: body.p_description, address: body.p_address, starts_at: body.p_starts_at };

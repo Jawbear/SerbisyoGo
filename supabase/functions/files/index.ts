@@ -1,5 +1,5 @@
 import {authorize,clients,cors,json,limitedFile,unwrap,requireData} from '../_shared/http.ts';
-import {validateUpload} from '../../../src/lib/domain.ts';
+import {validateUpload,VERIFICATION_DOC_CATEGORIES} from '../../../src/lib/domain.ts';
 const signatures=(b:Uint8Array,m:string)=>m==='application/pdf'?new TextDecoder().decode(b.slice(0,5))==='%PDF-':m==='image/png'?b[0]===137&&b[1]===80&&b[2]===78&&b[3]===71:m==='image/jpeg'?b[0]===255&&b[1]===216&&b[2]===255:m==='image/webp'?new TextDecoder().decode(b.slice(0,4))==='RIFF'&&new TextDecoder().decode(b.slice(8,12))==='WEBP':false;
 Deno.serve(async req=>{
  let headers:Record<string,string>={};try{
@@ -44,6 +44,8 @@ Deno.serve(async req=>{
  }
  if(req.method!=='POST')return json({error:'Method not allowed'},headers,405);
  const form=await limitedFile(req,10485760);const file=form.get('file');const kind=String(form.get('kind')||'');
+ const verificationCategory=String(form.get('verification_category')||'');
+ if(kind==='verification'&&!VERIFICATION_DOC_CATEGORIES.some(category=>category.id===verificationCategory))throw new Error('Choose a valid credential category. Update your app if this upload was sent by an older version.');
  if(!(file instanceof File)||!['verification','booking','support','avatar','payment'].includes(kind))throw new Error('Valid file and kind are required');
  validateUpload(kind,file.size,file.type,file.name,kind==='avatar'?5242880:10485760);
  const bytes=new Uint8Array(await file.arrayBuffer());if(!signatures(bytes,file.type))throw new Error('File contents do not match the declared type');
@@ -62,7 +64,7 @@ Deno.serve(async req=>{
  const bucket=kind==='avatar'?'avatars':'private-files';const extension=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':file.type==='image/webp'?'webp':'pdf';
  const id=crypto.randomUUID();const path=`${identity.id}/${kind}/${id}.${extension}`;
  unwrap(await privileged.storage.from(bucket).upload(path,bytes,{contentType:file.type,upsert:false}));
- const record=await privileged.from('files').insert({id,owner_id:identity.id,kind,bucket,path,booking_id:['booking','payment'].includes(kind)&&!draftId?booking:null,draft_id:kind==='booking'?draftId:null,case_id:kind==='support'?caseId:null,original_name:file.name.slice(0,200),mime_type:file.type,byte_size:file.size});
+ const record=await privileged.from('files').insert({id,owner_id:identity.id,kind,bucket,path,verification_category:kind==='verification'?verificationCategory:null,booking_id:['booking','payment'].includes(kind)&&!draftId?booking:null,draft_id:kind==='booking'?draftId:null,case_id:kind==='support'?caseId:null,original_name:file.name.slice(0,200),mime_type:file.type,byte_size:file.size});
  if(record.error){await privileged.storage.from(bucket).remove([path]);throw new Error(record.error.message);}
  if(kind==='avatar'){
  unwrap(await privileged.from('profiles').update({avatar_path:path}).eq('id',identity.id));

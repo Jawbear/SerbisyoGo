@@ -143,9 +143,10 @@ export const liveApi = {
     return { profile, applications: applications || [], files: files || [] };
   },
   submitProviderApplication: profile => result(db().rpc('submit_provider', { p_profile: profile })),
-  uploadVerificationDoc: async (asset, formattedName) => {
+  uploadVerificationDoc: async (asset, formattedName, category) => {
     const form = new FormData();
     form.append('kind', 'verification');
+    form.append('verification_category', category);
     form.append('file', Platform.OS === 'web' ? asset.file : {
       uri: asset.uri,
       name: formattedName,

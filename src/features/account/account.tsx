@@ -35,7 +35,7 @@ export function Account() {
             marginBottom: 20
           }}>Use a strong password. Verification and recovery links are sent to your account email.</p><div className="row"><ButtonLink href="/forgot-password/" secondary>Reset password</ButtonLink><ActionButton secondary action={s.signOut}>Sign out</ActionButton></div><p className="small muted" style={{
             marginTop: 20
-          }}>To request account deactivation, <Link href="/support/">contact support</Link>. Booking and financial history may require retention.</p></Card></div><div className="stack"><Card><h2>Saved addresses</h2><QueryState {...q}><DataTable rows={q.data || []} columns={[{
+          }}>To request account deactivation, <Link href="/support/">contact support</Link>. Booking and financial history may require retention.</p></Card></div><div className="stack">{s.role !== 'admin' && <><Card><h2>Saved addresses</h2><QueryState {...q}><DataTable rows={q.data || []} columns={[{
               key: 'label',
               label: 'Label'
             }, {
@@ -55,7 +55,7 @@ export function Account() {
               ...data,
               user_id: s.user!.id
             }));
-          }}><Field label="Address label" name="label" required placeholder="Home / work" maxLength={40} /><Field label="Complete address" name="line1" minLength={5} maxLength={250} required /><div className="grid-2"><Field label="City / municipality" name="city" minLength={2} required /><Field label="Postal code" name="postal_code" inputMode="numeric" pattern="[0-9]{4}" required /></div></MutationForm></Card><Notice>Planning to offer your skills? <Link href="/provider/apply/">Apply as a service provider</Link>.</Notice></div></div></>;
+          }}><Field label="Address label" name="label" required placeholder="Home / work" maxLength={40} /><Field label="Complete address" name="line1" minLength={5} maxLength={250} required /><div className="grid-2"><Field label="City / municipality" name="city" minLength={2} required /><Field label="Postal code" name="postal_code" inputMode="numeric" pattern="[0-9]{4}" required /></div></MutationForm></Card><Notice>Planning to offer your skills? <Link href="/provider/apply/">Apply as a service provider</Link>.</Notice></>}</div></div></>;
 }
 function AddressEditor({
   row

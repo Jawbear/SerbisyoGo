@@ -159,14 +159,7 @@ jobs:
         if: inputs.publish_release && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          version=$(node -p "JSON.parse(require('fs').readFileSync('app.json')).expo.version")
-          tag="android-v$version"
-          node scripts/release-notes.mjs > builds/release-notes.md
-          source_commit=$(node -p "JSON.parse(require('fs').readFileSync('builds/build-metadata.json')).sourceCommit")
-          gh release create "$tag" "builds/SerbisyoGo-$version.apk" "builds/SerbisyoGo-$version.apk.sha256" builds/build-metadata.json builds/android-home.png --target "$source_commit" --title "SerbisyoGo Android $version" --prerelease --notes-file builds/release-notes.md
-          printf '### APK download\n\n[Download SerbisyoGo %s](https://github.com/%s/releases/download/%s/SerbisyoGo-%s.apk)\n' "$version" "$GITHUB_REPOSITORY" "$tag" "$version" >> "$GITHUB_STEP_SUMMARY"
+        run: node scripts/publish-release.mjs
       - name: Show native failure diagnostics
         if: failure()
         run: |

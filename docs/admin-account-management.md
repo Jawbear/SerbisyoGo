@@ -41,7 +41,7 @@ The final application audit receipt records the administering account, a random 
 
 ## Mobile workspace
 
-In addition to accounts, the app exposes existing server-authorized tools for provider verification, bookings, category/service maintenance, support cases, announcements, settlement records, refunds, payouts, reports, settings, Android releases and audit review. Payment and payout actions record verified external events; they do not transfer funds. Private APK upload retains the backend's 50 MB limit; the CI release pipeline supports the separately hosted universal APK.
+In addition to accounts, the app exposes existing server-authorized tools for provider verification, bookings, category/service maintenance, support cases, announcements, settlement records, refunds, payouts, reports, settings, Android releases and audit review. Payment and payout actions record verified external events; they do not transfer funds. Private APK upload has a bounded 64 MiB limit after migration 21, subject to the hosted project's global Storage limit. The CI release pipeline also supports separately hosted universal APKs.
 
 ## Verification
 

@@ -1,5 +1,12 @@
 # Payment and provider credential hardening — 17 November 2026
 
+Staging follow-up: real Supabase testing required replacing migration 17's Auth
+table index with a private application-owned email reservation table and trigger.
+The current schema has 21 migrations and 170 pgTAP assertions. The private APK
+path now supports a bounded 64 MiB upload with streamed request/read-back handling;
+the project's global Storage limit must also permit that size. See the staging
+validation record for the final full-service outcome and the tested Android APK.
+
 The source now requires recorded recipient verification before enabling GCash,
 and all three credential groups before provider approval or reactivation.
 These changes have not been applied to the hosted database or deployed clients.

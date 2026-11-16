@@ -29,3 +29,27 @@ export async function limitedFile(req: Request, max: number) {
   };
   return new Request(req.url, init).formData();
 }
+
+// Raw APK bodies use one bounded allocation, avoiding multipart Blob copies.
+export async function limitedBytes(req: Request, max: number) {
+  if (!Number.isSafeInteger(max) || max <= 0) throw new Error('Invalid upload limit');
+  const declared = Number(req.headers.get('content-length') || 0);
+  if (!Number.isSafeInteger(declared) || declared < 0 || declared > max) throw new Error('Upload exceeds configured size limit');
+  const reader = req.body?.getReader();
+  if (!reader) throw new Error('File is required');
+  const bytes = new Uint8Array(declared || max);
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (size + value.byteLength > bytes.length) {
+        await reader.cancel();
+        throw new Error('Upload exceeds configured size limit');
+      }
+      bytes.set(value, size); size += value.byteLength;
+    }
+  } finally { reader.releaseLock(); }
+  if (declared && declared !== size) throw new Error('Incomplete APK upload');
+  return bytes.subarray(0, size);
+}

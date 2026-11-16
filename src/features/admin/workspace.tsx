@@ -8,7 +8,8 @@ import { adminNav } from '@/components/shell';
 import { ActionButton, Badge, ButtonLink, Card, DataTable, Dialog, Empty, ExportButton, Field, MutationForm, Notice, PageHeading, QueryState, Select, Stats, Textarea, useQuery } from '@/components/ui';
 import { list } from '@/lib/data';
 import { edge, rpc } from '@/lib/backend';
-import { manilaDate, money, percentToBps, pesosToCentavos, checkVerificationCompleteness } from '@/lib/domain';
+import { manilaDate, money, percentToBps, pesosToCentavos, checkVerificationCompleteness, validateUpload } from '@/lib/domain';
+import { APK_MAX_BYTES } from '@/lib/apk';
 import { releaseSchema } from '@/lib/schemas';
 import type { Booking } from '@/lib/types';
 import { BookingDetail } from '@/features/bookings/screens';
@@ -791,16 +792,28 @@ function ReleaseManagement({
 }: {
   releases: RecordRow[];
 }) {
+  const [pendingUpload, setPendingUpload] = useState<{ id: string; key: string } | null>(null);
   return <Card><h2>Android release management</h2><Notice>Supply the actual APK when it is ready. Upload creates a private verified draft. Publication is a separate, audited action. Files are versioned and cannot be overwritten.</Notice><div style={{
       marginTop: 24
     }}><MutationForm submit="Upload & verify draft APK" success="APK uploaded and verified. Review the draft before publishing." onSubmit={async f => {
-        releaseSchema.parse({
+        const data = releaseSchema.parse({
           version_name: f.get('version_name'),
           version_code: f.get('version_code'),
           min_android: f.get('min_android'),
           release_notes: f.get('release_notes')
         });
-        await edge('releases', f);
+        const file = f.get('file');
+        if (!(file instanceof File)) throw new Error('Choose your APK file.');
+        validateUpload('apk', file.size, file.type || 'application/octet-stream', file.name, APK_MAX_BYTES);
+        const key = JSON.stringify(data);
+        let id = pendingUpload?.key === key ? pendingUpload.id : releases.find(row => row.status === 'draft' && !row.verified_at && row.version_name === data.version_name && row.version_code === data.version_code && row.min_android === data.min_android && row.release_notes === data.release_notes)?.id as string | undefined;
+        if (!id) {
+          const draft = await rpc<{ id: string }>('create_release_draft', { p_version_name: data.version_name, p_version_code: data.version_code, p_min_android: data.min_android, p_notes: data.release_notes });
+          id = draft.id;
+        }
+        setPendingUpload({ id, key });
+        await edge('releases', file, `?id=${encodeURIComponent(id)}`);
+        setPendingUpload(null);
       }}><div className="grid-3"><Field label="APK version name" name="version_name" required placeholder="From your actual package" /><Field label="APK version code" name="version_code" type="number" min={1} required /><Field label="Minimum Android version" name="min_android" required placeholder="For example, 8.0" /></div><Textarea label="Release notes" name="release_notes" minLength={10} maxLength={10000} required /><Field label="Actual APK file (maximum 64 MiB, subject to project limits)" name="file" type="file" accept=".apk,application/vnd.android.package-archive" required /></MutationForm></div><div style={{
       marginTop: 32
     }}><DataTable rows={releases} columns={[{

@@ -52,16 +52,21 @@ test('mobile provider verification documents parse categories, format filenames 
   assert.equal(parsed.category?.id, 'gov_id');
 
   const completeness = checkVerificationCompleteness([
-    { original_name: '[Government ID] Passport.jpg' },
-    { original_name: '[TESDA NC II] Plumbing NC2.pdf' },
-    { original_name: '[Clearance] Police Clearance.pdf' }
+    { original_name: '[Government ID] Passport.jpg', verification_category: 'gov_id' },
+    { original_name: '[TESDA NC II] Plumbing NC2.pdf', verification_category: 'tesda_nc2' },
+    { original_name: '[Clearance] Police Clearance.pdf', verification_category: 'clearance' }
   ]);
   assert.equal(completeness.isComplete, true);
   assert.equal(completeness.missing.length, 0);
 
   const incomplete = checkVerificationCompleteness([
-    { original_name: '[Government ID] Passport.jpg' }
+    { original_name: '[Government ID] Passport.jpg', verification_category: 'gov_id' }
   ]);
   assert.equal(incomplete.isComplete, false);
   assert.equal(incomplete.missing.length, 2);
+  assert.equal(checkVerificationCompleteness([
+    { original_name: '[Government ID] misleading.pdf' },
+    { original_name: '[TESDA NC II] misleading.pdf' },
+    { original_name: '[Clearance] misleading.pdf' }
+  ]).isComplete, false);
 });

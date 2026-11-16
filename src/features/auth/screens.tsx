@@ -84,7 +84,7 @@ export function AuthScreen({
   </button>
 ) : undefined} success={mode === 'reset' ? 'Password updated successfully.' : mode === 'verify' ? 'Account verified successfully.' : mode === 'forgot' ? 'Email request submitted.' : 'Account request completed.'} onSubmit={async f => {
         const client = requireDb();
-        const email = String(f.get('email') || '').trim();
+        const email = String(f.get('email') || '').trim().toLowerCase();
         const password = String(f.get('password') || '');
         if (mode === 'register') {
           if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
@@ -92,27 +92,18 @@ export function AuthScreen({
           if (password !== f.get('confirm')) throw new Error('Passwords must match.');
           if (!f.get('consent')) throw new Error('Please confirm your consent to create an account.');
           const phone = normalizePhone(String(f.get('phone')));
-          const full_name = String(f.get('full_name')).trim();
+          const full_name = String(f.get('full_name')).trim().replace(/\s+/g, ' ');
           if (full_name.length < 2) throw new Error('Please enter your full name.');
 
-          try {
-            const availability = await rpc<{ available: boolean; field?: string; error?: string }>(
-              'check_registration_availability',
-              { p_email: email, p_full_name: full_name }
-            );
-            if (availability && !availability.available) {
-              if (availability.field === 'email' || availability.error?.toLowerCase().includes('email')) {
-                throw new Error('This email address is already in use or registered. Please sign in or use another email.');
-              }
-              if (availability.field === 'name' || availability.error?.toLowerCase().includes('name')) {
-                throw new Error('This name is already taken. Please choose a unique name.');
-              }
-              throw new Error(availability.error || 'Registration details are not available.');
-            }
-          } catch (checkErr: unknown) {
-            if (checkErr instanceof Error && (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken'))) {
-              throw checkErr;
-            }
+          const availability = await rpc<{ available: boolean; field?: string; error?: string }>(
+            'check_registration_availability',
+            { p_email: email, p_full_name: full_name }
+          );
+          if (!availability || typeof availability.available !== 'boolean') {
+            throw new Error('Unable to check account details. Please try again.');
+          }
+          if (!availability.available) {
+            throw new Error(availability.error || 'This email or full name is already registered.');
           }
 
           const {
@@ -135,7 +126,7 @@ export function AuthScreen({
               throw new Error('This email address is already in use or registered. Please sign in or use another email.');
             }
             if (msg.includes('profiles_full_name_unique_idx') || (msg.includes('name') && msg.includes('unique'))) {
-              throw new Error('This name is already taken. Please choose a unique name.');
+              throw new Error('This full name is already registered. Shared first names are allowed; the full name must be different.');
             }
             throw error;
           }
@@ -158,7 +149,10 @@ export function AuthScreen({
               status: string;
             };
           }>('user_context');
-          if (context.profile.status !== 'active') throw new Error('Your account is restricted. Contact support.');
+          if (context.profile.status !== 'active') {
+            await client.auth.signOut();
+            throw new Error('Your account is restricted. Contact support.');
+          }
           if (admin && context.role !== 'admin') {
             await client.auth.signOut();
             throw new Error('Administrator access is required.');

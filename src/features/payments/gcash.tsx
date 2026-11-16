@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 import { ActionButton, Badge, Card, Field, MutationForm, Notice, QueryState, Textarea, useQuery } from '@/components/ui';
 import { edge, rpc } from '@/lib/backend';
@@ -8,7 +9,7 @@ import { list } from '@/lib/data';
 import { money, validateUpload } from '@/lib/domain';
 import { useSession } from '@/components/session';
 
-type Settings = { recipient_name: string; recipient_phone: string; instructions: string; enabled: boolean; qr_code_url?: string | null; updated_at: string };
+type Settings = { recipient_name: string; recipient_phone: string; instructions: string; enabled: boolean; qr_code_url?: string | null; recipient_verified_at?: string | null; updated_at: string };
 type Submission = { id: string; receipt_id: string; reference: string; amount_centavos: number; recipient_name: string; recipient_phone: string; status: string; reason: string | null };
 
 export function GCashSettings() {
@@ -39,20 +40,23 @@ export function GCashSettings() {
           p_phone: f.get('phone'),
           p_instructions: f.get('instructions'),
           p_enabled: f.get('enabled') === 'on',
-          p_qr_url: f.get('qr_code_url') || null
+          p_qr_url: f.get('qr_code_url') || null,
+          p_recipient_verified: f.get('recipient_verified') === 'on'
         });
       }}>
         <Field label="GCash recipient name" name="name" required minLength={2} maxLength={100} defaultValue={q.data?.recipient_name || ''} />
         <Field label="GCash mobile number" name="phone" type="tel" pattern="09[0-9]{9}" placeholder="09xxxxxxxxx" required defaultValue={q.data?.recipient_phone || ''} />
         <Field label="Custom GCash QR image URL (optional)" name="qr_code_url" placeholder="https://... or data URL (leave blank to auto-generate)" defaultValue={q.data?.qr_code_url || ''} />
         <Textarea label="Payment instructions" name="instructions" maxLength={1000} defaultValue={q.data?.instructions || ''} />
-        <label className="check-field"><input name="enabled" type="checkbox" defaultChecked={q.data?.enabled ?? true} /><span>Enable GCash payments</span></label>
+        <Notice>{q.data?.recipient_verified_at ? 'Recipient verification is recorded. Changing the recipient name, number or QR requires verification again.' : 'Payments remain disabled until an administrator verifies the recipient in GCash.'}</Notice>
+        <label className="check-field"><input name="recipient_verified" type="checkbox" /><span>I checked the recipient name and mobile number in GCash and tested any supplied QR.</span></label>
+        <label className="check-field"><input name="enabled" type="checkbox" defaultChecked={q.data?.enabled ?? false} /><span>Enable GCash payments</span></label>
       </MutationForm>
 
       {previewQr && (
         <div style={{ marginTop: '20px', padding: '16px', background: '#0e1713', border: '1px solid #1f3323', borderRadius: '12px', textAlign: 'center' }}>
           <p className="eyebrow" style={{ color: '#27ae60', marginBottom: '8px' }}>GCash Scannable QR Code Preview</p>
-          <img src={previewQr} alt="GCash QR Preview" style={{ width: 160, height: 160, borderRadius: 8, margin: '0 auto', display: 'block', background: '#ffffff', padding: '6px' }} />
+          <Image unoptimized width={160} height={160} src={previewQr} alt="GCash QR Preview" style={{ width: 160, height: 160, borderRadius: 8, margin: '0 auto', display: 'block', background: '#ffffff', padding: '6px' }} />
           <p className="small muted" style={{ marginTop: '8px' }}>{q.data?.recipient_name} · {q.data?.recipient_phone}</p>
         </div>
       )}
@@ -80,7 +84,7 @@ export function GCashPayment({ bookingId, completed }: { bookingId: string; comp
   const pending = data?.submissions.some(s => s.status === 'pending');
 
   useEffect(() => {
-    if (data?.settings?.enabled && data.settings.recipient_phone) {
+    if (data?.settings?.enabled && data.settings.recipient_verified_at && data.settings.recipient_phone) {
       if (data.settings.qr_code_url) {
         const url = data.settings.qr_code_url;
         queueMicrotask(() => setQrCodeUrl(url));
@@ -115,7 +119,7 @@ export function GCashPayment({ bookingId, completed }: { bookingId: string; comp
           <Notice>Refund recorded.</Notice>
         ) : !completed ? (
           <Notice>GCash payment opens after the provider completes your service. Do not send payment yet.</Notice>
-        ) : !data.settings?.enabled ? (
+        ) : !data.settings?.enabled || !data.settings.recipient_verified_at ? (
           <Notice>GCash is not enabled. Contact support for payment instructions.</Notice>
         ) : (
           <>
@@ -137,7 +141,7 @@ export function GCashPayment({ bookingId, completed }: { bookingId: string; comp
 
               {qrCodeUrl ? (
                 <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
-                  <img src={qrCodeUrl} alt="GCash Scannable QR Code" style={{ width: '180px', height: '180px', display: 'block', borderRadius: '6px' }} />
+                  <Image unoptimized width={180} height={180} src={qrCodeUrl} alt="GCash Scannable QR Code" style={{ width: '180px', height: '180px', display: 'block', borderRadius: '6px' }} />
                 </div>
               ) : (
                 <div style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1b2a1e', borderRadius: '8px' }}>

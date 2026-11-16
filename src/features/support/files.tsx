@@ -37,6 +37,7 @@ export function FileList({
   const q = useQuery('files-' + JSON.stringify(filters), () => list('files', filters), !!(bookingId || caseId || ownerId));
   return <QueryState {...q}><div className="stack" style={{ gap: 12 }}>{q.data?.map(f => {
       const info = parseDocInfo(String(f.original_name));
+      const category = VERIFICATION_DOC_CATEGORIES.find(item => item.id === f.verification_category);
       return <div className="row between" key={String(f.id)} style={{
         padding: '12px 14px',
         borderRadius: 8,
@@ -45,7 +46,7 @@ export function FileList({
         alignItems: 'center',
         gap: 12,
         flexWrap: 'wrap'
-      }}><div className="stack" style={{ gap: 4, minWidth: 200, flex: 1 }}><div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>{info.isCategorized && <Badge>{info.badge}</Badge>}<strong>{info.title}</strong></div><span className="small muted">{(Number(f.byte_size) / 1024).toFixed(0)} KB · {f.mime_type === 'application/pdf' ? 'PDF Document' : 'Image'}</span></div><div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><ActionButton secondary action={async () => {
+      }}><div className="stack" style={{ gap: 4, minWidth: 200, flex: 1 }}><div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>{f.kind === 'verification' ? <Badge>{category?.badge || 'Category required — upload again'}</Badge> : info.isCategorized && <Badge>{info.badge}</Badge>}<strong>{info.title}</strong></div><span className="small muted">{(Number(f.byte_size) / 1024).toFixed(0)} KB · {f.mime_type === 'application/pdf' ? 'PDF Document' : 'Image'}</span></div><div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><ActionButton secondary action={async () => {
               const {
                 url
               } = await edge<{
@@ -85,8 +86,11 @@ export function UploadForm({
     const file = f.get('file');
     if (!(file instanceof File) || !file.size) throw new Error('Select a file.');
     let uploadFile = file;
+    let verificationCategory = '';
     if (kind === 'verification') {
       const category = String(f.get('doc_category') || 'Government ID').trim();
+      verificationCategory = VERIFICATION_DOC_CATEGORIES.find(item => item.badge === category)?.id || '';
+      if (!verificationCategory) throw new Error('Choose a valid credential category.');
       const title = String(f.get('doc_title') || '').trim();
       const formattedName = formatVerificationFileName(category, title, file.name);
       uploadFile = new File([file], formattedName, { type: file.type });
@@ -94,6 +98,7 @@ export function UploadForm({
     const body = new FormData();
     body.set('file', uploadFile);
     body.set('kind', kind);
+    if (verificationCategory) body.set('verification_category', verificationCategory);
     if (bookingId) body.set('booking_id', bookingId);
     if (caseId) body.set('case_id', caseId);
     await edge('files', body);

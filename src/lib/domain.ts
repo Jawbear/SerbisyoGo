@@ -206,14 +206,11 @@ export function formatVerificationFileName(categoryBadge: string, title: string,
   return `[${categoryBadge}] ${cleanTitle || 'document'}${ext}`;
 }
 
-export function checkVerificationCompleteness(files: { original_name: string }[]) {
-  const parsed = files.map(f => parseDocInfo(String(f.original_name)));
-
-  const hasGovId = parsed.some(p => p.badge === 'Government ID');
-  const hasProfProof = parsed.some(
-    p => p.category?.isProfessionalProof || ['TESDA NC II', 'TESDA NC I', 'TESDA COC', 'PRC License', 'Training Cert', 'Employment Proof', 'Proof of Profession'].includes(p.badge)
-  );
-  const hasClearance = parsed.some(p => p.badge === 'Clearance');
+export function checkVerificationCompleteness(files: { original_name: string; verification_category?: string | null }[]) {
+  const categories = files.map(file => VERIFICATION_DOC_CATEGORIES.find(category => category.id === file.verification_category));
+  const hasGovId = categories.some(category => category?.id === 'gov_id');
+  const hasProfProof = categories.some(category => category?.isProfessionalProof);
+  const hasClearance = categories.some(category => category?.id === 'clearance');
 
   const totalUploaded = files.length;
   const isComplete = hasGovId && hasProfProof && hasClearance;

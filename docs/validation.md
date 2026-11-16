@@ -1,5 +1,10 @@
 # Validation report
 
+17 November continuation: [staging validation](staging-validation-2026-11-17.md)
+records the current isolated Supabase, APK and mobile CI evidence. It supersedes
+the older environment limitations below. Production rollout and physical-phone
+checks remain separate.
+
 12 November cover-photo follow-up: supplied cabinet, plumbing, appliance, air-conditioning and carpentry photos now appear on the website and mobile Home/service browsing screens. Optimized JPEGs total 406,997 bytes per platform; the mobile copies are bundled for offline display. The existing dark green palette remains. TypeScript, website/mobile lint, three focused mobile browser navigation/update checks, the 320px website category layout check and live website photo-loading/overflow checks at 390px and 1440px passed. Website and native Android Home screenshots were reviewed; the signed 0.3.1 APK passed startup, discovery and hardware Back checks on the dedicated Android 15 emulator. The actual released 0.3.0 to 0.3.1 in-app upgrade also passed, including Android confirmation and retained private data. The automation initially tapped an offscreen control; corrected scrolling allowed the same downloaded APK to complete installation. Physical-phone testing remains pending.
 
 The [11 November functionality audit](functionality-audit.md) is the latest validation record. It includes actual read-only development-backend checks, customer/provider/admin browser reads, and fixes for sign-in return navigation and protected-page hydration. The older results and environment limitations below are retained as validation history; refer to the new audit for current scope and remaining gaps.
@@ -105,3 +110,49 @@ hosted setting, SMTP credential, policy approval or deployment was changed.
   rendered homepage is older than the current source. It was not redeployed.
 - Physical-phone testing remains pending. The acceptance document now includes a
   laptop-browser and Android-emulator substitute with a test-record template.
+# Account identity and administrator navigation continuation — 2026-11-17
+
+The subsequent broader audit is recorded in
+[full-project-audit-2026-11-17.md](full-project-audit-2026-11-17.md), including
+current fixes, measured bundle reduction, browser reruns, public APK 404 evidence,
+dependency results and remaining backend/device verification.
+
+- Web TypeScript check and production static export passed.
+- Web Node suite: 22 passed, including the account audit regression test now
+  included in `npm test`. Mobile Node suite: 16 passed.
+- Web lint passed with two existing `no-img-element` warnings in `gcash.tsx`.
+  Mobile lint passed after removing unused imports/results and using
+  `globalThis.window` for web-only OAuth origin detection.
+- All 16 authentication/navigation browser checks passed on desktop and mobile
+  against the production export, using installed Chrome via
+  `E2E_BROWSER_CHANNEL=chrome`. These intercept Auth/API calls and create no
+  hosted accounts. They cover duplicate email/name rejection, availability
+  failure, registration normalization, return destinations and admin navigation.
+- Mobile registration now propagates availability errors and rejects malformed
+  responses before signup. Native signup was not exercised on a device.
+- Local database tests could not connect to `127.0.0.1:54322`; Docker is not
+  available on PATH. The new identity migration and pgTAP tests remain unverified
+  at runtime. No hosted migration, Edge Function or website was deployed during
+  this continuation.
+
+## Payment defaults and provider credentials — 2026-11-17
+
+The follow-up now applies all 20 migrations and the actual pgTAP tests to an
+isolated embedded PostgreSQL instance without Docker: **168 assertions passed**.
+The runner emulates Supabase Auth/Storage SQL schemas; live service HTTP tests
+remain a separate integration check.
+
+Payment-recipient verification, changes to verified recipients, old RPC bypass
+attempts, provider credential groups, services, availability, approval and
+reactivation are covered. A successful-approval test exposed an existing
+ambiguous SQL `reason` reference, corrected by migration 20.
+
+Web TypeScript, web/mobile lint, 25 web Node tests, 16 mobile Node tests, production
+export and all three Edge Function type checks passed. Six focused web browser
+checks and three focused mobile browser checks passed after the changes.
+See [payment-credential-hardening.md](payment-credential-hardening.md) for rollout
+effects: existing wallets require re-verification; older uncategorized documents
+remain readable but require resubmission to count toward approval.
+
+These are local source/test changes. Hosted migrations, Edge Functions, website
+and APK have not been published by this continuation.

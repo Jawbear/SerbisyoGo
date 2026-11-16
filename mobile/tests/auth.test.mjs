@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeMobile, registration, validatePassword } from '../src/auth.js';
 
 test('registration normalizes shared account fields without accepting privileged roles', () => {
-  const data = registration({ name: ' Test User ', email: ' tester@example.test ', phone: '09171234567', password: 'TestPassword123!', confirm: 'TestPassword123!', consent: true, role: 'admin' });
+  const data = registration({ name: ' Test\t User ', email: ' TESTER@example.test ', phone: '09171234567', password: 'TestPassword123!', confirm: 'TestPassword123!', consent: true, role: 'admin' });
   assert.equal(data.email, 'tester@example.test');
   assert.deepEqual(data.data, { full_name: 'Test User', phone: '+639171234567', consent: true });
   assert.equal(normalizeMobile('+63 917 123 4567'), '+639171234567');

@@ -19,7 +19,7 @@ export function RegisterScreen({ navigation }) {
     await action.run(async () => {
       if (!liveAvailable || !supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
       if (Platform.OS === 'web') {
-        const redirect = typeof window !== 'undefined' ? `${window.location.origin}` : `${websiteUrl}/dashboard/`;
+        const redirect = globalThis.window?.location?.origin || `${websiteUrl}/dashboard/`;
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -76,26 +76,17 @@ export function RegisterScreen({ navigation }) {
           <View style={s.flex}>
             <Button title="Create account" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
               const input = registration(values);
-              if (supabase) {
-                try {
-                  const { data: availability } = await supabase.rpc('check_registration_availability', {
-                    p_email: input.email,
-                    p_full_name: input.data.full_name
-                  });
-                  if (availability && !availability.available) {
-                    if (availability.field === 'email' || availability.error?.toLowerCase().includes('email')) {
-                      throw new Error('This email address is already in use or registered. Please sign in or use another email.');
-                    }
-                    if (availability.field === 'name' || availability.error?.toLowerCase().includes('name')) {
-                      throw new Error('This name is already taken. Please choose a unique name.');
-                    }
-                    throw new Error(availability.error || 'Registration details are not available.');
-                  }
-                } catch (checkErr) {
-                  if (checkErr.message?.includes('already in use') || checkErr.message?.includes('already taken')) {
-                    throw checkErr;
-                  }
-                }
+              if (!supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
+              const { data: availability, error: checkError } = await supabase.rpc('check_registration_availability', {
+                p_email: input.email,
+                p_full_name: input.data.full_name
+              });
+              if (checkError) throw checkError;
+              if (!availability || typeof availability.available !== 'boolean') {
+                throw new Error('Unable to check account details. Please try again.');
+              }
+              if (!availability.available) {
+                throw new Error(availability.error || 'This email or full name is already registered.');
               }
               const { data, error } = await supabase.auth.signUp({ email: input.email, password: input.password, options: { data: input.data, emailRedirectTo: callback() } });
               if (error) {
@@ -104,7 +95,7 @@ export function RegisterScreen({ navigation }) {
                   throw new Error('This email address is already in use or registered. Please sign in or use another email.');
                 }
                 if (msg.includes('profiles_full_name_unique_idx') || (msg.includes('name') && msg.includes('unique'))) {
-                  throw new Error('This name is already taken. Please choose a unique name.');
+                  throw new Error('This full name is already registered. Shared first names are allowed; the full name must be different.');
                 }
                 throw error;
               }
@@ -147,7 +138,7 @@ export function VerifyEmailScreen({ navigation, route }) {
         <Button title="Verify code & sign in" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
           if (!email.trim()) throw new Error('Enter your email address.');
           if (!token.trim()) throw new Error('Enter the 6-digit verification code.');
-          let { data, error } = await supabase.auth.verifyOtp({
+          const { error } = await supabase.auth.verifyOtp({
             email: email.trim(),
             token: token.trim(),
             type: 'signup'
@@ -159,7 +150,6 @@ export function VerifyEmailScreen({ navigation, route }) {
               type: 'email'
             });
             if (retry.error) throw new Error(error.message || retry.error.message || 'Invalid or expired verification code.');
-            data = retry.data;
           }
           navigation.replace('Home');
         })} />

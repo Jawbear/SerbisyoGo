@@ -38,6 +38,9 @@ Deno.serve(async req=>{
   if(action==='create'){
    const name=text(body.full_name,'Full name',2,100),address=email(body.email),mobile=phone(body.phone),secret=password(body.password);
    const role=String(body.role||'customer');if(!['customer','admin'].includes(role))throw new Error('Create a customer account first; provider approval uses the verification workflow');
+   const availability=unwrap(await user.rpc('check_registration_availability',{p_email:address,p_full_name:name}));
+   if(!availability||typeof availability.available!=='boolean')throw new Error('Unable to check account details. Please try again.');
+   if(!availability.available)throw new Error(availability.error||'This email or full name is already registered.');
    const id=crypto.randomUUID();unwrap(await user.rpc('admin_account_auth_guard',{p_id:id,p_action:'account_created',p_reason:reason}));
    const created=await privileged.auth.admin.createUser({id,email:address,password:secret,email_confirm:body.email_verified===true,user_metadata:{full_name:name}});authOk(created);
    const createdUser=created.data.user;if(!createdUser)throw new Error('The account could not be created');

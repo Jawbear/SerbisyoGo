@@ -24,7 +24,7 @@ select ok(not has_table_privilege('authenticated','public.gcash_settings','UPDAT
 select ok(not has_function_privilege('anon','public.review_gcash_receipt(uuid,boolean,text)','EXECUTE'),'anonymous receipt review is denied');
 select set_config('request.jwt.claim.sub','91000000-0000-4000-8000-000000000003',true);
 set local role authenticated;
-select lives_ok($$select public.save_gcash_settings('Fictional Test Wallet','09171234567','Testing only',true)$$,'admin can configure GCash');
+select lives_ok($$select public.save_gcash_settings('Fictional Test Wallet','09171234567','Testing only',true,null,true)$$,'admin can configure and verify GCash');
 reset role;
 select set_config('request.jwt.claim.sub','91000000-0000-4000-8000-000000000002',true);
 set local role authenticated;

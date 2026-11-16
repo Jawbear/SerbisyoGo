@@ -4,6 +4,16 @@ import { installBackend, signIn } from '../fixtures/backend.mjs';
 const test = base.extend({ backend: async ({ page }, provideFixture) => { await provideFixture(await installBackend(page)); } });
 test.beforeEach(async ({ backend }) => { expect(backend.bookings).toEqual([]); });
 
+test('provider credentials sign-in returns to the application screen', async ({ page }) => {
+  await page.route(/\/rest\/v1\/(provider_applications|files)(\?|$)/, route => route.fulfill({ json: [] }));
+  await page.goto('/provider/verification');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await signIn(page);
+  const screen = page.getByTestId('screen-ProviderVerification').filter({ visible: true });
+  await expect(screen).toBeVisible();
+  await expect(screen.getByText('Credentials & Documents', { exact: true })).toBeVisible();
+});
+
 async function openReview(page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Browse Plumbing', exact: true }).click();

@@ -34,6 +34,7 @@
   "terms": "terms",
   "admin/login": "admin-login",
   "admin": "admin-dashboard",
+  "admin/accounts": "admin-accounts",
   "admin/providers": "admin-providers",
   "admin/customers": "admin-customers",
   "admin/bookings": "admin-bookings",

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
-import { liveAvailable, supabase, websiteUrl } from '../data/backend';
+import { supabase, websiteUrl } from '../data/backend';
 import { useAction } from '../hooks';
 import { colors as c } from '../theme';
 import { Button, Card, Field, GoogleButton, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
-const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages']);
+const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages', 'ProviderVerification']);
 
 export default function SignInScreen({ navigation, route }) {
   const { signIn, liveAvailable } = useApp();
@@ -28,7 +28,7 @@ export default function SignInScreen({ navigation, route }) {
     await action.run(async () => {
       if (!liveAvailable || !supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
       if (Platform.OS === 'web') {
-        const redirect = typeof window !== 'undefined' ? `${window.location.origin}` : `${websiteUrl}/dashboard/`;
+        const redirect = globalThis.window?.location?.origin || `${websiteUrl}/dashboard/`;
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {

@@ -9,9 +9,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs tests/local-inbox.test.ts",
+    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs tests/local-inbox.test.ts tests/account-audit.test.mjs tests/cors.test.ts tests/deployment-readiness.test.mjs tests/upload-stream.test.ts",
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
+    "test:db:embedded": "node scripts/test-db-embedded.mjs",
+    "apk:verify:published": "node --experimental-strip-types scripts/verify-published-apk.mjs",
     "deploy:guide": "node scripts/production-deploy.mjs",
     "deploy:check": "node --experimental-strip-types --env-file=.env.production.local scripts/production-deploy.mjs --check --require-build",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
@@ -29,22 +31,24 @@
     "admin:provision": "node --env-file=.env.local scripts/provision-admin.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.0",
     "@fontsource/plus-jakarta-sans": "^5.2.6",
+    "@supabase/supabase-js": "^2.57.0",
     "@tailwindcss/postcss": "^4.1.13",
-    "tailwindcss": "^4.1.13",
-    "next": "^16.0.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "fflate": "^0.8.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
     "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "recharts": "^3.1.2",
     "server-only": "^0.0.1",
-    "zod": "^4.1.5",
-    "fflate": "^0.8.2"
+    "tailwindcss": "^4.1.13",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@electric-sql/pglite-pgtap": "^0.0.17",
     "@playwright/test": "^1.55.0",
     "@types/leaflet": "^1.9.20",
     "@types/node": "^22.18.0",
@@ -56,5 +60,7 @@
     "supabase": "^2.39.2",
     "typescript": "^5.9.2"
   },
-  "engines": { "node": ">=22.19.0" }
+  "engines": {
+    "node": ">=22.19.0"
+  }
 }

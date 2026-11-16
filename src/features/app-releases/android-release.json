@@ -1,12 +1,12 @@
 {
-  "version_name": "0.3.1",
-  "version_code": 4,
+  "version_name": "0.4.1",
+  "version_code": 6,
   "min_android": "7.0",
-  "published_at": "2026-11-11T23:59:57Z",
-  "byte_size": 53680280,
-  "sha256": "eb1f522d2816985e414b73fb257f36ab8d66507972c0c08f699670e700e33f9d",
-  "release_notes": "Signed Android release with verified installation and in-app update support.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.1/SerbisyoGo-0.3.1.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.3.1",
-  "source_commit": "9af9556e6e5c8ca28d5f718b5802cd547779f833"
+  "published_at": "2026-11-16T22:51:31Z",
+  "byte_size": 53428876,
+  "sha256": "c0a9e0415e94965d751e9f9b311e1696ba357fcbaaf9a6e3a4cc08e5853aa760",
+  "release_notes": "Updated account registration, verified payment setup and provider credential uploads. Signed Android build with emulator installation and navigation checks passed. Physical-phone testing remains pending.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.4.1/SerbisyoGo-0.4.1.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.4.1",
+  "source_commit": "94dfa7aba52e17671a1fdc9d6757106a9fc81336"
 }

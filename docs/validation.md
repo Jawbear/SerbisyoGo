@@ -1,5 +1,8 @@
 # Validation report
 
+The [17 November update rollout](release-2026-11-17.md) records the subsequent
+main-branch push, hosted migrations/Edge Functions and Android publication status.
+
 17 November continuation: [staging validation](staging-validation-2026-11-17.md)
 records the current isolated Supabase, APK and mobile CI evidence. It supersedes
 the older environment limitations below. Production rollout and physical-phone

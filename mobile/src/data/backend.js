@@ -57,6 +57,7 @@ async function serviceContext(serviceId) {
   return provider ? { provider, service } : null;
 }
 export const liveApi = {
+  publicContact: () => result(db().rpc('public_settings')),
   catalog: async () => {
     const [categories, providers, services] = await Promise.all([
       result(db().from('categories').select('*').eq('active', true).order('name')),
@@ -135,12 +136,13 @@ export const liveApi = {
   sendMessage: (conversationId, body, nonce) => result(db().rpc('send_message', { p_conversation: conversationId, p_body: body.trim(), p_nonce: nonce })),
   providerVerification: async userId => {
     if (!userId) return null;
-    const [profile, applications, files] = await Promise.all([
+    const [profile, applications, files, credentialReviews] = await Promise.all([
       result(db().from('provider_profiles').select('*').eq('id', userId).maybeSingle()),
       result(db().from('provider_applications').select('*').eq('provider_id', userId).order('created_at', { ascending: false })),
-      result(db().from('files').select('*').eq('owner_id', userId).eq('kind', 'verification').order('created_at', { ascending: false }))
+      result(db().from('files').select('*').eq('owner_id', userId).eq('kind', 'verification').order('created_at', { ascending: false })),
+      result(db().from('provider_credential_reviews').select('kind,file_id,reviewed_at').eq('provider_id', userId))
     ]);
-    return { profile, applications: applications || [], files: files || [] };
+    return { profile, applications: applications || [], files: files || [], credentialReviews: credentialReviews || [] };
   },
   submitProviderApplication: profile => result(db().rpc('submit_provider', { p_profile: profile })),
   uploadVerificationDoc: async (asset, formattedName, category) => {

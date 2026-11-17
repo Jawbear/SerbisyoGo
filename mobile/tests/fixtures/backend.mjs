@@ -40,6 +40,7 @@ export async function installBackend(page) {
     let data;
     if (table === 'user_context') data = { profile: { id: user.id, full_name: 'Test Account', status: 'active' }, role: state.role };
     else if (table === 'is_admin') data = state.role==='admin';
+    else if (table === 'public_settings') data = {support_email:'support@example.test',fee_centavos:5000,commission_bps:1000};
     else if (table === 'check_registration_availability') data = { available: true };
     else if (table === 'available_slots') data = [8, 10, 13].map(hour => ({ starts_at: new Date(`${body.p_day}T${String(hour).padStart(2, '0')}:00:00+08:00`).toISOString() }));
     else if (table === 'save_booking_draft') {
@@ -61,7 +62,7 @@ export async function installBackend(page) {
       }
       data = booking.id;
     } else {
-      const tables = { categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_profiles: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
+      const tables = { provider_credential_reviews: [], categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_profiles: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
       if (!(table in tables)) throw new Error(`Unexpected backend call: ${table}`);
       if (state.failCatalog && table === 'categories') return route.fulfill({ status: 503, json: { message: 'Services are temporarily unavailable.' } });
       let rows = tables[table];

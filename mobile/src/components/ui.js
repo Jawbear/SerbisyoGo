@@ -59,12 +59,17 @@ export function ProviderAvatar({ provider, large = false }) {
   return image && !failed ? <Image accessibilityLabel={`${provider.display_name} profile photo`} source={{ uri: image }} onError={() => setFailed(true)} style={[s.avatar, large && s.avatarLarge]} /> : <View style={[s.avatar, large && s.avatarLarge]}><Icon name="person-outline" size={large ? 34 : 24} /></View>;
 }
 
+export function ProviderTrustBadges({provider}) {
+ const badges=provider?.trust_badges;
+ return <View style={[s.row,{flexWrap:'wrap'}]}>{badges?.identity_reviewed===true&&<Badge>Identity reviewed</Badge>}{badges?.skills_reviewed===true&&<Badge>{badges.skills_label||'Skills credential reviewed'}</Badge>}</View>;
+}
+
 export function ProviderCard({ provider }) {
   const navigation = useNavigation();
   return <Pressable accessibilityRole="button" accessibilityLabel={`View ${provider.display_name}`} onPress={() => navigation.navigate('ProviderDetails', { providerId: provider.id })} style={({ pressed }) => [s.card, { gap: 16 }, pressed && { borderColor: c.green }]}>
     <View style={s.row}><ProviderAvatar provider={provider} /><View style={s.flex}><Text style={s.providerName}>{provider.display_name}</Text><Muted>{provider.headline}</Muted></View><Icon name="arrow-forward-outline" size={18} /></View>
     <View style={s.between}><View style={s.inline}><Icon name="location-outline" size={14} color={c.muted} /><Muted>{provider.city}</Muted></View>{Number(provider.review_count) > 0 ? <Text style={s.rating}>★ {Number(provider.rating).toFixed(1)} <Text style={{ color: c.muted }}>({provider.review_count})</Text></Text> : <Badge>New professional</Badge>}</View>
-    <View style={s.cardFoot}><Muted>Starting from</Muted><Text style={s.price}>{money(provider.min_rate || 0)}</Text></View>
+    <ProviderTrustBadges provider={provider}/><View style={s.cardFoot}><Muted>Starting from</Muted><Text style={s.price}>{money(provider.min_rate || 0)}</Text></View>
   </Pressable>;
 }
 

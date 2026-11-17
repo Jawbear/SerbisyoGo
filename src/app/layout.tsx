@@ -10,6 +10,7 @@ import './globals.css';
 import './theme.css';
 import './responsive.css';
 import './public-layout.css';
+import './information.css';
 import { SessionProvider } from '@/components/session';
 import { Shell } from '@/components/shell';
 import { config } from '@/lib/config';

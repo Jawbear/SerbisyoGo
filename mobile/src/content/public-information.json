@@ -1,0 +1,73 @@
+{
+  "pages": {
+    "how-it-works": {
+      "title": "Good work starts with a clear plan.",
+      "eyebrow": "How it works",
+      "intro": "From the first search to the final review, keep your home service in one place with SerbisyoGo.",
+      "sections": [
+        {"title":"Find a local professional","body":"Explore service categories, compare profiles and read feedback from completed bookings. Identity and skills badges describe different document reviews."},
+        {"title":"Describe the task and choose a time","body":"Select a service, explain what needs attention and request an available appointment. For quotation-based work, accept the provider’s final quotation before confirming."},
+        {"title":"Agree on the details","body":"Your provider accepts the request. Use the booking conversation to confirm access, scope, materials and any changes before work starts."},
+        {"title":"Follow the appointment","body":"See booking status updates. Live location is available only during eligible active jobs when the assigned provider chooses to share it."},
+        {"title":"Check the work and payment record","body":"Review the completed job and invoice. Follow the payment options shown in your booking; a service request does not automatically charge you."},
+        {"title":"Leave useful feedback","body":"After completion, the booking customer can submit a review. If something needs attention, open a support case with the booking details."}
+      ]
+    },
+    "for-clients": {
+      "title": "A helping hand for the home you care for.",
+      "eyebrow": "For clients",
+      "intro": "Choose a professional, make the scope clear and keep the details of your next home service together.",
+      "sections": [
+        {"title":"Compare before you book","body":"Browse local services, starting rates, service areas and customer reviews. Open a profile to see its services and available appointment slots."},
+        {"title":"Understand the badges","body":"Identity reviewed means an administrator reviewed a government ID. A skills badge means a separate trade or professional credential was reviewed. Neither badge guarantees the result of a job."},
+        {"title":"Keep the price clear","body":"Review labor, the booking fee and the total before confirming. Estimated services require an accepted quotation. Agree on materials and extra work in the booking conversation."},
+        {"title":"Keep a record","body":"Messages, booking updates, the invoice and your review stay connected to the job. Submit payment references or receipts only through the controls available in your booking."},
+        {"title":"Get help with a concern","body":"Use Help & support to open a case, describe what happened and attach relevant evidence. Support replies appear in the case thread."}
+      ]
+    },
+    "for-workers": {
+      "title": "Bring your skills closer to home.",
+      "eyebrow": "For workers",
+      "intro": "Build a service profile for your community, set your availability and manage requests with SerbisyoGo.",
+      "sections": [
+        {"title":"Tell clients about your work","body":"Create an account and submit a provider profile with your specialty, experience, city and service areas."},
+        {"title":"Choose one accepted document","body":"Upload at least one accepted ID or credential for administrative review. You do not need every document listed. Extra certificates and portfolio evidence are optional."},
+        {"title":"Build trust with specific evidence","body":"An administrator may separately review a government ID for an identity badge and a trade or professional credential for a skills badge. Uploading a file does not automatically award a badge or approve your profile."},
+        {"title":"List services and working hours","body":"Add at least one active service with a clear rate and duration, then set your weekly availability. Your application stays pending until an administrator approves it."},
+        {"title":"Manage your requests","body":"Review incoming bookings, accept work that fits your schedule and discuss the scope in the booking conversation. Keep job status updates accurate."},
+        {"title":"Complete work and build your reputation","body":"Mark completed work correctly, keep payment records accurate and let completed-booking reviews show clients what to expect."}
+      ]
+    },
+    "faq": {
+      "title": "A little clarity goes a long way.",
+      "eyebrow": "Frequently asked questions",
+      "intro": "Answers about getting started, booking a service, provider documents, payments and support."
+    },
+    "contact": {
+      "title": "Let’s get you to the right help.",
+      "eyebrow": "Contact SerbisyoGo",
+      "intro": "A booking concern, an account question or a document review: start with the route that keeps your information in the right place.",
+      "sections": [
+        {"title":"An existing booking","body":"Open the booking conversation to discuss scope or scheduling with your provider. For a dispute or safety concern, open a support case linked to that booking."},
+        {"title":"Account or application help","body":"Sign in and open Help & support. Include a clear description and any relevant booking reference. Never send your password, GCash PIN or one-time codes."},
+        {"title":"Private documents","body":"Upload verification documents from your provider workspace. They are available to you and authorized administrators, rather than published on your public profile."}
+      ]
+    }
+  },
+  "faq": [
+    {"group":"Getting started","question":"What does SerbisyoGo do?","answer":"SerbisyoGo connects clients with local home service providers. You can compare services, request an appointment, exchange booking messages and keep service records together."},
+    {"group":"Getting started","question":"Can I use the website and Android app with one account?","answer":"Yes. Your account connects to the same service on the website and Android app. Download the published APK from the official SerbisyoGo download page."},
+    {"group":"Booking a service","question":"How do I request a service?","answer":"Find a professional, choose an active service, describe the task and select an available appointment. Review the address and price before submitting the request. The provider must accept it."},
+    {"group":"Booking a service","question":"Is the displayed estimate the final price?","answer":"For quotation-based services, the provider supplies a final labor quotation that you must accept before confirmation. Review the booking fee and total, and discuss any materials or changes before work starts."},
+    {"group":"Booking a service","question":"Can I track my provider?","answer":"Eligible active bookings can show live location when the assigned provider enables location sharing. Location is not continuously available and arrival estimates are not guaranteed."},
+    {"group":"Provider documents","question":"Do workers need to upload every document?","answer":"No. One accepted ID or credential is sufficient for submission readiness. Extra documents are optional. An administrator still reviews the application; active services and weekly availability are also required before approval."},
+    {"group":"Provider documents","question":"What does Identity reviewed mean?","answer":"An administrator reviewed a government ID submitted by that provider. It does not mean a TESDA certificate or trade qualification was reviewed."},
+    {"group":"Provider documents","question":"What does a skills badge mean?","answer":"An administrator separately reviewed a trade or professional credential. The label identifies its type, such as TESDA NC II or a PRC credential. A government ID alone does not award a skills badge."},
+    {"group":"Provider documents","question":"Are identity and skills documents both mandatory?","answer":"No. The one-document application rule remains. Identity and skills badges are optional, separate reviews of the relevant documents. A provider can have one, both or neither badge after application approval."},
+    {"group":"Payments","question":"Does requesting a booking charge me automatically?","answer":"No. Follow the payment instructions available in your booking. SerbisyoGo currently uses cash or administrator-reviewed manual payment records; an automatic payment gateway is not connected."},
+    {"group":"Payments","question":"How does GCash work?","answer":"GCash instructions appear only when an administrator has verified and enabled the recipient. If available, check the recipient and amount, then submit the reference or receipt through your booking. Uploading a receipt alone does not mark the payment as paid."},
+    {"group":"Support & privacy","question":"Who can see uploaded IDs and certificates?","answer":"Verification files are private to their owner and authorized administrators. Public profiles show only approved badge summaries, not the documents, document numbers or reviewer details."},
+    {"group":"Support & privacy","question":"How do I report a problem?","answer":"Open Help & support, select the booking if relevant and describe your concern. You can attach evidence after creating the case and read replies in its thread."},
+    {"group":"Support & privacy","question":"Can I cancel or get help with a payment dispute?","answer":"Cancellation options depend on the booking status. Open the booking to check available actions. For payment disputes, submit a support case so an administrator can review the job, messages and payment records. A refund is not automatic."}
+  ]
+}

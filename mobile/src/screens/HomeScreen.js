@@ -5,6 +5,8 @@ import { homeCover, serviceCover } from '../data/covers';
 import { colors as c, roleLabels } from '../theme';
 import { Badge, Button, Card, Icon, Label, Muted, Notice, ProviderGrid, Query, Screen, Section, s } from '../components/ui';
 
+import {informationLinks} from './InformationScreen';
+
 const categoryIcons = { zap: 'flash-outline', droplets: 'water-outline', hammer: 'hammer-outline', plug: 'construct-outline', wind: 'snow-outline', wrench: 'construct-outline' };
 
 export default function HomeScreen({ navigation }) {
@@ -41,6 +43,7 @@ export default function HomeScreen({ navigation }) {
       </Section>
       <Section title="A reliable helping hand"><ProviderGrid providers={query.data.providers.slice(0, 4)} /><Button title="See all professionals" secondary onPress={() => navigation.navigate('FindProfessionals', { categoryId: '' })} /></Section>
     </>}</Query>
+    <Card style={s.stack}><Label>Explore SerbisyoGo</Label><Text style={s.sectionTitle}>A clear start, for everyone.</Text><View style={[s.row,{flexWrap:'wrap'}]}>{informationLinks.map(([page,label])=><Button key={page} title={label} secondary onPress={()=>navigation.navigate('Information',{page})}/>)}</View></Card>
     <Card style={s.stack}><Label>Your service records</Label><Text style={s.sectionTitle}>A little less to worry about.</Text><Muted>Review requests you have saved and keep your next appointment close at hand.</Muted><Button title="Open my bookings" secondary icon="calendar-outline" onPress={() => navigation.navigate('MyBookings')} /></Card>
     {app.identity?.role === 'provider' ? (
       <Card style={s.stack}>

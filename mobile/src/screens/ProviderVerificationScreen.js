@@ -73,6 +73,7 @@ export default function ProviderVerificationScreen({ navigation }) {
                   <View style={styles.checklist}>{VERIFICATION_DOC_CATEGORIES.filter(category => category.id !== 'other_proof').map(category => <Text key={category.id} style={styles.checkTitle}>• {category.name}</Text>)}</View><Muted>Work photos and portfolio evidence are optional supporting documents.</Muted>
                 </Card>
 
+                <Card style={s.stack}><Text style={s.sectionTitle}>Separate document reviews</Text><Muted>These optional reviews are independent from application approval. Uploading a document does not automatically grant a public badge.</Muted><Badge>Identity: {data.credentialReviews?.some(row=>row.kind==='identity')?'Review recorded':'Not reviewed'}</Badge><Badge>Skills: {data.credentialReviews?.some(row=>row.kind==='skills')?'Review recorded':'Not reviewed'}</Badge></Card>
                 {/* Upload Form Card */}
                 <Card style={s.stack}>
                   <Text style={s.sectionTitle}>Upload Credential Document</Text>

@@ -32,9 +32,14 @@ adb('shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.roun
 await waitForText('Search professionals');
 adb('shell', 'input', 'keyevent', '4');
 await waitForText('Find a professional');
+for (const [page, heading] of [['faq', 'A little clarity goes a long way.'], ['for-workers', 'Bring your skills closer to home.']]) {
+  adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW', '-d', `serbisyogo://info/${page}`, metadata.packageName);
+  await waitForText(heading);
+  writeFileSync(`builds/android-${page}.png`, execFileSync('adb', ['-e', 'exec-out', 'screencap', '-p']));
+}
 if (!adb('shell', 'pidof', metadata.packageName).trim()) throw new Error('The app process stopped after navigation.');
 const crashes = adb('logcat', '-d', '-b', 'crash');
 if (crashes.includes(metadata.packageName)) throw new Error('The Android crash buffer contains an application crash.');
-metadata.emulatorSmoke = { api: Number(adb('shell', 'getprop', 'ro.build.version.sdk').trim()), abi: adb('shell', 'getprop', 'ro.product.cpu.abi').trim(), installed: true, launchedWithoutMetro: true, publicNavigation: true, hardwareBack: true, physicalDeviceTested: false };
+metadata.emulatorSmoke = { api: Number(adb('shell', 'getprop', 'ro.build.version.sdk').trim()), abi: adb('shell', 'getprop', 'ro.product.cpu.abi').trim(), installed: true, launchedWithoutMetro: true, publicNavigation: true, hardwareBack: true, publicGuides: true, physicalDeviceTested: false };
 writeFileSync('builds/build-metadata.json', JSON.stringify(metadata, null, 2) + '\n');
 console.log('Installed release APK, opened Home, navigated to discovery and returned with Android Back without Metro.');

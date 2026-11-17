@@ -44,5 +44,10 @@
   "admin/reports": "admin-reports",
   "admin/complaints": "admin-complaints",
   "admin/announcements": "admin-announcements",
-  "admin/settings": "admin-settings"
+  "admin/settings": "admin-settings",
+  "how-it-works": "how-it-works",
+  "for-clients": "for-clients",
+  "for-workers": "for-workers",
+  "faq": "faq",
+  "contact": "contact"
 }

@@ -42,6 +42,19 @@ test('one real credential upload permits admin review without requiring other gr
  const pending=await applicant.from('provider_profiles').select('status').eq('id',fixtures.accounts.pendingProvider.id).single();expect(pending.data?.status).toBe('pending');
  expect((await applicant.rpc('admin_action',review)).error).toBeTruthy();expect((await admin.rpc('admin_action',review)).error).toBeNull();
  const context=await applicant.rpc('user_context');expect(context.data?.role).toBe('provider');
+ // Badge reviews are explicit and independent from application approval.
+ const providerId=fixtures.accounts.pendingProvider.id;
+ const badges=async()=>{const r=await client().from('public_providers').select('trust_badges').eq('id',providerId).single();expect(r.error).toBeNull();return r.data!.trust_badges;};
+ expect((await badges()).identity_reviewed).toBe(false);
+ expect((await applicant.rpc('review_provider_credential',{p_provider:providerId,p_file:uploaded.id,p_kind:'identity',p_verified:true,p_reason:'Self review must be denied'})).error).toBeTruthy();
+ expect((await admin.rpc('review_provider_credential',{p_provider:providerId,p_file:uploaded.id,p_kind:'identity',p_verified:true,p_reason:'Reviewed fictional staging identity fixture'})).error).toBeNull();
+ expect((await badges()).identity_reviewed).toBe(true);expect((await badges()).skills_reviewed).toBe(false);
+ expect((await admin.rpc('review_provider_credential',{p_provider:providerId,p_file:uploaded.id,p_kind:'skills',p_verified:true,p_reason:'An ID must not count as a trade certificate'})).error).toBeTruthy();
+ const skillResponse=await upload('tesda_nc2');const skillFile=await skillResponse.json();expect(skillResponse.ok).toBe(true);
+ expect((await admin.rpc('review_provider_credential',{p_provider:providerId,p_file:skillFile.id,p_kind:'skills',p_verified:true,p_reason:'Reviewed fictional staging skills fixture'})).error).toBeNull();
+ expect((await badges()).skills_label).toBe('TESDA NC II reviewed');
+ const removedId=await fetch(`${url}/functions/v1/files?id=${uploaded.id}`,{method:'DELETE',headers});expect(removedId.ok).toBe(true);
+ expect((await badges()).identity_reviewed).toBe(false);expect((await badges()).skills_reviewed).toBe(true);
  const extra=await upload('business_permit');const file=await extra.json();expect(extra.ok,JSON.stringify(file)).toBe(true);
  const preflight=await fetch(`${url}/functions/v1/files?id=${file.id}`,{method:'OPTIONS',headers:{Origin:'http://localhost:3000','Access-Control-Request-Method':'DELETE','Access-Control-Request-Headers':'authorization,apikey'}});expect(preflight.headers.get('access-control-allow-methods')).toContain('DELETE');
  const deletion=await fetch(`${url}/functions/v1/files?id=${file.id}`,{method:'DELETE',headers});expect(deletion.ok).toBe(true);

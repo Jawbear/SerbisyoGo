@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs tests/local-inbox.test.ts tests/account-audit.test.mjs tests/cors.test.ts tests/deployment-readiness.test.mjs tests/upload-stream.test.ts",
+    "test": "node --experimental-strip-types --test tests/domain.test.ts tests/development-seed.test.mjs tests/http.test.ts tests/development-accounts.test.mjs tests/local-inbox.test.ts tests/account-audit.test.mjs tests/cors.test.ts tests/deployment-readiness.test.mjs tests/upload-stream.test.ts tests/public-information.test.mjs",
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
     "test:db:embedded": "node scripts/test-db-embedded.mjs",

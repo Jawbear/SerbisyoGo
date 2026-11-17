@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import {CredentialReviews} from '@/features/providers/credential-reviews';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
@@ -498,6 +499,7 @@ function ProviderVerificationData({
         </div>
       </Card>
 
+      <CredentialReviews providerId={id} files={q.data?.files||[]} admin/>
       <Card>
         <h3>Services & availability</h3>
         <DataTable

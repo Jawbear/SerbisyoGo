@@ -6,6 +6,7 @@ export type Row = {
   [key: string]: unknown;
 };
 export interface Provider {
+  trust_badges?: { identity_reviewed: boolean; skills_reviewed: boolean; skills_label: string | null };
   id: string;
   display_name: string;
   headline: string;

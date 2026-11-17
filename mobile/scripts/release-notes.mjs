@@ -10,6 +10,9 @@ console.log(`Installable SerbisyoGo Android APK ${build.version} (version code $
 - Verified APK signature, application identity, embedded JavaScript bundle and restricted permission list.
 - Installed and launched on an Android API ${build.emulatorSmoke.api} emulator; discovery navigation and Android Back passed without Metro.
 - Adds mobile account registration, verification-email resend and password recovery requests using the shared website accounts.
+- Adds How It Works, For Clients, For Workers, FAQ and Contact guides, with the same content as the website.
+- Shows separate administrator-reviewed identity and skills badges; uploads alone do not award either badge.
+- Provider verification accepts any one listed ID or credential for administrator review. Extra documents are optional; portfolio photos are supporting evidence.
 - Adds booking conversations, provider status/quotation actions and private GCash receipt submission after service completion. GCash payments require independent administrator wallet verification on the website.
 - Removes the mobile administrator workspace; account CRUD and administration are available on the website.
 - Includes optional in-app update checks, verified APK downloads with progress, and Android installation confirmation. Install this version once to enable updates from within the app.

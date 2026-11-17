@@ -1,5 +1,9 @@
 # Payment and provider credential hardening — 17 November 2026
 
+Provider policy correction: [one accepted ID or credential](provider-document-policy.md)
+now replaces the three-group requirement described in this historical report.
+Migration 22 implements the corrected policy; extra documents are optional.
+
 Staging follow-up: real Supabase testing required replacing migration 17's Auth
 table index with a private application-owned email reservation table and trigger.
 The current schema has 21 migrations and 170 pgTAP assertions. The private APK

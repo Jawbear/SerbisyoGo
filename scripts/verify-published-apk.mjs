@@ -22,10 +22,10 @@ try {
   // No token is sent, so this still checks the actual anonymous download.
   await promisify(execFile)(process.platform === 'win32' ? 'curl.exe' : 'curl', [
     '--ipv4','--silent','--show-error','--fail','--location',
-    '--connect-timeout','20','--max-time','120','--retry','1','--retry-max-time','180',
+    '--connect-timeout','20','--max-time','360','--retry','1','--retry-max-time','480',
     '--max-filesize',String(release.byte_size),'--proto','=https','--proto-redir','=https',
     '--output',fileURLToPath(partial),'--url',url.href
-  ], {timeout:200000,maxBuffer:1048576,windowsHide:true});
+  ], {timeout:600000,maxBuffer:1048576,windowsHide:true});
   if ((await stat(partial)).size !== release.byte_size) throw new Error('Public APK size does not match its manifest.');
   bytes = await readFile(partial);
 } finally { await unlink(partial).catch(() => {}); }

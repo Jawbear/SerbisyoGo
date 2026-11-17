@@ -1,0 +1,58 @@
+# Public guides and separate credential reviews
+
+The public website includes How It Works, For Clients, For Workers, FAQ and
+Contact pages, with navigation in the header/footer and links from Home and
+Support. The Android app bundles the same guide/FAQ content and provides native
+navigation, topic filters and search. Contact links to the existing support
+case workflow and displays the configured support inbox when available.
+
+The section structure was informed by the SkillMart reference. The prose,
+branding and visual implementation are original to SerbisyoGo. Content describes
+the existing appointment-request model and manual payment records; no PayMongo
+integration, job-bidding feature, guaranteed arrival or automatic refund is
+advertised.
+
+## Document reviews
+
+The one-accepted-document application rule remains unchanged. Identity and skills
+badges are optional, independent administrative decisions:
+
+- Identity: review a private upload categorized as a government ID.
+- Skills: review TESDA NC I/II or COC, PRC, training or employment evidence. The
+  public label identifies the reviewed category.
+- Other uploads, profile approval and account roles never award badges by
+  themselves. Public summaries appear only for approved, active profiles.
+
+In Administration → Providers, open an application/profile and inspect its
+private uploads. Under Identity & skills reviews, choose the badge decision,
+eligible document and a review reason. Grant or revoke the badge explicitly.
+Each action records its administrator, document, timestamp and reason. Replacing,
+reclassifying or deleting the reviewed file invalidates that review.
+
+Migration 23 stores the records in a private RLS-protected table. Only owners and
+administrators can read them; direct client writes are denied. The public catalog
+receives only two review flags and a category label, without document IDs, paths,
+reviewer details or private reasons. Existing records are not auto-verified.
+
+## Consistency and release
+
+`src/content/public-information.json` is the canonical content source. Run
+`node scripts/sync-public-information.mjs` to update the bundled mobile copy.
+The root test suite checks that the two copies match. Android version metadata
+is aligned across app.json, package.json and the lockfile at 0.5.0/code 8.
+
+The Android workflow can publish the signed, installation-tested APK with
+`verify_update=false`. Deploy the matching website update feed, then run the
+workflow with the original `artifact_run_id`, `publish_release=true` and
+`verify_update=true` to verify the real upgrade. This avoids depending on a
+cached public release feed before the website has been updated. No different
+APK is substituted during that second check.
+
+The Windows production export disables the unreliable persistent Webpack cache;
+the development cache and Linux build defaults are preserved. The anonymous
+public APK verifier uses the system HTTP client with a bounded transfer deadline,
+then checks the complete size, SHA-256 and binary manifest before using the file.
+
+Validation currently includes 201 embedded PostgreSQL assertions and 22
+desktop/mobile website browser checks, including configured-contact behavior.
+Final real-service, mobile CI and release evidence will be added after rollout.

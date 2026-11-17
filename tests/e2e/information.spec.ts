@@ -1,11 +1,12 @@
 import {test,expect} from '@playwright/test';
 import {publicFixtures} from './public-fixtures';
 test.beforeEach(async({page})=>{await publicFixtures(page);});
-test('all five public guides have working navigation and fit the viewport',async({page})=>{
+test('all five public guides have working navigation and fit the viewport',async({page},testInfo)=>{
  for(const route of ['how-it-works','for-clients','for-workers','faq','contact']){
   await page.goto(`/${route}/`);await expect(page.locator('main h1')).toHaveCount(1);
   await expect(page.getByRole('navigation',{name:'Explore SerbisyoGo'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  if(route==='how-it-works'||route==='faq')await page.screenshot({path:testInfo.outputPath(`${route}.png`),fullPage:true});
  }
  await expect(page.getByRole('link',{name:'Help & support',exact:true})).toHaveAttribute('href','/support/');
 });

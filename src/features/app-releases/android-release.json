@@ -1,12 +1,12 @@
 {
-  "version_name": "0.4.2",
-  "version_code": 7,
+  "version_name": "0.5.0",
+  "version_code": 8,
   "min_android": "7.0",
-  "published_at": "2026-11-17T00:04:43Z",
-  "byte_size": 53427652,
-  "sha256": "122e12f12488a80667d5640332b324ccaedbcb4dcf1b5fd8e6b22f268cb1e204",
-  "release_notes": "Provider verification accepts one listed ID or credential for administrator review. Additional documents are optional. Signed Android installation and navigation checks passed; physical-phone checks remain pending.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.4.2/SerbisyoGo-0.4.2.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.4.2",
-  "source_commit": "cc244d65cf0a4be3391396ab95450547ef84a74f"
+  "published_at": "2026-11-17T05:22:15Z",
+  "byte_size": 53442288,
+  "sha256": "a12ff57205e5cff28c30fe7139741260cce2595924a43dd86b4881142c02c7ad",
+  "release_notes": "New How It Works, For Clients, For Workers, searchable FAQ and Contact guides. Separate administrator-reviewed identity and skills badges; one accepted application document remains sufficient. Android installation and navigation verified; physical-phone checks remain pending.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.0/SerbisyoGo-0.5.0.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.0",
+  "source_commit": "fbc62078f39d2f55c8b757224491e0bc698ea7c9"
 }

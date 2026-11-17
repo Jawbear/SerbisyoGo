@@ -8,5 +8,5 @@ test('public guides and FAQ are available without signing in',async({page})=>{
  await expect(page.getByText(/One accepted ID or credential is sufficient for submission readiness/)).toBeVisible();
  await page.getByRole('button',{name:'For Workers',exact:true}).click();await expect(page.getByText('Bring your skills closer to home.',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Contact',exact:true}).click();await expect(page.getByRole('button',{name:'Open support center',exact:true})).toBeVisible();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=globalThis.innerWidth)).toBe(true);
 });

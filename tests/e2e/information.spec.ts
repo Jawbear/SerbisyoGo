@@ -29,3 +29,9 @@ test('public provider badges reflect explicit independent server reviews',async(
  skills=true;await visit();await expect(page.getByText('Identity reviewed',{exact:true})).toBeVisible();await expect(page.getByText('TESDA NC II reviewed',{exact:true})).toBeVisible();
  identity=false;await visit();await expect(page.getByText('Identity reviewed',{exact:true})).toHaveCount(0);await expect(page.getByText('TESDA NC II reviewed',{exact:true})).toBeVisible();
 });
+test('contact uses the configured support email and never invents an inbox',async({page})=>{
+ let email:string|null='support@example.test';
+ await page.route('**/rest/v1/rpc/public_settings',route=>route.fulfill({json:{support_email:email}}));
+ await page.goto('/contact/');await expect(page.getByRole('link',{name:'Email support@example.test',exact:true})).toHaveAttribute('href','mailto:support@example.test');
+ email=null;await page.reload();await expect(page.getByRole('link',{name:'Email support@example.test',exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Help & support',exact:true})).toBeVisible();
+});

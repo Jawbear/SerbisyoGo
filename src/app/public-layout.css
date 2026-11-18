@@ -44,7 +44,7 @@
   .hero-search input, .hero-search select { font-size: 16px; }
   .public-header { gap: 8px; min-height: 72px; padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
   .public-header .brand { gap: 8px; font-size: 15px; }
-  .public-header .brand img { width: 30px; height: 30px; }
+  .public-header .brand img { width: 48px; height: 48px; }
   .public-header .header-actions { gap: 8px; }
   .public-header .header-actions .button { font-size: 12px; padding-inline: 12px; }
   .public-shell .main-content { padding-top: 16px; }

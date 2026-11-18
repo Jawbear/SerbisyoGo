@@ -15,7 +15,7 @@ const informationNav = [['/how-it-works/', 'How It Works', Home], ['/for-clients
 const visitorNav = [['/', 'Home', Home], ['/find/', 'Find a professional', Search], ['/services/', 'Services', Layers], ...informationNav] as const;
 export const adminNav = [['/admin/', 'Operations dashboard', LayoutDashboard], ['/admin/providers/', 'Providers & verification', ShieldCheck], ['/admin/accounts/', 'User accounts', Users], ['/admin/customers/', 'Customers', Users], ['/admin/bookings/', 'Bookings', CalendarDays], ['/admin/services/', 'Services & pricing', Layers], ['/admin/payouts/', 'Commissions & payouts', Wallet], ['/admin/transactions/', 'Transactions', CreditCard], ['/admin/reports/', 'Reports & analytics', ChartNoAxesCombined], ['/admin/complaints/', 'Complaints & safety', LifeBuoy], ['/admin/announcements/', 'Announcements', Megaphone], ['/admin/settings/', 'Settings & audit logs', Settings]] as const;
 export function Brand({ onClick, href = '/' }: { onClick?: () => void; href?: string } = {}) {
-  return <Link href={href} className="brand" onClick={onClick}><Image unoptimized width={34} height={34} src={`${config.basePath}/brand/logo.png`} alt="" /><span>SerbisyoGo</span></Link>;
+  return <Link href={href} className="brand" onClick={onClick}><Image unoptimized width={64} height={64} src={`${config.basePath}/brand/logo.png`} alt="" /><span>SerbisyoGo</span></Link>;
 }
 export function Shell({
   children

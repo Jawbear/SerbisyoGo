@@ -1,0 +1,248 @@
+.card {
+  container-type: inline-size;
+  border-color: #344d67;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.walletIcon,
+.stepIcon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: #d3e5ff;
+  background: #203b65;
+}
+
+.walletIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+.stepIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #1b2e49;
+}
+
+.body,
+.steps,
+.step,
+.recipient {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+
+.body {
+  margin-top: 16px;
+}
+
+.step {
+  align-content: start;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #101713;
+}
+
+.step h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.recipient {
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid #36557d;
+  border-radius: 12px;
+  background: #142238;
+  color: #e7f1ff;
+  overflow-wrap: anywhere;
+}
+
+.recipientLabel {
+  color: #b9cce6;
+  font-size: 12px;
+}
+
+.amount {
+  display: block;
+  font-size: clamp(24px, 7cqi, 32px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.recipientDetails {
+  display: grid;
+  gap: 2px;
+  border-top: 1px solid #36557d;
+  padding-top: 10px;
+}
+
+.phone {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.recipient > button,
+.refresh {
+  justify-self: start;
+}
+
+.status {
+  --status-color: #a8c9ff;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--status-color);
+  border-radius: 12px;
+  background: #101713;
+}
+
+.status[data-tone='success'] { --status-color: var(--green); }
+.status[data-tone='warning'] { --status-color: var(--warning); }
+.status[data-tone='error'] { --status-color: var(--error); }
+
+.status > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--status-color);
+}
+
+.status strong { color: var(--status-color); }
+.status p { color: var(--muted); }
+
+.qr {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+}
+
+.qr img {
+  display: block;
+  width: min(164px, 100%);
+  height: 164px;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.instructions {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.receiptForm {
+  gap: 12px;
+}
+
+.receiptForm button[type='submit'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.filePicker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 12px;
+  min-height: 46px;
+  border: 1px dashed #52735f;
+  border-radius: 8px;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.filePicker:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+.filePicker input {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.selectedFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.selectedFile svg { flex: none; color: var(--green); }
+
+.history,
+.transferDisclosure {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.history summary,
+.transferDisclosure summary {
+  padding: 11px 14px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 4px;
+}
+
+.history li {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.history li > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.history li span { color: var(--muted); }
+.history li span[data-status='rejected'] { color: var(--error); }
+.history li span[data-status='approved'] { color: var(--green); }
+.history li span[data-status='pending'] { color: var(--warning); }
+
+.transferDisclosure .step { margin: 0 8px 8px; }
+.settings > h2 { margin-bottom: 8px; }
+.settings > p { margin-bottom: 20px; }
+
+.savedQr {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@container (min-width: 560px) {
+  .steps:not([data-correction='true']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

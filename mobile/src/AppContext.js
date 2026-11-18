@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 import { liveApi, liveAvailable, supabase } from './data/backend';
+import { createGoogleCallbackHandler } from './googleAuth';
 
 const Context = createContext(null);
 
@@ -58,6 +59,24 @@ export function AppProvider({ children }) {
       if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh();
     };
   }, [loadIdentity, invalidateAuth]);
+
+  useEffect(() => {
+    if (!supabase || Platform.OS === 'web') return;
+    let alive = true;
+    const complete = createGoogleCallbackHandler(supabase);
+    const handleURL = async url => {
+      try {
+        if (await complete(url) && alive) await loadIdentity();
+      } catch (error) {
+        if (alive) { setAuthError(error.message); setAuthLoading(false); }
+      }
+    };
+    const subscription = Linking.addEventListener('url', event => { void handleURL(event.url); });
+    void Linking.getInitialURL().then(url => { if (alive) void handleURL(url); }).catch(() => {
+      if (alive) setAuthError('The sign-in return link could not be opened. Please try again.');
+    });
+    return () => { alive = false; subscription.remove(); };
+  }, [loadIdentity]);
 
   const signIn = useCallback(async (email, password) => {
     if (!supabase) throw new Error('The service connection is not configured. Please contact support.');

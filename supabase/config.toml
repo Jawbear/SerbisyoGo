@@ -17,7 +17,7 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback/"]
+additional_redirect_urls = ["http://localhost:3000/auth/callback/", "serbisyogo://sign-in"]
 enable_signup = true
 minimum_password_length = 8
 [auth.email]

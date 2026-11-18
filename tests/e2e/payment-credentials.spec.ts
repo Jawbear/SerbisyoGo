@@ -45,6 +45,7 @@ test('admin payment setup defaults to disabled and sends explicit recipient veri
   await form.getByRole('checkbox', { name: /I checked the recipient name and mobile number/ }).check();
   await form.getByRole('button', { name: 'Save GCash recipient', exact: true }).click();
   await expect(page.getByText('Recipient verification is recorded.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Saved recipient QR preview' })).toHaveCount(0);
   expect(requests[1].p_recipient_verified).toBe(true);
   expect(requests[1].p_enabled).toBe(true);
 });
@@ -93,6 +94,52 @@ test('customer payment controls stay closed for an unverified recipient', async 
   await expect(page.getByText('GCash is not enabled. Contact support for payment instructions.', { exact: true })).toBeVisible();
   await expect(page.getByText('Unverified Wallet', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('GCash transaction reference', { exact: true })).toHaveCount(0);
+});
+
+test('a rejected GCash receipt can be replaced without exposing transfer details by default', async ({ page }) => {
+  await sessionFixture(page, 'customer');
+  const bookingId = '40000000-0000-4000-8000-000000000011';
+  const reference = '1234567890123';
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aN6sAAAAASUVORK5CYII=';
+  const submissions = [{ id: 'previous-receipt', status: 'rejected', reference, reason: 'The previous image was unreadable.' }];
+  let uploaded = 0;
+  await page.route('**/functions/v1/files*', route => {
+    uploaded++;
+    expect(route.request().postDataBuffer()?.toString()).toContain('filename="receipt.png"');
+    return route.fulfill({ status: 201, json: { id: 'uploaded-receipt' } });
+  });
+  await page.route('**/rest/v1/**', route => {
+    const table = new URL(route.request().url()).pathname.split('/').pop();
+    if (table === 'user_context') return route.fallback();
+    if (table === 'bookings') return route.fulfill({ json: { id: bookingId, customer_id: accountId, provider_id: 'other-provider', reference: 'SG-RECEIPT-RETRY', service_title: 'Fictional repair', description: 'Isolated payment UI test', starts_at: '2026-11-17T00:00:00Z', address_snapshot: { line1: '12 Test Street', city: 'Bunawan', postal_code: '8506' }, status: 'completed', labor_centavos: 50000, fee_centavos: 5000, total_centavos: 55000 } });
+    if (table === 'payments') return route.fulfill({ json: [{ id: 'payment-test', status: 'pending', amount_centavos: 55000 }] });
+    if (table === 'gcash_settings') return route.fulfill({ json: [{ enabled: true, recipient_verified_at: '2026-11-17T00:00:00Z', recipient_name: 'Fictional Test Wallet', recipient_phone: '09170000001', qr_code_url: 'data:image/png;base64,' + png }] });
+    if (table === 'gcash_submissions') return route.fulfill({ json: submissions });
+    if (table === 'submit_gcash_receipt') {
+      expect(route.request().postDataJSON()).toEqual({ p_booking: bookingId, p_reference: reference, p_receipt: 'uploaded-receipt', p_expected_amount: 55000, p_recipient_phone: '09170000001' });
+      submissions.unshift({ id: 'replacement-receipt', status: 'pending', reference, reason: '' });
+      return route.fulfill({ json: 'replacement-receipt' });
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.goto(`/bookings/detail/?id=${bookingId}`);
+  await expect(page.getByText('Receipt needs updating', { exact: true })).toBeVisible();
+  await expect(page.getByText('The previous image was unreadable.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Fictional Test Wallet', { exact: true })).toBeHidden();
+  await page.getByText('View transfer details', { exact: true }).click();
+  const qr = page.getByRole('img', { name: 'Verified GCash recipient QR' });
+  await expect(qr).toBeVisible();
+  await expect.poll(() => qr.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  const submit = page.getByRole('button', { name: 'Submit GCash receipt', exact: true });
+  await expect(submit).toBeDisabled();
+  await page.getByLabel('GCash transaction reference', { exact: true }).fill('1234 5678-90123');
+  await page.getByLabel('Choose GCash receipt', { exact: true }).setInputFiles({ name: 'receipt.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  await expect(page.getByText('receipt.png', { exact: true })).toBeVisible();
+  await submit.click();
+  await expect(page.getByText('Awaiting verification', { exact: true })).toBeVisible();
+  await expect(submit).toHaveCount(0);
+  await expect(qr).toHaveCount(0);
+  expect(uploaded).toBe(1);
 });
 
 test('admin retries a binary APK request against the same unverified draft', async ({ page }) => {

@@ -46,6 +46,7 @@ This guide explains how to enable **Sign in / Sign up with Google (Gmail)** for 
    - **Redirect URLs**: Ensure the following are listed:
      - `https://serbisyogo.sg-team.workers.dev/auth/callback/`
      - `http://localhost:3000/auth/callback/` (for local development)
+     - `serbisyogo://sign-in` (required for the installed Android app)
    - Click **Save**.
 
 ---
@@ -67,6 +68,26 @@ This guide explains how to enable **Sign in / Sign up with Google (Gmail)** for 
 ---
 
 ## 4. Verification & Testing
+
+### Installed mobile app
+
+The mobile app and website share accounts, but use separate return addresses.
+Keep the existing website Site URL and redirect URLs. Add `serbisyogo://sign-in`
+to **Authentication → URL Configuration → Redirect URLs** in the hosted Supabase
+project. Updating `supabase/config.toml` only configures local Supabase; it does
+not change the hosted project's settings.
+
+The installed app starts Google OAuth and opens the system browser.
+After account selection, Supabase returns to `serbisyogo://sign-in`.
+The app receives both initial links and links while running, completes the
+returned session, verifies the account, and continues inside the app. Google Cloud's
+authorized redirect URI remains the Supabase `/auth/v1/callback` address above.
+
+Install a newly built APK containing these changes. Test both **Continue with
+Gmail** and Google registration, including returning while the app is running,
+returning after Android closes the app, cancellation, and retrying. Verify that
+the app displays the signed-in account and the browser does not land on the
+website dashboard. A browser preview cannot verify Android return behavior.
 
 - Run tests:
   ```bash

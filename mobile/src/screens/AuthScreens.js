@@ -1,44 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { supabase, websiteUrl } from '../data/backend';
 import { registration } from '../auth';
 import { useAction } from '../hooks';
+import { startGoogleAuth } from '../googleAuth';
 import { colors as c } from '../theme';
 import { Button, Card, Field, GoogleButton, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
 const callback = (next = '/login/') => `${websiteUrl}/auth/callback/?next=${encodeURIComponent(next)}`;
 
 export function RegisterScreen({ navigation }) {
-  const { liveAvailable } = useApp();
+  const { liveAvailable, identity, authError } = useApp();
   const [values, setValues] = useState({ name: '', email: '', phone: '', password: '', confirm: '', consent: false });
   const set = (key, value) => setValues(previous => ({ ...previous, [key]: value }));
   const action = useAction();
+  const focused = useIsFocused();
+
+  useEffect(() => {
+    if (identity && focused) navigation.replace('Home');
+  }, [identity, focused, navigation]);
 
   async function handleGoogleAuth() {
     await action.run(async () => {
       if (!liveAvailable || !supabase) throw new Error('Authentication is unavailable until Supabase is configured.');
-      if (Platform.OS === 'web') {
-        const redirect = globalThis.window?.location?.origin || `${websiteUrl}/dashboard/`;
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirect
-          }
-        });
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: 'serbisyogo://sign-in'
-          }
-        });
-        if (error) throw error;
-        if (data?.url) {
-          await Linking.openURL(data.url);
-        }
-      }
+      await startGoogleAuth(supabase, Platform.OS, url => Linking.openURL(url), globalThis.window?.location?.origin || websiteUrl);
     });
   }
 
@@ -71,7 +58,7 @@ export function RegisterScreen({ navigation }) {
             <Text style={{ color: c.green, fontSize: 12, fontWeight: '600' }}>Service terms</Text>
           </Pressable>
         </View>
-        {action.error && <Notice error>{action.error}</Notice>}
+        {(action.error || authError) && <Notice error>{action.error || authError}</Notice>}
         <View style={s.actionsRow}>
           <View style={s.flex}>
             <Button title="Create account" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
@@ -106,7 +93,7 @@ export function RegisterScreen({ navigation }) {
             })} />
           </View>
           <View style={{ flex: 1.25 }}>
-            <GoogleButton title="Sign up with Gmail" disabled={!liveAvailable} onPress={handleGoogleAuth} />
+            <GoogleButton title="Sign up with Gmail" disabled={!liveAvailable || action.busy} onPress={handleGoogleAuth} />
           </View>
         </View>
         <View style={[s.row, { justifyContent: 'center', marginTop: 10 }]}>

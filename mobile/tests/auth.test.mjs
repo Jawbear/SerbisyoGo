@@ -1,6 +1,66 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeMobile, registration, validatePassword } from '../src/auth.js';
+import { createGoogleCallbackHandler, startGoogleAuth, mobileAuthRedirect } from '../src/googleAuth.js';
+
+test('Google sign-in opens the provider with the native app as its return address', async () => {
+  let options;
+  const opened = [];
+  const client = { auth: { signInWithOAuth: async value => {
+    options = value;
+    return { data: { url: 'https://accounts.google.com/test' }, error: null };
+  } } };
+  await startGoogleAuth(client, 'android', url => opened.push(url), 'https://website.test');
+  assert.equal(options.options.redirectTo, mobileAuthRedirect);
+  assert.equal(options.options.skipBrowserRedirect, true);
+  assert.deepEqual(opened, ['https://accounts.google.com/test']);
+  await startGoogleAuth(client, 'web', () => assert.fail('web should use the browser redirect'), 'https://mobile-preview.test');
+  assert.equal(options.options.redirectTo, 'https://mobile-preview.test');
+  assert.equal(options.options.skipBrowserRedirect, false);
+});
+
+test('Google callback exchanges a code once even if Android delivers the link twice', async () => {
+  const exchanged = [];
+  const complete = createGoogleCallbackHandler({ auth: { exchangeCodeForSession: async code => {
+    exchanged.push(code);
+    return { error: null };
+  } } });
+  assert.deepEqual(await Promise.all([
+    complete('serbisyogo://sign-in?code=test-code'),
+    complete('serbisyogo://sign-in?code=test-code')
+  ]), [true, true]);
+  assert.deepEqual(exchanged, ['test-code']);
+  assert.equal(await complete('serbisyogo://sign-in/?code=another-code'), true);
+  assert.deepEqual(exchanged, ['test-code', 'another-code']);
+});
+
+test('Google callback restores the returned native session once', async () => {
+  const sessions = [];
+  const complete = createGoogleCallbackHandler({ auth: { setSession: async session => {
+    sessions.push(session);
+    return { error: null };
+  } } });
+  const url = 'serbisyogo://sign-in#access_token=test-access&refresh_token=test-refresh';
+  assert.deepEqual(await Promise.all([complete(url), complete(url)]), [true, true]);
+  assert.deepEqual(sessions, [{ access_token: 'test-access', refresh_token: 'test-refresh' }]);
+  await assert.rejects(complete('serbisyogo://sign-in#access_token=test-access'), /incomplete/);
+  await assert.rejects(complete('serbisyogo://sign-in#error=access_denied'), /cancelled/);
+});
+
+test('Google callback ignores unrelated links and reports cancellation and exchange errors', async () => {
+  const complete = createGoogleCallbackHandler({ auth: { exchangeCodeForSession: async () => ({ error: new Error('private server details') }) } });
+  for (const url of [null, 'invalid', 'https://website.test/sign-in?code=x', 'serbisyogo://bookings?code=x', 'serbisyogo://sign-in/other?code=x', 'serbisyogo://sign-in']) {
+    assert.equal(await complete(url), false);
+  }
+  await assert.rejects(complete('serbisyogo://sign-in?error=access_denied'), /cancelled/);
+  await assert.rejects(complete('serbisyogo://sign-in?code=expired'), /Please try signing in again/);
+});
+
+test('Google sign-in surfaces provider and browser launch failures', async () => {
+  await assert.rejects(startGoogleAuth({ auth: { signInWithOAuth: async () => ({ error: new Error('provider unavailable') }) } }, 'android', () => {}), /provider unavailable/);
+  await assert.rejects(startGoogleAuth({ auth: { signInWithOAuth: async () => ({ data: {} }) } }, 'android', () => {}), /could not be opened/);
+  await assert.rejects(startGoogleAuth({ auth: { signInWithOAuth: async () => ({ data: { url: 'https://example.test' } }) } }, 'android', async () => { throw new Error('browser unavailable'); }), /browser unavailable/);
+});
 
 test('registration normalizes shared account fields without accepting privileged roles', () => {
   const data = registration({ name: ' Test\t User ', email: ' TESTER@example.test ', phone: '09171234567', password: 'TestPassword123!', confirm: 'TestPassword123!', consent: true, role: 'admin' });

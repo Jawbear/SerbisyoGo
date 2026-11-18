@@ -78,8 +78,9 @@ export function BookingRecord({
   view?: 'detail' | 'confirmed' | 'track' | 'invoice' | 'review';
 }) {
   const id = useSearchParams().get('id') || '';
-  const q = useQuery('booking-' + id, () => one<Booking>('bookings', id));
-  return <><RealtimeRefresh tables={['bookings']} filter={`id=eq.${id}`} /><QueryState {...q}>{q.data ? view === 'confirmed' ? <BookingConfirmed booking={q.data} /> : view === 'track' ? <Tracking booking={q.data} /> : view === 'invoice' ? <Invoice booking={q.data} /> : view === 'review' ? <Review booking={q.data} /> : <BookingDetail booking={q.data} /> : <Empty title="Booking not found" description="This record may not belong to your account." action={<ButtonLink href="/bookings/">My bookings</ButtonLink>} />}</QueryState></>;
+  const { user } = useSession();
+  const q = useQuery('booking-' + id + '-' + user?.id, () => one<Booking>('bookings', id));
+  return <><RealtimeRefresh tables={['bookings']} filter={`id=eq.${id}`} /><QueryState {...q} loading={q.loading && (view !== 'detail' || !q.data)}>{q.data ? view === 'confirmed' ? <BookingConfirmed booking={q.data} /> : view === 'track' ? <Tracking booking={q.data} /> : view === 'invoice' ? <Invoice booking={q.data} /> : view === 'review' ? <Review booking={q.data} /> : <BookingDetail key={id} booking={q.data} /> : <Empty title="Booking not found" description="This record may not belong to your account." action={<ButtonLink href="/bookings/">My bookings</ButtonLink>} />}</QueryState></>;
 }
 export function BookingDetail({
   booking: b,
@@ -90,16 +91,17 @@ export function BookingDetail({
 }) {
   const session = useSession();
   const actor: Actor = admin ? 'admin' : session.user?.id === b.provider_id ? 'provider' : 'customer';
+  const canPay = actor === 'customer' && session.user?.id === b.customer_id;
   const events = useQuery('booking-events-' + b.id, () => list('booking_events', {
     booking_id: b.id
   }));
-  return <><PageHeading eyebrow={b.reference} title={b.service_title} description={`Requested for ${manilaDate(b.starts_at)} · Asia/Manila`} action={<Badge>{b.status}</Badge>} /><div className="split"><div className="stack"><Card><h2>Service details</h2><p style={{
+  return <><PageHeading eyebrow={b.reference} title={b.service_title} description={`Requested for ${manilaDate(b.starts_at)} · Asia/Manila`} action={<Badge>{b.status}</Badge>} /><div className="stack">{canPay && b.status === 'completed' && <GCashPayment bookingId={b.id} bookingStatus={b.status} />}<div className="split"><div className="stack"><Card><h2>Service details</h2><p style={{
             whiteSpace: 'pre-wrap'
           }}>{b.description}</p><p className="row muted small" style={{
             marginTop: 20
           }}><MapPin size={16} />{b.address_snapshot.line1}, {b.address_snapshot.city} {b.address_snapshot.postal_code}</p><div className="row" style={{
             marginTop: 24
-          }}><ButtonLink href={`/bookings/track/?id=${b.id}`}>Track booking</ButtonLink><ButtonLink secondary href={`/messages/?booking=${b.id}`}>Open messages</ButtonLink>{b.status === 'completed' && <><ButtonLink href={`/bookings/invoice/?id=${b.id}`} secondary>View invoice</ButtonLink>{actor === 'customer' && <ButtonLink href={`/bookings/review/?id=${b.id}`} secondary>Write a review</ButtonLink>}</>}</div></Card><Card><h2>Booking timeline</h2><QueryState {...events}>{events.data?.slice().reverse().map(e => <div key={String(e.id)} className="faq"><div className="row between"><Badge>{String(e.to_status)}</Badge><span className="small muted">{manilaDate(String(e.created_at))}</span></div>{e.reason ? <p>{String(e.reason)}</p> : null}</div>)}</QueryState></Card><Card><h2>Photos & evidence</h2><FileList bookingId={b.id} /><UploadForm kind="booking" bookingId={b.id} /></Card></div><div className="stack">{actor === 'customer' && <GCashPayment bookingId={b.id} completed={b.status === 'completed'} />}<Card><h2>Agreed charges</h2><dl className="definition-list"><div><dt>Labor {b.is_estimate && !b.quote_accepted ? 'estimate' : ''}</dt><dd>{money(b.labor_centavos)}</dd></div><div><dt>Booking fee</dt><dd>{money(b.fee_centavos)}</dd></div><div className="total"><dt>{b.is_estimate && !b.quote_accepted ? 'Estimated total' : 'Total'}</dt><dd>{money(b.total_centavos)}</dd></div></dl>{b.is_estimate && b.status === 'requested' && <div style={{
+          }}><ButtonLink href={`/bookings/track/?id=${b.id}`}>Track booking</ButtonLink><ButtonLink secondary href={`/messages/?booking=${b.id}`}>Open messages</ButtonLink>{b.status === 'completed' && <><ButtonLink href={`/bookings/invoice/?id=${b.id}`} secondary>View invoice</ButtonLink>{actor === 'customer' && <ButtonLink href={`/bookings/review/?id=${b.id}`} secondary>Write a review</ButtonLink>}</>}</div></Card><Card><h2>Booking timeline</h2><QueryState {...events}>{events.data?.slice().reverse().map(e => <div key={String(e.id)} className="faq"><div className="row between"><Badge>{String(e.to_status)}</Badge><span className="small muted">{manilaDate(String(e.created_at))}</span></div>{e.reason ? <p>{String(e.reason)}</p> : null}</div>)}</QueryState></Card><Card><h2>Photos & evidence</h2><FileList bookingId={b.id} /><UploadForm kind="booking" bookingId={b.id} /></Card></div><div className="stack">{canPay && b.status !== 'completed' && <GCashPayment bookingId={b.id} bookingStatus={b.status} />}<Card><h2>Agreed charges</h2><dl className="definition-list"><div><dt>Labor {b.is_estimate && !b.quote_accepted ? 'estimate' : ''}</dt><dd>{money(b.labor_centavos)}</dd></div><div><dt>Booking fee</dt><dd>{money(b.fee_centavos)}</dd></div><div className="total"><dt>{b.is_estimate && !b.quote_accepted ? 'Estimated total' : 'Total'}</dt><dd>{money(b.total_centavos)}</dd></div></dl>{b.is_estimate && b.status === 'requested' && <div style={{
             marginTop: 24
           }}>{b.quoted_labor_centavos !== null && <Notice>Proposed labor: {money(b.quoted_labor_centavos)}. {b.quote_accepted ? 'Accepted by customer.' : 'Awaiting customer approval.'}</Notice>}{actor === 'provider' && <MutationForm submit="Send labor quotation" onSubmit={async f => {
               await rpc('booking_quote', {
@@ -130,7 +132,7 @@ export function BookingDetail({
               p_booking: b.id,
               p_reason: String(f.get('reason'))
             });
-          }}><Textarea label="Reason for refund request" name="reason" required minLength={5} maxLength={2000} /></MutationForm></Card>}</div></div></>;
+          }}><Textarea label="Reason for refund request" name="reason" required minLength={5} maxLength={2000} /></MutationForm></Card>}</div></div></div></>;
 }
 function Tracking({
   booking: b

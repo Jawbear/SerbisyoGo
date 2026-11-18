@@ -54,7 +54,12 @@ export function createSearchStore(storage, makeId) {
   return {
     getSavedPreferences: () => pending.then(read),
     savePreference: value => put(value),
-    updatePreference: (id, value) => put(value, id),
+    updatePreference: (id, value) => {
+      if (typeof id !== 'string' || !id.trim()) {
+        return Promise.reject(new Error('Choose a saved search to update.'));
+      }
+      return put(value, id);
+    },
     deletePreference: id => change(rows => rows.filter(row => row.id !== id))
   };
 }

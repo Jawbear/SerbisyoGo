@@ -27,6 +27,8 @@ test('saved searches survive reopening the store and update in place', async () 
   const open=()=>createSearchStore(disk,randomUUID);
   const store=open();
   assert.deepEqual(await store.getSavedPreferences(),[]);
+  await assert.rejects(store.updatePreference('',search), /Choose a saved search/);
+  assert.deepEqual(await store.getSavedPreferences(),[]);
   const [row]=await store.savePreference(search);
   assert.deepEqual(await open().getSavedPreferences(),[row]);
   await assert.rejects(store.savePreference(search),/already saved/);

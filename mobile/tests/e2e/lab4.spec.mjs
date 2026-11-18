@@ -27,3 +27,44 @@ test('location picker displays loading, HTTP error, empty and refreshed records'
   await expect(button('View Art Ecleo')).toHaveCount(0);
   expect(requests).toBe(3);
 });
+
+test('saved service filters can be restored, edited and deleted across reloads during a location outage', async ({ page }) => {
+  await installBackend(page);
+  await page.route(locationUrl, route => route.fulfill({
+    json: { data: [{ code: '1600302000', name: 'Bunawan' }] }
+  }));
+  const button = name => page.getByRole('button', { name, exact: true });
+  const label = page.getByLabel('Search label (optional)', { exact: true });
+  await page.goto('/find');
+  await button('Plumbing').click();
+  await button('Choose municipality').click();
+  await button('Bunawan').click();
+  await button('Saved searches').click();
+  await label.fill('Workshop');
+  await button('Save search').click();
+  await expect(page.getByText('Search saved on this device.')).toBeVisible();
+
+  await page.unroute(locationUrl);
+  await page.route(locationUrl, route => route.abort('internetdisconnected'));
+  await page.reload();
+  await button('Choose municipality').click();
+  await expect(page.getByText(locationError)).toBeVisible();
+  await button('Saved searches').click();
+  await expect(page.getByText('Workshop', { exact: true })).toBeVisible();
+  await button('Edit').click();
+  await expect(page.getByText('Municipality: Bunawan')).toBeVisible();
+  await label.fill('Garage');
+  await button('Update saved search').click();
+  await expect(page.getByText('Saved search updated.')).toBeVisible();
+
+  await page.reload();
+  await button('Saved searches').click();
+  await expect(page.getByText('Garage', { exact: true })).toBeVisible();
+  await expect(button('Edit')).toHaveCount(1);
+  await button('Delete').click();
+  await button('Confirm delete').click();
+  await expect(page.getByText('Saved search deleted.')).toBeVisible();
+  await page.reload();
+  await button('Saved searches').click();
+  await expect(page.getByText('No saved searches on this device.')).toBeVisible();
+});

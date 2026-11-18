@@ -1,12 +1,12 @@
 {
-  "version_name": "0.5.0",
-  "version_code": 8,
+  "version_name": "0.5.2",
+  "version_code": 10,
   "min_android": "7.0",
-  "published_at": "2026-11-17T05:22:15Z",
-  "byte_size": 53442288,
-  "sha256": "a12ff57205e5cff28c30fe7139741260cce2595924a43dd86b4881142c02c7ad",
-  "release_notes": "New How It Works, For Clients, For Workers, searchable FAQ and Contact guides. Separate administrator-reviewed identity and skills badges; one accepted application document remains sufficient. Android installation and navigation verified; physical-phone checks remain pending.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.0/SerbisyoGo-0.5.0.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.0",
-  "source_commit": "fbc62078f39d2f55c8b757224491e0bc698ea7c9"
+  "published_at": "2026-11-18T02:00:43Z",
+  "byte_size": 53473132,
+  "sha256": "624e503570e116c7e36a437136d142c8386cd26ef8b4104e77e616a8b875114b",
+  "release_notes": "Fixes mobile sign-up and sign-in. Email verification supports eight-digit codes and lets unverified users resend a code from sign-in. Gmail authorization returns to the app. GCash checkout shows verified transfer details and lets customers correct rejected receipts. Android in-app upgrade and data retention passed on the emulator.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.2/SerbisyoGo-0.5.2.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.2",
+  "source_commit": "ce88e8ed81cb595f6872f0db846ba97d6fea9263"
 }

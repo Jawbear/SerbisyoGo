@@ -1,12 +1,12 @@
 {
-  "version_name": "0.5.3",
-  "version_code": 11,
+  "version_name": "0.5.4",
+  "version_code": 12,
   "min_android": "7.0",
-  "published_at": "2026-11-18T10:49:44Z",
-  "byte_size": 54931864,
-  "sha256": "32d279867f1db69b1a7e15ec8136fcba4844e86f290f9b4f05cbc68df65507d3",
-  "release_notes": "Updates the SerbisyoGo launcher icon and in-app logo with the new green emblem.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.3/SerbisyoGo-0.5.3.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.3",
-  "source_commit": "1d57bb5e0c83e1eebe8be9b9fdc9da2047077548"
+  "published_at": "2026-11-18T12:35:13Z",
+  "byte_size": 55271324,
+  "sha256": "cf9baff788ded72f82c0e4a542a32455614355e548f32c42d680189c4adbb506",
+  "release_notes": "Uses the official neon-green 3D emblem on pure black for the Android launcher and splash screen. Includes adaptive, legacy and themed icons, plus matching in-app branding.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.4/SerbisyoGo-0.5.4.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.4",
+  "source_commit": "0cd32b9246f580724d48ce56cd66a35559fad50c"
 }

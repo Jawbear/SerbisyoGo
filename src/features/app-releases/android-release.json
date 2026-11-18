@@ -1,12 +1,12 @@
 {
-  "version_name": "0.5.2",
-  "version_code": 10,
+  "version_name": "0.5.3",
+  "version_code": 11,
   "min_android": "7.0",
-  "published_at": "2026-11-18T02:00:43Z",
-  "byte_size": 53473132,
-  "sha256": "624e503570e116c7e36a437136d142c8386cd26ef8b4104e77e616a8b875114b",
-  "release_notes": "Fixes mobile sign-up and sign-in. Email verification supports eight-digit codes and lets unverified users resend a code from sign-in. Gmail authorization returns to the app. GCash checkout shows verified transfer details and lets customers correct rejected receipts. Android in-app upgrade and data retention passed on the emulator.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.2/SerbisyoGo-0.5.2.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.2",
-  "source_commit": "ce88e8ed81cb595f6872f0db846ba97d6fea9263"
+  "published_at": "2026-11-18T10:49:44Z",
+  "byte_size": 54931864,
+  "sha256": "32d279867f1db69b1a7e15ec8136fcba4844e86f290f9b4f05cbc68df65507d3",
+  "release_notes": "Updates the SerbisyoGo launcher icon and in-app logo with the new green emblem.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.3/SerbisyoGo-0.5.3.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.3",
+  "source_commit": "1d57bb5e0c83e1eebe8be9b9fdc9da2047077548"
 }

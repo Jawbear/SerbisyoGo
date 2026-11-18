@@ -3,7 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { supabase, websiteUrl } from '../data/backend';
-import { registration } from '../auth';
+import { registration, signInDestination, verificationCode } from '../auth';
 import { useAction } from '../hooks';
 import { startGoogleAuth } from '../googleAuth';
 import { colors as c } from '../theme';
@@ -89,7 +89,8 @@ export function RegisterScreen({ navigation }) {
               if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
                 throw new Error('This email address is already in use or registered. Please sign in or use another email.');
               }
-              navigation.replace(data.session ? 'Home' : 'VerifyEmail', { email: input.email });
+              if (!data?.user) throw new Error('Account creation could not be confirmed. Please try again.');
+              if (!data.session) navigation.replace('VerifyEmail', { email: input.email });
             })} />
           </View>
           <View style={{ flex: 1.25 }}>
@@ -112,42 +113,42 @@ export function VerifyEmailScreen({ navigation, route }) {
   const [token, setToken] = useState('');
   const [sent, setSent] = useState(false);
   const action = useAction();
-  const { liveAvailable } = useApp();
+  const { liveAvailable, identity, authError } = useApp();
+  const focused = useIsFocused();
+
+  useEffect(() => {
+    if (identity && focused) navigation.replace(signInDestination(identity.role, route.params), route.params?.routeParams);
+  }, [identity, focused, navigation, route.params]);
+
   return (
     <Screen footer={false}>
       <Title>Verify your email</Title>
-      <Notice>Enter the 6-digit verification code sent to your email to activate your account. Check your spam folder too.</Notice>
+      <Notice>Enter the verification code from your email. If you confirmed using the email link, go back to sign in. Check your spam folder if the email is missing.</Notice>
       <Card style={s.stack}>
         <Field label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <Field label="6-digit verification code" value={token} onChangeText={setToken} keyboardType="number-pad" maxLength={8} placeholder="123456" />
-        {action.error && <Notice error>{action.error}</Notice>}
-        {sent && <Notice>A fresh 6-digit verification code was sent. Please check your inbox.</Notice>}
+        <Field label="Verification code" value={token} onChangeText={setToken} keyboardType="number-pad" autoComplete="one-time-code" />
+        {(action.error || authError) && <Notice error>{action.error || authError}</Notice>}
+        {sent && <Notice>A fresh verification code was sent. Please check your inbox.</Notice>}
         <Button title="Verify code & sign in" disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
-          if (!email.trim()) throw new Error('Enter your email address.');
-          if (!token.trim()) throw new Error('Enter the 6-digit verification code.');
-          const { error } = await supabase.auth.verifyOtp({
-            email: email.trim(),
-            token: token.trim(),
-            type: 'signup'
+          const address = email.trim().toLowerCase();
+          if (!address) throw new Error('Enter your email address.');
+          const { data, error } = await supabase.auth.verifyOtp({
+            email: address,
+            token: verificationCode(token),
+            type: 'email'
           });
-          if (error) {
-            const retry = await supabase.auth.verifyOtp({
-              email: email.trim(),
-              token: token.trim(),
-              type: 'email'
-            });
-            if (retry.error) throw new Error(error.message || retry.error.message || 'Invalid or expired verification code.');
-          }
-          navigation.replace('Home');
+          if (error) throw error;
+          if (!data?.session) navigation.replace('SignIn', { ...route.params, email: address });
         })} />
-        <Button title="Resend 6-digit code" secondary disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
-          if (!email.trim()) throw new Error('Enter your email address.');
-          const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: callback() } });
+        <Button title="Resend verification code" secondary disabled={!liveAvailable} busy={action.busy} onPress={() => action.run(async () => {
+          const address = email.trim().toLowerCase();
+          if (!address) throw new Error('Enter your email address.');
+          const { error } = await supabase.auth.resend({ type: 'signup', email: address, options: { emailRedirectTo: callback() } });
           if (error) throw error;
           setSent(true);
         })} />
         <View style={[s.row, { justifyContent: 'center', marginTop: 10 }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back to sign in" onPress={() => navigation.replace('SignIn')}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to sign in" onPress={() => navigation.replace('SignIn', { ...route.params, email })}>
             <Text style={{ color: c.green, fontWeight: '700', fontSize: 13 }}>Back to sign in</Text>
           </Pressable>
         </View>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeMobile, registration, validatePassword } from '../src/auth.js';
-import { createGoogleCallbackHandler, startGoogleAuth, mobileAuthRedirect } from '../src/googleAuth.js';
+import { createGoogleCallbackHandler, isGoogleAuthCallback, startGoogleAuth, mobileAuthRedirect } from '../src/googleAuth.js';
 
 test('Google sign-in opens the provider with the native app as its return address', async () => {
   let options;
@@ -54,6 +54,18 @@ test('Google callback ignores unrelated links and reports cancellation and excha
   }
   await assert.rejects(complete('serbisyogo://sign-in?error=access_denied'), /cancelled/);
   await assert.rejects(complete('serbisyogo://sign-in?code=expired'), /Please try signing in again/);
+});
+
+test('Google return links are handled by auth without replacing the navigation route', async () => {
+  assert.equal(isGoogleAuthCallback('serbisyogo://sign-in?returnTo=MyBookings'), false);
+  assert.equal(isGoogleAuthCallback('serbisyogo://bookings?code=unrelated'), false);
+  assert.equal(isGoogleAuthCallback('serbisyogo://sign-in?code=oauth#other=value'), true);
+  const complete = createGoogleCallbackHandler({ auth: { exchangeCodeForSession: async code => {
+    assert.equal(code, 'oauth');
+    return { error: null };
+  } } });
+  assert.equal(await complete('serbisyogo://sign-in?code=oauth#other=value'), true);
+  await assert.rejects(complete('serbisyogo://sign-in?error_code=access_denied'), /cancelled/);
 });
 
 test('Google sign-in surfaces provider and browser launch failures', async () => {

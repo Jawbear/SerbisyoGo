@@ -81,7 +81,7 @@ export function AppProvider({ children }) {
   const signIn = useCallback(async (email, password) => {
     if (!supabase) throw new Error('The service connection is not configured. Please contact support.');
     const response = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (response.error) throw new Error(response.error.message);
+    if (response.error) throw response.error;
     return loadIdentity();
   }, [loadIdentity]);
 

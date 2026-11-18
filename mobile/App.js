@@ -17,6 +17,7 @@ import SignInScreen from './src/screens/SignInScreen';
 import { UpdateProvider } from './src/updates/UpdateContext';
 import UpdateScreen from './src/updates/UpdateScreen';
 import { RegisterScreen, VerifyEmailScreen, ForgotPasswordScreen } from './src/screens/AuthScreens';
+import { isGoogleAuthCallback } from './src/googleAuth';
 import MessagesScreen from './src/screens/MessagesScreen';
 import ProviderVerificationScreen from './src/screens/ProviderVerificationScreen';
 
@@ -26,6 +27,7 @@ const Stack = createNativeStackNavigator();
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, primary: c.green, background: c.background, card: c.background, text: c.text, border: c.border } };
 const linking = {
   prefixes: ['serbisyogo://'],
+  filter: url => !isGoogleAuthCallback(url),
   config: { screens: {
     Home: '', FindProfessionals: 'find', ProviderDetails: 'providers/:providerId',
     BookingForm: 'book/:providerId/:serviceId', BookingReview: 'review/:draftId',

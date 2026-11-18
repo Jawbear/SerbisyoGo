@@ -17,6 +17,21 @@ export function validatePassword(password) {
   }
 }
 
+const signInDestinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages', 'ProviderVerification']);
+
+export function signInDestination(role, params) {
+  const requested = params?.returnTo;
+  if (!signInDestinations.has(requested)) return 'Home';
+  if (role !== 'customer' && ['BookingForm', 'BookingReview'].includes(requested)) return 'Home';
+  return requested;
+}
+
+export function verificationCode(value) {
+  const code = value.replace(/[\s-]/g, '');
+  if (!/^\d{6,8}$/.test(code)) throw new Error('Enter the verification code from your email.');
+  return code;
+}
+
 export function registration(values) {
   const full_name = (values.name || '').trim().replace(/\s+/g, ' ');
   const email = (values.email || '').trim().toLowerCase();

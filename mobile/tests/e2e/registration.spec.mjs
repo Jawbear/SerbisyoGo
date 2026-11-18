@@ -47,6 +47,46 @@ test('registration keeps fields and displays an error when the server rejects si
   await expect(page.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue('New Tester');
 });
 
+test('unconfirmed email sign-in can resend and verify an eight-digit code', async ({ page }) => {
+  await installBackend(page);
+  const email = 'customer@example.test';
+  let resend;
+  const attempts = [];
+  await page.route('**/auth/v1/token?grant_type=password', route => route.fulfill({
+    status: 400, json: { code: 'email_not_confirmed', msg: 'Email not confirmed' }
+  }));
+  await page.route('**/auth/v1/resend*', route => {
+    resend = route.request().postDataJSON();
+    return route.fulfill({ json: {} });
+  });
+  await page.route('**/auth/v1/verify*', route => {
+    attempts.push(route.request().postDataJSON());
+    return route.fallback();
+  });
+
+  await page.goto('/sign-in?returnTo=MyBookings');
+  await page.getByLabel('Email address', { exact: true }).fill(email.toUpperCase());
+  await page.getByLabel('Password', { exact: true }).fill('fixture-password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByTestId('screen-VerifyEmail')).toBeVisible();
+  await expect(page.getByLabel('Email address', { exact: true })).toHaveValue(email);
+  await page.getByRole('button', { name: 'Resend verification code', exact: true }).click();
+  await expect(page.getByText('A fresh verification code was sent. Please check your inbox.', { exact: true })).toBeVisible();
+  expect(resend).toMatchObject({ email, type: 'signup' });
+
+  const code = page.getByLabel('Verification code', { exact: true });
+  const verify = page.getByRole('button', { name: 'Verify code & sign in', exact: true });
+  await code.fill('1234');
+  await verify.click();
+  await expect(page.getByRole('alert')).toContainText('Enter the verification code');
+  expect(attempts).toHaveLength(0);
+
+  await code.fill('1234 5678');
+  await verify.click();
+  await expect(page.getByTestId('screen-MyBookings')).toBeVisible();
+  expect(attempts).toMatchObject([{ email, token: '12345678', type: 'email' }]);
+});
+
 for (const scenario of ['email', 'name', 'unavailable', 'malformed']) {
   test(`registration blocks signup when availability reports ${scenario}`, async ({ page }) => {
     await installBackend(page);

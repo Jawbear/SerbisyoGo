@@ -2,33 +2,37 @@ import { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
+import { signInDestination } from '../auth';
 import { supabase, websiteUrl } from '../data/backend';
 import { useAction } from '../hooks';
 import { startGoogleAuth } from '../googleAuth';
 import { colors as c } from '../theme';
 import { Button, Card, Field, GoogleButton, Label, Muted, Notice, Screen, Title, s } from '../components/ui';
 
-const destinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages', 'ProviderVerification']);
-
 export default function SignInScreen({ navigation, route }) {
   const { signIn, liveAvailable, identity, authError } = useApp();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email || '');
   const [password, setPassword] = useState('');
   const action = useAction();
   const focused = useIsFocused();
   async function submit() {
     await action.run(async () => {
       if (!email.trim() || !password) throw new Error('Enter your email address and password.');
-      const identity = await signIn(email, password);
-      if (!identity) throw new Error('Your account could not be verified. Please try again.');
+      const address = email.trim().toLowerCase();
+      try {
+        const account = await signIn(address, password);
+        if (!account) throw new Error('Your account could not be verified. Please try again.');
+      } catch (error) {
+        const needsVerification = error.code === 'email_not_confirmed' || (!error.code && error.message === 'Email not confirmed');
+        if (!needsVerification) throw error;
+        navigation.replace('VerifyEmail', { ...route.params, email: address });
+      }
     });
   }
 
   useEffect(() => {
     if (!identity || !focused) return;
-    const requested = destinations.has(route.params?.returnTo) ? route.params.returnTo : 'Home';
-    const destination = ['BookingForm', 'BookingReview'].includes(requested) && identity.role !== 'customer' ? 'Home' : requested;
-    navigation.replace(destination, route.params?.routeParams);
+    navigation.replace(signInDestination(identity.role, route.params), route.params?.routeParams);
   }, [identity, focused, navigation, route.params]);
 
   async function handleGoogleAuth() {

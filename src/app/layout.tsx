@@ -17,8 +17,8 @@ import { config } from '@/lib/config';
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#0B0F0E' };
 export const metadata: Metadata = {
   icons: {
-    icon: { url: `${config.basePath}/brand/emblem-48.png`, type: 'image/png' },
-    apple: { url: `${config.basePath}/brand/emblem-180.png`, type: 'image/png' }
+    icon: { url: `${config.basePath}/brand/favicon-green.png`, type: 'image/png' },
+    apple: { url: `${config.basePath}/brand/apple-green.png`, type: 'image/png' }
   },
   title: {
     default: 'SerbisyoGo — Your home. In good hands.',

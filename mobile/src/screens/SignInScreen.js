@@ -1,3 +1,4 @@
+import BrandLogo from '../components/BrandLogo';
 import { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
@@ -45,6 +46,7 @@ export default function SignInScreen({ navigation, route }) {
   return (
     <Screen footer={false}>
       <View style={s.stack}>
+        <BrandLogo />
         <Label>Welcome back</Label>
         <Title>Your home services, all together.</Title>
       </View>

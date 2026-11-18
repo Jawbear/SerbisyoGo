@@ -2,7 +2,7 @@
   "expo": {
     "name": "SerbisyoGo",
     "slug": "serbisyogo-mobile",
-    "version": "0.5.3",
+    "version": "0.5.4",
     "scheme": "serbisyogo",
     "orientation": "default",
     "userInterfaceStyle": "dark",
@@ -10,14 +10,19 @@
     "icon": "./assets/logo.png",
     "android": {
       "package": "com.serbisyogo.mobile",
-      "versionCode": 11,
+      "versionCode": 12,
       "allowBackup": false,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/launcher-foreground.png",
+        "backgroundColor": "#000000",
+        "monochromeImage": "./assets/launcher-monochrome.png"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -25,7 +30,18 @@
       "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "android": {
+            "image": "./assets/logo.png",
+            "backgroundColor": "#000000",
+            "resizeMode": "contain",
+            "imageWidth": 168
+          }
+        }
+      ]
     ]
   }
 }

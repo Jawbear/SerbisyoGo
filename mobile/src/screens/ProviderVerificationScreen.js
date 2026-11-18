@@ -1,3 +1,4 @@
+import BrandLogo from '../components/BrandLogo';
 import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -44,6 +45,7 @@ export default function ProviderVerificationScreen({ navigation }) {
     <Screen>
       <View style={s.between}>
         <View style={s.stack}>
+          <BrandLogo />
           <Label>Provider Workspace</Label>
           <Text style={s.title}>Credentials & Documents</Text>
         </View>

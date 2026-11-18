@@ -1,4 +1,5 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import BrandLogo from './src/components/BrandLogo';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -44,7 +45,7 @@ function Navigator() {
       headerBackVisible: false, contentStyle: { backgroundColor: c.background },
       headerLeft: ({ canGoBack }) => canGoBack ? <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.back}><Icon name="arrow-back-outline" color={c.text} /></Pressable> : null
     })}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'SerbisyoGo', headerTitle: () => <View style={styles.brand}><Image source={require('./assets/logo.png')} style={styles.logo} /><Text style={styles.brandText}>SerbisyoGo</Text></View> }} />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'SerbisyoGo', headerTitle: () => <View style={styles.brand}><BrandLogo size={36} /><Text style={styles.brandText}>SerbisyoGo</Text></View> }} />
       <Stack.Screen name="FindProfessionals" component={FindScreen} options={{ title: 'Find a professional' }} />
       <Stack.Screen name="ProviderDetails" component={ProviderScreen} options={{ title: 'Provider details' }} />
       <Stack.Screen name="BookingForm" component={BookingFormScreen} options={{ title: 'Your service request' }} />
@@ -68,6 +69,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 9 }, logo: { width: 30, height: 30, borderRadius: 8 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   brandText: { color: c.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.4 }, back: { padding: 10, marginLeft: -8, marginRight: 6, minWidth: 44, minHeight: 44, justifyContent: 'center' }
 });

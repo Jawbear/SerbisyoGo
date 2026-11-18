@@ -1,6 +1,6 @@
 {
   "name": "serbisyogo-mobile",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "type": "module",
   "main": "index.js",
@@ -25,6 +25,7 @@
     "expo-crypto": "~55.0.19",
     "expo-document-picker": "~55.0.17",
     "expo-font": "~55.0.8",
+    "expo-splash-screen": "~55.0.25",
     "expo-status-bar": "~55.0.6",
     "expo-system-ui": "~55.0.22",
     "react": "19.2.0",

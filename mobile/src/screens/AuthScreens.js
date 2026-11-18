@@ -1,3 +1,4 @@
+import BrandLogo from '../components/BrandLogo';
 import { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Linking, Platform, Pressable, Text, View } from 'react-native';
@@ -32,6 +33,7 @@ export function RegisterScreen({ navigation }) {
   return (
     <Screen footer={false}>
       <View style={s.stack}>
+        <BrandLogo />
         <Label>Join your local community</Label>
         <Title>A little help starts here.</Title>
       </View>
@@ -122,6 +124,7 @@ export function VerifyEmailScreen({ navigation, route }) {
 
   return (
     <Screen footer={false}>
+      <BrandLogo />
       <Title>Verify your email</Title>
       <Notice>Enter the verification code from your email. If you confirmed using the email link, go back to sign in. Check your spam folder if the email is missing.</Notice>
       <Card style={s.stack}>

@@ -45,9 +45,15 @@ export function findService(catalog, providerId, serviceId) {
   return provider && service ? { provider, service } : null;
 }
 
-export function filterProviders(catalog, search = '', categoryId = '') {
+export function filterProviders(catalog, search = '', categoryId = '', city = '') {
+  const normalizeCity = value => value.trim().toLowerCase().replace(/^city of | city$/g, '');
+  const municipality = normalizeCity(city);
   const term = search.trim().toLowerCase();
   return catalog.providers.filter(provider => {
+    if (municipality) {
+      const areas = [provider.city, ...(provider.service_areas || [])];
+      if (!areas.some(area => typeof area === 'string' && normalizeCity(area.split(',')[0]) === municipality)) return false;
+    }
     const services = catalog.services.filter(service => service.provider_id === provider.id);
     if (categoryId && !services.some(service => service.category_id === categoryId)) return false;
     const text = [provider.display_name, provider.headline, provider.city, ...services.map(service => service.title)].join(' ').toLowerCase();

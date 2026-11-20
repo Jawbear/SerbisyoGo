@@ -9,7 +9,7 @@ import { colors as c } from '../theme';
 
 const Context = createContext(null);
 const REMINDER = 'serbisyogo:update-reminder';
-export function UpdateProvider({ children }) {
+export function UpdateProvider({ children, allowPrompt = true }) {
   const installed = updater?.installedVersion() || { versionName: config.expo.version, versionCode: config.expo.android.versionCode, sdkInt: 999 };
   const [release, setRelease] = useState(null); const [checking, setChecking] = useState(false);
   const [error, setError] = useState(''); const [prompt, setPrompt] = useState(false);
@@ -71,7 +71,7 @@ export function UpdateProvider({ children }) {
   }
   return <Context.Provider value={{installed,release,checking,checked,error,stage,progress,message,check,download,install,canInstall:Boolean(updater),cancel:()=>updater?.cancelDownload()}}>
     {children}
-    <Modal visible={prompt} transparent animationType="fade" onRequestClose={later}>
+    <Modal visible={prompt && allowPrompt} transparent animationType="fade" onRequestClose={later}>
       <View style={{flex:1,backgroundColor:'#0009',justifyContent:'center',padding:24}}><View accessibilityViewIsModal style={{backgroundColor:c.panel,borderColor:c.border,borderWidth:1,borderRadius:20,padding:24,gap:18,maxWidth:440,width:'100%',alignSelf:'center'}}>
         <Text accessibilityRole="header" style={{color:c.text,fontSize:23,fontWeight:'700'}}>A new version is available</Text><Text style={{color:c.muted,lineHeight:22}}>SerbisyoGo {release?.version_name} is ready. You can update now or keep using your current version.</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Download app update" onPress={download} style={{backgroundColor:c.green,padding:16,borderRadius:12}}><Text style={{color:c.buttonText,textAlign:'center',fontWeight:'700'}}>Download update</Text></Pressable>

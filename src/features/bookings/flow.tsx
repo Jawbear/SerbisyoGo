@@ -22,7 +22,7 @@ type Draft = {
   };
   starts_at: string | null;
 };
-export const todayManila = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+import { todayManila } from '@/lib/domain';
 export function BookingFlow({
   step
 }: {
@@ -31,6 +31,8 @@ export function BookingFlow({
   const params = useSearchParams();
   const router = useRouter();
   const provider = params.get('provider') || '';
+  const requestedDay = params.get('day') || '';
+  const preferredDay = /^\d{4}-\d{2}-\d{2}$/.test(requestedDay) && requestedDay >= todayManila() && requestedDay <= todayManila(89) && new Date(requestedDay + 'T12:00:00Z').toJSON()?.slice(0, 10) === requestedDay ? requestedDay : '';
   const draftParam = params.get('draft') || '';
   const [savedDraft, setSavedDraft] = useState(draftParam);
   const query = useQuery('booking-flow-' + provider + '-' + draftParam, async () => ({
@@ -61,7 +63,7 @@ export function BookingFlow({
             p_service: data.provider_service_id,
             p_description: data.description,
             p_address: address,
-            p_starts_at: draft?.starts_at || null
+            p_starts_at: draft?.provider_service_id === data.provider_service_id ? draft.starts_at : null
           });
           setSavedDraft(id);
           const savedUrl = new URL(window.location.href);
@@ -75,20 +77,22 @@ export function BookingFlow({
             upload.set('draft_id', id);
             await edge('files', upload);
           }
-          router.push(`/book/schedule/?draft=${id}&provider=${provider}`);
-        }}><Select label="Select service" name="service" required defaultValue={draft?.provider_service_id || params.get('service') || ''}><option value="" disabled>Choose a service</option>{query.data?.services.map(s => <option key={s.id} value={s.id}>{s.title} · {money(s.rate_centavos)} {s.pricing_mode === 'quote' ? 'estimate' : ''}</option>)}</Select><Textarea label="Describe the task" name="description" required minLength={10} maxLength={3000} defaultValue={draft?.description} placeholder="What is happening, and what would you like repaired?" /><div className="grid-2"><Field label="Address label" name="label" placeholder="Home" defaultValue={draft?.address.label || 'Home'} required maxLength={40} /><Field label="City / municipality" name="city" defaultValue={draft?.address.city} required minLength={2} /></div><Field label="Complete service address" name="line1" placeholder="House/unit, building, street, barangay" defaultValue={draft?.address.line1} required minLength={5} maxLength={250} /><Field label="Postal code" name="postal_code" inputMode="numeric" pattern="[0-9]{4}" defaultValue={draft?.address.postal_code} required /><Field label="Optional photo (JPG, PNG, WebP; up to 10 MB)" name="photo" type="file" accept="image/jpeg,image/png,image/webp" /><Notice>Your draft is saved to your account when you continue. Rates for quotation-based jobs remain estimates until you accept the provider’s quote.</Notice></MutationForm>{!query.data?.services.length && <Empty title="No active services available" action={<ButtonLink href="/find/">Find another professional</ButtonLink>} />}</Card> : !draft ? <Empty title="Start with your booking details" action={<ButtonLink href="/find/">Find a professional</ButtonLink>} /> : step === 'schedule' ? <Schedule draft={draft} next={draftLink('payment')} /> : <Payment draft={draft} back={draftLink('schedule')} />}</QueryState></>;
+          router.push(`/book/schedule/?draft=${id}&provider=${provider}${preferredDay ? "&day=" + preferredDay : ""}`);
+        }}><Select label="Select service" name="service" required defaultValue={draft?.provider_service_id || params.get('service') || ''}><option value="" disabled>Choose a service</option>{query.data?.services.map(s => <option key={s.id} value={s.id}>{s.title} · {money(s.rate_centavos)} {s.pricing_mode === 'quote' ? 'estimate' : ''}</option>)}</Select><Textarea label="Describe the task" name="description" required minLength={10} maxLength={3000} defaultValue={draft?.description} placeholder="What is happening, and what would you like repaired?" /><div className="grid-2"><Field label="Address label" name="label" placeholder="Home" defaultValue={draft?.address.label || 'Home'} required maxLength={40} /><Field label="City / municipality" name="city" defaultValue={draft?.address.city} required minLength={2} /></div><Field label="Complete service address" name="line1" placeholder="House/unit, building, street, barangay" defaultValue={draft?.address.line1} required minLength={5} maxLength={250} /><Field label="Postal code" name="postal_code" inputMode="numeric" pattern="[0-9]{4}" defaultValue={draft?.address.postal_code} required /><Field label="Optional photo (JPG, PNG, WebP; up to 10 MB)" name="photo" type="file" accept="image/jpeg,image/png,image/webp" /><Notice>Your draft is saved to your account when you continue. Rates for quotation-based jobs remain estimates until you accept the provider’s quote.</Notice></MutationForm>{!query.data?.services.length && <Empty title="No active services available" action={<ButtonLink href="/find/">Find another professional</ButtonLink>} />}</Card> : !draft ? <Empty title="Start with your booking details" action={<ButtonLink href="/find/">Find a professional</ButtonLink>} /> : step === 'schedule' ? <Schedule draft={draft} preferredDay={preferredDay} next={draftLink('payment')} /> : <Payment draft={draft} back={draftLink('schedule')} />}</QueryState></>;
 }
 function Schedule({
+  preferredDay,
   draft,
   next
 }: {
   draft: Draft;
   next: string;
+  preferredDay: string;
 }) {
-  const [day, setDay] = useState(() => draft.starts_at ? new Date(new Date(draft.starts_at).getTime() + 8 * 3600000).toISOString().slice(0, 10) : todayManila());
+  const [day, setDay] = useState(() => draft.starts_at ? new Date(new Date(draft.starts_at).getTime() + 8 * 3600000).toISOString().slice(0, 10) : preferredDay || todayManila());
   const [bounds] = useState(() => ({
     min: todayManila(),
-    max: new Date(Date.now() + 89 * 86400000 + 8 * 3600000).toISOString().slice(0, 10)
+    max: todayManila(89)
   }));
   const router = useRouter();
   const slots = useQuery('slots-' + draft.provider_service_id + '-' + day, () => rpc<{
@@ -141,7 +145,7 @@ function Payment({
     maxWidth: 960
   }}><Card><h2>Payment method</h2><div className="row" style={{
         marginBottom: 20
-      }}><ShieldCheck className="green" /><div><strong>GCash / cash settlement</strong><p className="small muted">Payment is pending until an authorized settlement is recorded.</p></div></div><Notice>After service completion, open booking details to send a GCash payment and submit your receipt for administrator verification. No payment is collected when you submit this request.</Notice><MutationForm submit="Submit booking request →" disabled={!price.data || !draft.starts_at} onSubmit={async f => {
+      }}><ShieldCheck className="green" /><div><strong>Pay after service</strong><p className="small muted">Payment is pending until an authorized settlement is recorded.</p></div></div><Notice>No payment is due now. After completion, check your booking for the available settlement instructions. If GCash is enabled, submit your transfer receipt there for verification.</Notice><MutationForm submit="Submit booking request →" disabled={!price.data || !draft.starts_at} onSubmit={async f => {
         if (!f.get('acknowledge')) throw new Error('Please acknowledge the booking request.');
         const id = await rpc<string>('confirm_booking', {
           p_draft: draft.id,

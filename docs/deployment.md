@@ -8,11 +8,12 @@ public environment, run `npm run deploy:check` to check local configuration,
 email placeholders and required export files. This does not inspect the hosted
 database, validate SMTP delivery, or establish production readiness.
 
-The Cloudflare workflow validates pushes to `main` and uploads a
-`cloudflare-website` artifact. Publication requires a manual workflow run with
-`publish` enabled. Set repository `NEXT_PUBLIC_*` variables for the intended
-website and Supabase project, plus `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` secrets. Use an empty base path for the configured Worker.
+When enabled, the Cloudflare workflow validates pushes to `main` and uploads a
+commit-named export with its archive SHA-256 in the build summary. Publication
+requires a manual run on `main` with `publish=true`, the full `reviewed_sha` and
+an approval for `cloudflare-production`. Set repository `NEXT_PUBLIC_*` variables
+for the intended website and Supabase project. Store `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in that protected environment. Use an empty base path for the configured Worker.
 Supabase secrets remain outside the browser build. This workflow does not apply
 migrations or deploy Edge Functions.
 
@@ -41,7 +42,7 @@ still a draft.
 For a local deployment instead of the GitHub workflow:
 
 ```powershell
-Copy-Item .env.production.example .env.production.local
+if (!(Test-Path .env.production.local)) { Copy-Item .env.production.example .env.production.local }
 # fill in the public Supabase URL/key and the real Worker URL
 npx.cmd wrangler login
 npm.cmd run deploy:cloudflare -- --confirm
@@ -148,13 +149,13 @@ Templates use the SerbisyoGo forest/ivory/sage/gold palette with bilingual Engli
 
 ### Cloudflare CI/CD
 
-The `.github/workflows/cloudflare-deploy.yml` workflow automatically deploys to Cloudflare Workers on every push to `main`:
+The local workflow has separate validation and publication jobs. The operator has disabled the remote workflow during the 0.5.6 hold.
 
 1. Installs dependencies, runs tests/lint/typecheck
 2. Builds the static export with `NEXT_PUBLIC_*` variables from repository variables
-3. Deploys to Cloudflare Workers using `wrangler deploy`
+3. Packages the validated export. The manually approved deploy job retrieves the same archive, checks its digest and runs Wrangler against it.
 
-**Required repository secrets** (Settings → Secrets and variables → Actions → Secrets):
+**Production environment secrets** (Settings → Environments → cloudflare-production)
 - `CLOUDFLARE_API_TOKEN` — Create at Cloudflare Dashboard → My Profile → API Tokens → Create Token → Edit Cloudflare Workers
 - `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Dashboard → Workers & Pages → Account ID (right sidebar)
 
@@ -173,7 +174,7 @@ Prints 35 items across 7 phases: pre-deployment, Supabase setup, SMTP/Auth, Clou
 
 ## Release gates
 
-Before a real launch, resolve the outstanding checks in `validation.md`, regenerate introspected types, commit a resolved package lock, and review the operator-approved terms/privacy/pricing policies at `/terms/`, `/privacy/` and `/pricing/`. Configure sender reputation/rate limits, production map quotas, backups, monitoring and log retention. Run the two-customer/two-provider negative-access tests against staging. Supply an APK only after Android development and signing are complete; this task has not created one.
+Before a real launch, resolve the outstanding checks in `validation.md`, regenerate introspected types, commit a resolved package lock, and review the operator-approved terms/privacy/pricing policies at `/terms/`, `/privacy/` and `/pricing/`. Configure sender reputation/rate limits, production map quotas, backups, monitoring and log retention. Run the two-customer/two-provider negative-access tests against staging. Use the signed 0.5.6 local test APK for acceptance. Publication requires a tested artifact from the approved release commit. See the [0.5.6 release rehearsal and recovery runbook](release-056.md).
 
 No source or database workflow automatically deploys a production Supabase project. The backend-check workflow starts an isolated local backend on a GitHub runner and tests it without production credentials.
 

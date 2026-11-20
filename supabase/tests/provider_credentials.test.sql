@@ -47,6 +47,17 @@ select lives_ok($$select public.admin_action('provider','a1910000-0000-4000-8000
 select is((select status from public.provider_profiles where id='a1900000-0000-4000-8000-000000000002'),'approved','complete provider becomes approved');
 select is((select role from public.role_assignments where user_id='a1900000-0000-4000-8000-000000000002'),'provider','only successful review grants provider access');
 select is((select reason from public.provider_applications where id='a1910000-0000-4000-8000-000000000001'),'Inspected fictional credentials','review reason is retained');
+select set_config('request.jwt.claim.sub','a1900000-0000-4000-8000-000000000002',true);
+select lives_ok($$select public.set_service_area_pin(8.17812,125.99351)$$,'approved owner can publish a service-area landmark');
+reset role;
+select set_config('request.jwt.claim.sub','',true);
+set local role anon;
+select is((select p.min_rate from public.public_providers p join public.provider_services s on s.provider_id=p.id
+  where s.id='a1920000-0000-4000-8000-000000000001' and s.active and p.service_latitude=8.178 and p.service_longitude=125.994),
+  50000,'anonymous discovery receives the approved profile, active offer price and rounded map pin');
+reset role;
+select set_config('request.jwt.claim.sub','a1900000-0000-4000-8000-000000000001',true);
+set local role authenticated;
 select lives_ok($$select public.admin_action('provider','a1900000-0000-4000-8000-000000000002','suspend','{"reason":"Fictional suspension for reactivation test"}')$$,'admin can suspend the approved provider');
 reset role;
 update public.provider_services set active=false where id='a1920000-0000-4000-8000-000000000001';

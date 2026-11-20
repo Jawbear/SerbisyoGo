@@ -12,5 +12,7 @@ export default defineConfig([...nextVitals, ...nextTs, globalIgnores([
   'playwright-report/**',
   'test-results/**',
   'mobile/**',
+  'fixly/**',
+  'deliverables/**',
   'src/lib/database.types.ts'
 ])]);

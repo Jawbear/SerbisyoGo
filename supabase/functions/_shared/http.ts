@@ -1,4 +1,4 @@
-import {createClient} from 'npm:@supabase/supabase-js@2';
+import {createClient} from '@supabase/supabase-js';
 import {corsHeaders} from './cors.ts';
 import {publicStorageUrl} from './storage-url.ts';
 export function browserStorageUrl(url:string) {

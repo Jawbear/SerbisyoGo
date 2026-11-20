@@ -13,7 +13,10 @@ const displayHeight=Number(adb('shell','wm','size').match(/\d+x(\d+)/)?.[1]||192
 async function findButton(text,timeout=90000){return waitFor(value=>{const node=[...value.matchAll(/<node\b[^>]*>/g)].map(match=>match[0]).find(node=>node.includes(`content-desc="${text}"`)||node.includes(`text="${text}"`));const bounds=node?.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);if(bounds&&Number(bounds[2])>displayHeight*.12&&Number(bounds[4])<displayHeight*.81)return true;adb('shell','input','swipe','800','1400','800','600','350');return false;},text,timeout);}
 
 // This is the disposable runner emulator, never a connected user's phone.
-adb('uninstall',metadata.packageName);adb('install','builds/updater-baseline.apk');
+if (adb('shell','pm','list','packages',metadata.packageName).trim().split(/\r?\n/).includes('package:'+metadata.packageName)) {
+  adb('uninstall',metadata.packageName);
+}
+adb('install','builds/updater-baseline.apk');
 adb('root');adb('wait-for-device');
 writeFileSync('builds/update-retained-data.txt','retained-through-in-place-update\n');
 adb('shell','mkdir','-p',`/data/data/${metadata.packageName}/files`);
@@ -38,12 +41,13 @@ const end=Date.now()+90000;let upgraded=false;
 while(Date.now()<end){if(new RegExp(`versionCode=${metadata.versionCode}\\b`).test(adb('shell','dumpsys','package',metadata.packageName))){upgraded=true;break;}await sleep(1000);}
 if(!upgraded)throw new Error('Android did not install the newer version.');
 if(!adb('shell','cat',`/data/data/${metadata.packageName}/files/update-retained-data.txt`).includes('retained-through-in-place-update'))throw new Error('Private application data was not retained during the update.');
-xml=await waitFor(value=>value.includes('App installed.')||value.includes('App updates')||value.includes('Find a professional'),'installer completes after upgrade');
+const updatedScreen=value=>value.includes('App updates')||value.includes('Find a professional')||value.includes('Browse as guest');
+xml=await waitFor(value=>value.includes('App installed.')||updatedScreen(value),'installer completes after upgrade');
 // Android's completion dialog can remain above an activity started with adb.
 // Follow the real installer Open action before checking the updated app UI.
 if(xml.includes('App installed.')&&/text="Open"/.test(xml))tap(xml,'Open');
 else adb('shell','am','start','-W','-n',`${metadata.packageName}/.MainActivity`);
-await waitFor(value=>value.includes('App updates')||value.includes('Find a professional'),'updated app launches');
+await waitFor(updatedScreen,'updated app launches');
 metadata.emulatorSmoke.inAppUpdate={fromVersionCode:metadata.versionCode-1,toVersionCode:metadata.versionCode,optionalPrompt:true,laterKeepsAppUsable:true,downloadVerified:true,permissionFlow:true,androidConfirmation:true,privateDataRetained:true};
 writeFileSync('builds/build-metadata.json',JSON.stringify(metadata,null,2)+'\n');
 console.log('In-app update passed: optional prompt, Later, download verification, permission settings, Android confirmation, actual version upgrade and retained private data.');

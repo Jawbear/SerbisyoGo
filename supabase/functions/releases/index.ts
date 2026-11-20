@@ -1,4 +1,4 @@
-import {unzipSync} from 'npm:fflate@0.8.2';
+import {unzipSync} from 'fflate';
 import {createHash} from 'node:crypto';
 import {authorize,clients,cors,json,limitedFile,unwrap,requireData,browserStorageUrl} from '../_shared/http.ts';
 import {validateUpload} from '../../../src/lib/domain.ts';

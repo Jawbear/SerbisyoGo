@@ -54,6 +54,7 @@ export default function SignInScreen({ navigation, route }) {
         <View style={{ gap: 4 }}>
           <Text accessibilityRole="header" style={{ color: c.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4 }}>Sign in</Text>
           <Muted>Your details stay with your account.</Muted>
+        {route.params?.fromOpening && <Button title="Browse as guest" secondary onPress={() => navigation.replace('Home')} />}
         </View>
         <Field label="Email address" placeholder="you@example.com" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={email} onChangeText={setEmail} />
         <Field label="Password" secureTextEntry autoComplete="current-password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />

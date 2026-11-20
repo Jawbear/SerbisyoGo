@@ -4,7 +4,7 @@ React Native/Expo client for the existing SerbisyoGo home-services system. It op
 
 The verified signed APK is available from the [SerbisyoGo download page](https://serbisyogo.sg-team.workers.dev/download/), for Android 7.0+. See [Android build and installation details](ANDROID_BUILD.md).
 
-The 0.3.0 source adds optional in-app Android updates: a newer-version prompt, Later, download progress, APK verification and Android installation confirmation. Home → App updates provides a manual check. Users on 0.1.0/0.2.0 must install an updater-enabled APK once without uninstalling first. Expo Go and browser previews cannot perform native APK installation. See [the updater flow and release checks](../docs/in-app-updates.md). Release availability depends on completion of the signed Android build and emulator checks.
+App updates can be checked from the app and installed through Android after package verification. The delivery report distinguishes the local test APK from the public release. [Update flow](../docs/in-app-updates.md) · [Current delivery and QA](../docs/marketplace-delivery.md)
 
 ## Run on your laptop
 
@@ -34,8 +34,11 @@ Prices and appointments come from the server. A successful confirmation is requi
 
 | Screen | Purpose | Parameters |
 | --- | --- | --- |
-| Home | Public discovery, account access, main shortcuts | None |
-| FindProfessionals | Search and category filtering | Optional `categoryId` |
+| Home | First-run Android onboarding, customer discovery or dedicated provider dashboard | None |
+| Profile | Shared profile editing and account notifications | None |
+| ProviderSettings | Service catalog, pricing and weekly hours | None |
+| SupportCases | Open a case and follow replies | Optional `bookingId` |
+| FindProfessionals | Service, city, price, rating, availability and service-area maps | Optional `categoryId`, `search`, `city` |
 | ProviderDetails | Selected professional and services | `providerId` |
 | BookingForm | Task, address and available appointment | `providerId`, `serviceId`, optional `draftId` |
 | BookingReview | Saved draft and server-calculated total | `draftId` |
@@ -64,6 +67,6 @@ npm.cmd run test:e2e
 
 Controlled browser tests intercept backend HTTP calls while exercising the real application, authentication client and booking RPC wiring. Fixtures exist only under `tests/`; they are not an application mode. Separate opt-in tests check actual development accounts without creating hosted bookings. See [VALIDATION.md](VALIDATION.md) for exact results and limits.
 
-Mobile administration has been removed; administrators use the website. Mobile includes registration, verification-email resend, recovery requests, booking conversations, provider status/quotation actions and manual GCash receipt submission. Email confirmation/recovery links open the website. Provider onboarding and availability, profile editing, reviews, support and refund requests still use the website. See [alpha/beta setup and validation limits](../docs/alpha-beta-gcash.md). Physical-phone validation remains pending. The downloadable APK comes from the native Gradle build; `export:android` alone produces a JavaScript/Hermes bundle.
+Mobile customers can register, verify by email code, request a password reset, communicate, track requests, open support cases and review completed work. Recovery links use the website. Providers can manage services, weekly hours, profile applications, credentials and assigned work on Android. Administrators manage accounts, settlements and platform settings on the website. The native build and distribution instructions are in [ANDROID_BUILD.md](ANDROID_BUILD.md).
 
 See the [evaluation guide](LAB_GUIDE.md) and [AI development record](AI_DEVELOPMENT.md).

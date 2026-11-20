@@ -1,4 +1,4 @@
-﻿begin;
+begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
@@ -48,10 +48,18 @@ select set_config('test.conversation',(select id::text from public.conversations
 select lives_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Authorized customer message','99999999-0000-4000-8000-000000000001')$$,'member can send a message');
 select lives_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Authorized customer message','99999999-0000-4000-8000-000000000001')$$,'duplicate message nonce is idempotent');
 select is((select count(*) from public.messages),1::bigint,'duplicate message created once');
+select set_config('test.message', (select id::text from public.messages limit 1), true);
+select is((select count(*) from public.conversation_inbox),1::bigint,'sender sees their booking thread');
+select ok(not has_table_privilege('authenticated','public.conversation_inbox','TRIGGER')
+  and not has_table_privilege('authenticated','public.conversation_inbox','TRUNCATE'),
+  'inbox readers receive only the required table access');
+select is((select count(*) from public.notifications where title='New booking message'),0::bigint,'sender receives no self notification');
 
 select set_config('request.jwt.claims','{"sub":"aaaaaaaa-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is((select count(*) from public.bookings),0::bigint,'second customer cannot read first customer booking');
 select is((select count(*) from public.messages),0::bigint,'second customer cannot read conversation history');
+select is((select count(*) from public.conversation_inbox),0::bigint,'inbox excludes unrelated threads');
+select throws_ok($$select public.read_through_message(current_setting('test.message')::uuid)$$,'42501',null,'unrelated account cannot advance read cursor');
 select is((select count(*) from public.support_cases),0::bigint,'second customer cannot read first customer support case');
 select throws_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Intrusion attempt','99999999-0000-4000-8000-000000000002')$$,'42501',null,'second customer cannot send into unrelated conversation');
 select throws_ok($$select public.confirm_booking(current_setting('test.draft_a')::uuid,50000)$$,'42501',null,'second customer cannot confirm another draft');
@@ -66,6 +74,9 @@ select throws_ok($$select public.update_location(current_setting('test.booking_a
 
 select set_config('request.jwt.claims','{"sub":"bbbbbbbb-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((select count(*) from public.bookings),2::bigint,'assigned provider sees its own requests');
+select is((select count(*) from public.notifications where title='New booking message'),1::bigint,'message retry sends one private notification');
+select lives_ok($$select public.read_through_message(current_setting('test.message')::uuid)$$,'recipient can mark the displayed message as read');
+select is((select unread from public.conversation_inbox where id=current_setting('test.conversation')::uuid),0::bigint,'read marker is shared across clients');
 select lives_ok($$select public.transition_booking(current_setting('test.booking_a')::uuid,'confirmed','')$$,'assigned approved provider accepts the request');
 select throws_ok($$select public.transition_booking(current_setting('test.booking_b')::uuid,'confirmed','')$$,'P0001',null,'overlapping accepted booking is prevented');
 select throws_ok($$select public.transition_booking(current_setting('test.booking_a')::uuid,'completed','')$$,'42501',null,'provider cannot skip job states');
@@ -97,7 +108,8 @@ select lives_ok($$select public.booking_quote(current_setting('test.quote_bookin
 select set_config('request.jwt.claims','{"sub":"aaaaaaaa-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select throws_ok($$select public.booking_quote(current_setting('test.quote_booking')::uuid,null,true)$$,'42501',null,'second customer cannot accept another quotation');
 select set_config('request.jwt.claims','{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',true);
-select lives_ok($$select public.booking_quote(current_setting('test.quote_booking')::uuid,null,true)$$,'owning customer can accept quotation');
+select throws_ok($$select public.accept_booking_quote(current_setting('test.quote_booking')::uuid,50000)$$,'P0001',null,'stale displayed labor requires renewed consent');
+select lives_ok($$select public.accept_booking_quote(current_setting('test.quote_booking')::uuid,55000)$$,'owning customer accepts the displayed quotation');
 select is((select total_centavos from public.bookings where id=current_setting('test.quote_booking')::uuid),60000,'accepted quote preserves the original fee and recalculates total');
 select set_config('request.jwt.claims','{"sub":"cccccccc-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select set_config('test.payment',(select id::text from public.payments where booking_id=current_setting('test.booking_a')::uuid),true);
@@ -114,6 +126,12 @@ set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select is((select count(*) from public.app_releases where id=current_setting('test.release')::uuid),0::bigint,'draft APK metadata is not public');
 select is((select count(*) from storage.objects where bucket_id='android-releases'),0::bigint,'unpublished APK storage objects have no public read policy');
+reset role;
+update auth.users set raw_app_meta_data='{"development_fixture":"serbisyogo-development-v1"}'
+where id='aaaaaaaa-0000-4000-8000-000000000001';
+set local role anon;
+select is((select count(*) from public.reviews where booking_id=current_setting('test.booking_a')::uuid),0::bigint,'public profiles exclude feedback by a seeded customer');
+select is((select review_count from public.public_providers where id='bbbbbbbb-0000-4000-8000-000000000001'),0,'a seeded review does not contribute to the public rating count');
 select * from finish();
 rollback;
 

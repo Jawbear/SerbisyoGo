@@ -2,6 +2,7 @@
 
 import { AnnouncementFeed } from '@/features/admin/announcements';
 import Link from 'next/link';
+import { useRef, useState } from 'react';
 import {CredentialReviews} from './credential-reviews';
 import { useSession } from '@/components/session';
 import { Badge, ButtonLink, Card, DataTable, Field, MutationForm, Notice, PageHeading, QueryState, RealtimeRefresh, Select, Stats, Textarea, useQuery, ActionButton } from '@/components/ui';
@@ -96,7 +97,17 @@ export function ProviderProfileEditor() {
   const completeness = checkVerificationCompleteness(q.data?.files || []);
   return <><PageHeading eyebrow="Offer your skills" title={p ? 'Your professional profile' : 'Join your local service community.'} description="Complete your profile, services, availability and private verification documents. Applications stay pending until an administrator reviews them." /><QueryState {...q}>{p && <div className="row" style={{
         marginBottom: 24
-      }}><Badge>{String(p.status)}</Badge><ButtonLink href="/provider/availability/" secondary>Set availability</ButtonLink>{q.data?.applications[0]?.reason ? <Notice>Review feedback: {String(q.data.applications[0].reason)}</Notice> : null}</div>}<div className="grid-2"><div className="stack"><Card><h2>Public profile application</h2>{pending ? <Notice>Your application is waiting for review. You can still complete services, availability and verification documents below.</Notice> : <MutationForm submit={p ? 'Submit profile changes for review' : 'Submit provider application'} success="Application submitted. Complete services, availability and verification documents next." onSubmit={async f => {
+      }}><Badge>{String(p.status)}</Badge><ButtonLink href="/provider/availability/" secondary>Set availability</ButtonLink>{q.data?.applications[0]?.reason ? <Notice>Review feedback: {String(q.data.applications[0].reason)}</Notice> : null}</div>}<div className="grid-2"><div className="stack">{p && <Card><h2>Public service-area pin</h2>
+        <p className="muted">Choose a public landmark within your coverage area. Visitors can see this point on the map. Clear both fields to remove it.</p>
+        <MutationForm key={String(p.service_latitude) + ',' + String(p.service_longitude)} submit="Save map pin" onSubmit={async form => {
+          const latitude = String(form.get('latitude') || '').trim();
+          const longitude = String(form.get('longitude') || '').trim();
+          if (Boolean(latitude) !== Boolean(longitude)) throw new Error('Enter both coordinates, or clear both fields.');
+          await rpc('set_service_area_pin', { p_latitude: latitude ? Number(latitude) : null, p_longitude: longitude ? Number(longitude) : null });
+        }}>
+          <Field label="Public latitude" name="latitude" type="number" step="any" min="-85" max="85" defaultValue={String(p.service_latitude ?? '')} />
+          <Field label="Public longitude" name="longitude" type="number" step="any" min="-180" max="180" defaultValue={String(p.service_longitude ?? '')} />
+        </MutationForm></Card>}<Card><h2>Public profile application</h2>{pending ? <Notice>Your application is waiting for review. You can still complete services, availability and verification documents below.</Notice> : <MutationForm submit={p ? 'Submit profile changes for review' : 'Submit provider application'} success="Application submitted. Complete services, availability and verification documents next." onSubmit={async f => {
               const data = providerSchema.parse({
                 display_name: f.get('display_name'),
                 headline: f.get('headline'),
@@ -141,40 +152,62 @@ function ServiceForm({
     });
   }}><Field label="Service title" name="title" defaultValue={service?.title} required minLength={3} maxLength={120} /><Select label="Category" name="category" required defaultValue={service?.category_id}><option value="" disabled>Choose category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select><div className="grid-2"><Field label="Labor amount / starting estimate (₱)" name="rate" inputMode="decimal" placeholder="0.00" defaultValue={service ? (service.rate_centavos / 100).toFixed(2) : ''} required /><Field label="Appointment duration (minutes)" name="duration" type="number" min={30} max={480} step={30} defaultValue={service?.duration_minutes || 60} required /></div><Select label="Pricing type" name="mode" defaultValue={service?.pricing_mode || 'quote'}><option value="quote">Estimate — customer accepts final quote</option><option value="fixed">Fixed labor amount</option></Select><label className="check-field"><input name="active" type="checkbox" defaultChecked={service?.active ?? true} /><span>Offer this service</span></label></MutationForm>;
 }
+type WeeklyInterval = { weekday: number; starts_minute: number; ends_minute: number };
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function timeValue(minute: number) {
+  return [Math.floor(minute / 60) % 24, minute % 60].map(n => String(n).padStart(2, '0')).join(':');
+}
+
+function WeeklyHoursForm({ week }: { week: WeeklyInterval[] }) {
+  const [windows, setWindows] = useState(() =>
+    [...week].sort((a, b) => a.weekday - b.weekday || a.starts_minute - b.starts_minute)
+      .map((slot, key) => ({ ...slot, key }))
+  );
+  const nextKey = useRef(windows.length);
+  function addWindow(weekday: number) {
+    const key = nextKey.current++;
+    setWindows(current => [...current, { weekday, key, starts_minute: 480, ends_minute: 1020 }]);
+  }
+  return <MutationForm submit="Save weekly hours" onSubmit={async form => {
+    function minutes(name: string) {
+      const [hour, minute] = String(form.get(name)).split(':').map(Number);
+      return hour * 60 + minute;
+    }
+    const schedule = windows.map(({ weekday, key }) => {
+      const start = minutes('start-' + key);
+      const end = minutes('end-' + key) || 1440;
+      if (start >= end) throw new Error(weekdays[weekday] + ' hours must end after they start.');
+      return { weekday, starts_minute: start, ends_minute: end };
+    });
+    await rpc('save_availability', { p_week: schedule });
+  }}>
+    <p className="muted">Add a time period for each shift you work. An end time of midnight closes the day.</p>
+    {weekdays.map((day, weekday) => <div key={day} className="stack">
+      <h3>{day}</h3>
+      {windows.filter(slot => slot.weekday === weekday).map((slot, index) => <div key={slot.key} className="stack">
+        <div className="grid-2">
+          <Field label="From" aria-label={day + ' start ' + (index + 1)} name={'start-' + slot.key} type="time" defaultValue={timeValue(slot.starts_minute)} required />
+          <Field label="Until" aria-label={day + ' end ' + (index + 1)} name={'end-' + slot.key} type="time" defaultValue={timeValue(slot.ends_minute)} required />
+        </div>
+        <button type="button" className="button secondary compact" aria-label={'Remove ' + day + ' shift ' + (index + 1)} onClick={() => setWindows(current => current.filter(item => item.key !== slot.key))}>Remove shift</button>
+      </div>)}
+      <button type="button" className="button secondary compact" disabled={windows.length >= 28} aria-label={'Add shift for ' + day} onClick={() => addWindow(weekday)}>Add shift</button>
+    </div>)}
+  </MutationForm>;
+}
+
 export function Availability() {
   const s = useSession();
   const q = useQuery('weekly-' + s.user?.id, async () => ({
-    week: await list<{
-      weekday: number;
-      starts_minute: number;
-      ends_minute: number;
-    }>('weekly_availability', {
+    week: await list<WeeklyInterval>('weekly_availability', {
       provider_id: s.user!.id
     }),
     blocked: await list('unavailable_periods', {
       provider_id: s.user!.id
     })
   }), !!s.user);
-  const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
-  const minute = (v: FormDataEntryValue | null) => {
-    const [h, m] = String(v).split(':').map(Number);
-    return h * 60 + m;
-  };
-  return <><PageHeading title="Make room for good work." description="Weekly hours are in Asia/Manila (UTC+8). Existing accepted bookings keep their reserved time." action={<ButtonLink href="/provider/profile/" secondary>Profile & services</ButtonLink>} /><QueryState {...q}><div className="grid-2"><Card><h2>Weekly availability</h2><MutationForm key={JSON.stringify(q.data?.week)} submit="Save weekly hours" onSubmit={async f => {
-            const week = [0, 1, 2, 3, 4, 5, 6].filter(i => f.get('day-' + i)).map(i => ({
-              weekday: i,
-              starts_minute: minute(f.get('start-' + i)),
-              ends_minute: minute(f.get('end-' + i))
-            }));
-            await rpc('save_availability', {
-              p_week: week
-            });
-          }}>{['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, i) => {
-              const slot = q.data?.week.find(w => w.weekday === i);
-              return <div key={day} className="stack" style={{
-                gap: 10
-              }}><label className="check-field"><input type="checkbox" name={'day-' + i} defaultChecked={!!slot} /><strong>{day}</strong></label><div className="grid-2"><Field label="From" name={'start-' + i} type="time" defaultValue={fmt(slot?.starts_minute || 480)} required /><Field label="Until" name={'end-' + i} type="time" defaultValue={fmt(slot?.ends_minute || 1020)} required /></div></div>;
-            })}</MutationForm></Card><div className="stack"><Card><h2>Block an unavailable period</h2><MutationForm submit="Block dates" onSubmit={async f => {
+  return <><PageHeading title="Make room for good work." description="Weekly hours are in Asia/Manila (UTC+8). Existing accepted bookings keep their reserved time." action={<ButtonLink href="/provider/profile/" secondary>Profile & services</ButtonLink>} /><QueryState {...q}><div className="grid-2"><Card><h2>Weekly availability</h2><WeeklyHoursForm key={JSON.stringify(q.data?.week)} week={q.data?.week || []} /></Card><div className="stack"><Card><h2>Block an unavailable period</h2><MutationForm submit="Block dates" onSubmit={async f => {
               await rpc('set_unavailable', {
                 p_id: null,
                 p_start: new Date(String(f.get('start')) + ':00+08:00').toISOString(),

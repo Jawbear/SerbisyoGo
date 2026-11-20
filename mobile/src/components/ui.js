@@ -1,3 +1,4 @@
+import { useApp } from '../AppContext';
 import { useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,8 +31,9 @@ export function GoogleButton({ title = "Continue with Gmail", onPress, disabled 
   </Pressable>;
 }
 
-export function Field({ label, multiline = false, ...props }) {
-  return <View style={s.field}><Text style={s.fieldLabel}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor={c.muted} style={[s.input, multiline && { minHeight: 112, textAlignVertical: 'top' }]} multiline={multiline} {...props} /></View>;
+export function Field({ label, multiline = false, secureTextEntry = false, ...props }) {
+  const [revealed, setRevealed] = useState(false);
+  return <View style={s.field}><Text style={s.fieldLabel}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor={c.muted} style={[s.input, multiline && { minHeight: 112, textAlignVertical: 'top' }]} multiline={multiline} secureTextEntry={secureTextEntry && !revealed} {...props} />{secureTextEntry && <Pressable accessibilityRole="button" accessibilityLabel={(revealed ? 'Hide ' : 'Show ') + label.toLowerCase()} style={{ alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center' }} onPress={() => setRevealed(!revealed)}><Text style={{ color: c.green }}>{revealed ? 'Hide' : 'Show'} password</Text></Pressable>}</View>;
 }
 
 export function Notice({ children, error = false }) {
@@ -69,7 +71,7 @@ export function ProviderCard({ provider }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={`View ${provider.display_name}`} onPress={() => navigation.navigate('ProviderDetails', { providerId: provider.id })} style={({ pressed }) => [s.card, { gap: 16 }, pressed && { borderColor: c.green }]}>
     <View style={s.row}><ProviderAvatar provider={provider} /><View style={s.flex}><Text style={s.providerName}>{provider.display_name}</Text><Muted>{provider.headline}</Muted></View><Icon name="arrow-forward-outline" size={18} /></View>
     <View style={s.between}><View style={s.inline}><Icon name="location-outline" size={14} color={c.muted} /><Muted>{provider.city}</Muted></View>{Number(provider.review_count) > 0 ? <Text style={s.rating}>★ {Number(provider.rating).toFixed(1)} <Text style={{ color: c.muted }}>({provider.review_count})</Text></Text> : <Badge>New professional</Badge>}</View>
-    <ProviderTrustBadges provider={provider}/><View style={s.cardFoot}><Muted>Starting from</Muted><Text style={s.price}>{money(provider.min_rate || 0)}</Text></View>
+    <ProviderTrustBadges provider={provider}/><View style={s.cardFoot}><Muted>Starting from</Muted><Text style={s.price}>{provider.min_rate == null ? 'No active rate' : money(provider.min_rate)}</Text></View>
   </Pressable>;
 }
 
@@ -83,10 +85,18 @@ export function ProviderGrid({ providers }) {
 export function QuickNav() {
   const navigation = useNavigation();
   const route = useRoute();
-  const active = ['ProviderDetails', 'BookingForm', 'BookingReview'].includes(route.name) ? 'FindProfessionals' : route.name === 'BookingRecord' ? 'MyBookings' : route.name;
-  return <View style={s.bottom}><View style={s.navRow}>{[
-    ['Home', 'Home', 'home-outline'], ['FindProfessionals', 'Find help', 'search-outline'], ['MyBookings', 'Bookings', 'calendar-outline']
-  ].map(([name, title, icon]) => <Pressable key={name} accessibilityRole="button" accessibilityLabel={`Navigate to ${title}`} accessibilityState={{ selected: active === name }} onPress={() => navigation.navigate(name)} style={s.navItem}><Icon name={icon} color={active === name ? c.green : c.muted} /><Text style={[s.navLabel, { color: active === name ? c.green : c.muted }]}>{title}</Text></Pressable>)}</View><Text style={s.tagline}>LOCAL SKILLS. EVERYDAY CARE.</Text></View>;
+  const { identity } = useApp();
+  const provider = identity?.role === 'provider';
+  const active = ['BookingReview', 'BookingForm', 'ProviderDetails'].includes(route.name) ? 'FindProfessionals' : route.name === 'BookingRecord' ? 'MyBookings' : route.name;
+  const tabs = [
+    ['Home', 'Home', 'home-outline'],
+    provider ? ['ProviderSettings', 'Services', 'construct-outline'] : ['FindProfessionals', 'Explore', 'search-outline'],
+    ['MyBookings', 'Bookings', 'calendar-outline'], ['Messages', 'Messages', 'chatbubbles-outline'], ['Profile', 'Profile', 'person-outline']
+  ];
+  return <View style={s.bottom}><View style={s.navRow}>{tabs.map(([name, title, icon]) =>
+    <Pressable key={name} accessibilityRole="button" accessibilityLabel={'Navigate to ' + title} accessibilityState={{ selected: active === name }} onPress={() => navigation.navigate(name, name === 'Messages' ? { bookingId: undefined } : undefined, { pop: true })} style={s.navItem}>
+      <Icon name={icon} color={active === name ? c.green : c.muted} /><Text style={[s.navLabel, { color: active === name ? c.green : c.muted }]}>{title}</Text>
+    </Pressable>)}</View></View>;
 }
 
 export function Screen({ children, footer = true }) {

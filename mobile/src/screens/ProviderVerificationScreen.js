@@ -17,6 +17,7 @@ export default function ProviderVerificationScreen({ navigation }) {
 
   // Application form state for new providers
   const [displayName, setDisplayName] = useState(identity?.profile?.full_name || '');
+  const [editing, setEditing] = useState(false);
   const [headline, setHeadline] = useState('');
   const [bio, setBio] = useState('');
   const [city, setCity] = useState('');
@@ -55,7 +56,7 @@ export default function ProviderVerificationScreen({ navigation }) {
       <Query query={q}>
         {data && (
           <>
-            {profile ? (
+            {profile && !editing ? (
               <>
                 {/* Application status / feedback notice */}
                 {application?.reason ? (
@@ -64,7 +65,11 @@ export default function ProviderVerificationScreen({ navigation }) {
                   <Notice>Your provider application is awaiting review. Upload at least one accepted ID or credential below. Extra documents are optional.</Notice>
                 ) : null}
 
-                {/* Requirements Checklist Card */}
+                {application?.status !== 'pending' && <Button title="Edit public profile and coverage" secondary onPress={() => {
+                  setDisplayName(profile.display_name); setHeadline(profile.headline); setBio(profile.bio); setCity(profile.city);
+                  setServiceAreas(profile.service_areas.join(', ')); setEditing(true);
+                }} />}
+                <Button title="Manage services and hours" secondary onPress={() => navigation.navigate('ProviderSettings')} />
                 <Card style={s.stack}>
                   <View style={s.between}>
                     <Text style={s.sectionTitle}>Choose any one ID or credential</Text>
@@ -185,7 +190,7 @@ export default function ProviderVerificationScreen({ navigation }) {
             ) : (
               /* Provider Application Form when !profile */
               <Card style={s.stack}>
-                <Text style={s.sectionTitle}>Apply to become a Service Provider</Text>
+                <Text style={s.sectionTitle}>{editing ? 'Edit public profile' : 'Apply to become a Service Provider'}</Text>
                 <Muted>Join our verified network of skilled professionals. Submit your application details below, then upload any one accepted ID or credential. Additional documents are optional.</Muted>
 
                 <Field
@@ -225,7 +230,7 @@ export default function ProviderVerificationScreen({ navigation }) {
                 />
 
                 <Button
-                  title="Submit provider application"
+                  title={editing ? 'Submit changes for review' : 'Submit provider application'}
                   icon="checkmark-outline"
                   busy={action.busy}
                   onPress={() => action.run(async () => {
@@ -242,6 +247,7 @@ export default function ProviderVerificationScreen({ navigation }) {
                       city: city.trim(),
                       service_areas: areas
                     });
+                    setEditing(false);
                     refresh();
                   })}
                 />

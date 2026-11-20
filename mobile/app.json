@@ -2,7 +2,7 @@
   "expo": {
     "name": "SerbisyoGo",
     "slug": "serbisyogo-mobile",
-    "version": "0.5.5",
+    "version": "0.5.6",
     "scheme": "serbisyogo",
     "orientation": "default",
     "userInterfaceStyle": "dark",
@@ -10,7 +10,7 @@
     "icon": "./assets/logo.png",
     "android": {
       "package": "com.serbisyogo.mobile",
-      "versionCode": 13,
+      "versionCode": 14,
       "allowBackup": false,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",

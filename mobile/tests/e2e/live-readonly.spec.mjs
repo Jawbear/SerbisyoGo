@@ -8,7 +8,7 @@ for (const role of ['customer', 'provider', 'admin']) {
   test(`${role} signs in with the actual development account and reads assigned requests`, async ({ page }) => {
     const manifest = JSON.parse(await readFile(new URL('../../../.cache/development-users.json', import.meta.url), 'utf8'));
     expect(new URL(manifest.project).origin).toBe(new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).origin);
-    const account = manifest.accounts[role === 'admin' ? 'admin' : `${role}1`];
+    const account = manifest.accounts[role === 'provider' ? (process.env.E2E_PROVIDER_FIXTURE || 'provider1') : role === 'admin' ? 'admin' : 'customer1'];
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');

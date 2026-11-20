@@ -1,10 +1,8 @@
-# SERBISYOGO website
+# SerbisyoGo
 
-A Next.js App Router / TypeScript / Tailwind website with a customer experience, provider workspace and protected administration. The [mobile Expo client](mobile/README.md) uses the same Supabase accounts, services and booking backend directly, with responsive screens and React Navigation. A signed [Android 0.1.0 APK](https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.1.0/SerbisyoGo-0.1.0.apk) is available; see [native build details](mobile/ANDROID_BUILD.md).
+SerbisyoGo is a Philippine home-services marketplace with a Next.js website, a native Expo Android app and shared Supabase authentication, booking, messaging and payment records. Provider and customer tools are available on both clients. Administration runs on the website.
 
-## Current validation status
-
-The implementation is reviewable source, **not a verified production deployment**. Twenty Node tests and TypeScript pass; full ESLint and the static production build passed in the functionality audit. That audit ran 46 existing desktop/mobile browser checks, 6 authentication regressions and actual read-only customer/provider/admin checks against the designated development backend. The [isolated backend run](https://github.com/Jawbear/SerbisyoGo/actions/runs/42946819961) also passed database security tests, generated-type and Edge Function checks, and 20 persisted desktop/mobile workflows including captured registration and password recovery. Sign-in return navigation, protected-page hydration and required storage responses were fixed. The 2 real-APK test instances remain skipped without a supplied Android package. Production SMTP, host configuration and deployment of the latest Edge Function source still need deployment-specific verification. See the [current functionality audit](docs/functionality-audit.md) for exact scope and remaining checks.
+The latest local test build is Android 0.5.6. The delivery report identifies the APK, migration order, verified workflows and remaining release checks. [Marketplace delivery report](docs/marketplace-delivery.md) · [Public Android downloads](https://serbisyogo.sg-team.workers.dev/download/)
 
 ## Hosting: GitHub and Supabase
 

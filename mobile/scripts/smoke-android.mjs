@@ -45,7 +45,7 @@ async function waitForOpeningEvent(event) {
   throw new Error(`Android did not report ${event}`);
 }
 console.log(launch());
-await waitForOpeningEvent('Opening prepared: 1080x1920');
+await waitForOpeningEvent('Opening prepared: 720x1280');
 const overlay = ui();
 if (overlay.includes('Viewing full screen') && overlay.includes('Got it')) tap(overlay, 'Got it');
 await waitForOpeningEvent('Opening ended: completed');
@@ -59,7 +59,7 @@ if (onboardingAppeared) {
   await waitForText('Find a professional');
   adb('shell', 'am', 'force-stop', metadata.packageName);
   launch();
-  await waitForOpeningEvent('Opening prepared: 1080x1920');
+  await waitForOpeningEvent('Opening prepared: 720x1280');
   adb('shell', 'input', 'keyevent', '4');
   await waitForOpeningEvent('Opening ended: dismissed');
   tap(await waitForText('Browse as guest'), 'Browse as guest');

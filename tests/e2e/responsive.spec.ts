@@ -65,8 +65,8 @@ test('discovery filters survive reload and profile navigation', async ({ page })
 test('published APK remains available if optional release lookup fails', async ({ page }) => {
   await page.route('**/*.supabase.co/rest/v1/app_releases*', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Release lookup unavailable' }) }));
   await page.goto('/download/');
-  await expect(page.getByRole('link', { name: 'Download APK', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Take SerbisyoGo with you.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download for Android', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Official Android app' })).toBeVisible();
 });
 
 test('every admin section and private workflow denies anonymous access', async ({ page }) => {

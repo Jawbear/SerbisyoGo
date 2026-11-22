@@ -31,6 +31,12 @@ export function DownloadPage() {
 
   return <>
     <PageHeading eyebrow="SerbisyoGo for Android" title="Home care, in your pocket." description="The same account. The same local expertise. Built to stay with you." />
+    <Card className="stack" style={{ maxWidth: 920, margin: '0 auto 24px' }}>
+      <h2>Classroom demo v0.5.6</h2>
+      <p>Try a sample booking offline. The demo installs alongside the live SerbisyoGo app and opens without signing in.</p>
+      <div><a className="button" href="https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.6/SerbisyoGo-Classroom-0.5.6.apk"><Download size={18} />Download classroom APK</a></div>
+      <p className="small muted">Android 7.0 or later · 56.2 MB · Build 14</p>
+    </Card>
     <Card className="download-hero">
       <div>
         <div className="download-icon"><Smartphone size={44} /></div>

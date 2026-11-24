@@ -40,3 +40,19 @@ test('offline update checking fails without altering account state, while an ava
  const request=async url=>url.includes('app-update.json')?{ok:true,json:async()=>release}:{ok:false};
  assert.equal(await loadAvailableRelease(3,35,undefined,request),null);
 });
+
+test('the public Android updater ignores draft and prerelease metadata', async () => {
+  const urls = [];
+  const request = async url => {
+    urls.push(url);
+    if (url.includes('app-update.json')) return { ok: true, json: async () => release };
+    if (url.includes('api.github.com')) return { ok: true, json: async () =>
+      [{ draft: false, prerelease: true }, { draft: true, prerelease: false }].map(flags => ({
+        ...flags, tag_name: 'android-v0.9.0', assets: [{ name: 'build-metadata.json',
+          browser_download_url: 'https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.9.0/build-metadata.json' }]
+      })) };
+    throw new Error('Unexpected metadata request');
+  };
+  assert.equal(await loadAvailableRelease(3, 35, undefined, request), null);
+  assert.equal(urls.length, 2);
+});

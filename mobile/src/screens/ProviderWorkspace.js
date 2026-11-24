@@ -9,13 +9,13 @@ import { Badge, Button, Card, Chip, Field, Muted, Notice, Query, Screen, Section
 export function ProviderHome({ navigation }) {
   const { identity, api } = useApp();
   const id = identity.user.id;
-  const jobs = useData('provider-jobs', () => api.bookings(id, 'provider'));
+  const jobs = useData('provider-jobs', () => api.providerUpcoming(id));
   useLiveRows('bookings', 'provider_id=eq.' + id, jobs.retry, true);
   return <Screen><View style={s.between}><Title>Your work</Title><Badge>Provider</Badge></View>
     <Button title="Manage services and hours" icon="calendar-outline" onPress={() => navigation.navigate('ProviderSettings')} />
-    <Query query={jobs}>{jobs.data && [['Incoming requests', ['requested']], ['Active jobs', ['en_route', 'in_progress']], ['Upcoming appointments', ['confirmed']]].map(([title, states]) => {
-      const rows = jobs.data.filter(job => states.includes(job.status)).sort((a,b) => a.starts_at.localeCompare(b.starts_at));
-      return <Section key={title} title={title}>{rows.length ? rows.slice(0, 5).map(job => <Card key={job.id} style={s.stack}>
+    <Query query={jobs}>{jobs.data && ['Incoming requests', 'Active jobs', 'Upcoming appointments'].map((title, index) => {
+      const rows = jobs.data[index];
+      return <Section key={title} title={title}>{rows.length ? rows.map(job => <Card key={job.id} style={s.stack}>
         <StatusBadge status={job.status} /><Text style={s.sectionTitle}>{job.service_title}</Text><Muted>{job.reference} · {appointment(job.starts_at)}</Muted>
         <Button secondary title="View job details" onPress={() => navigation.navigate('BookingRecord', { bookingId: job.id })} /></Card>) : <Muted>None at the moment.</Muted>}</Section>;
     })}</Query>

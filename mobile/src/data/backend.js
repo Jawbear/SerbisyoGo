@@ -125,6 +125,13 @@ export const liveApi = {
   submit: (draftId, expectedTotal) => result(db().rpc('confirm_booking', { p_draft: draftId, p_expected_total: expectedTotal })),
   draftPhotos: id => result(db().from('files').select('id,original_name').eq('draft_id', id)
     .eq('kind', 'booking').order('created_at')),
+  profilePhoto: () => fileRequest(null, '?my_avatar=1'),
+  uploadProfilePhoto: asset => {
+    const body = new FormData();
+    body.append('kind', 'avatar');
+    body.append('file', Platform.OS === 'web' ? asset.file : { uri: asset.uri, name: asset.name, type: asset.mimeType });
+    return fileRequest(body);
+  },
   uploadJobPhoto: async (draftId, asset) => {
     const body = new FormData();
     body.append('kind', 'booking');
@@ -144,12 +151,24 @@ export const liveApi = {
   },
   reviewBooking: (id, rating, body) => result(db().rpc('submit_review', { p_booking: id, p_rating: rating, p_body: body.trim() })),
   nextAppointment: userId => result(db().from('bookings').select('id,service_title,starts_at,status').eq('customer_id',userId).in('status',['requested','confirmed','en_route','in_progress']).gte('starts_at',new Date().toISOString()).order('starts_at').limit(1).maybeSingle()),
-  bookings: async (userId, role) => {
+  bookings: async (userId, role, status, before) => {
     if (!userId) return [];
-    const rows = await result(db().from('bookings').select('*').eq(role === 'provider' ? 'provider_id' : 'customer_id', userId).order('created_at', { ascending: false }));
+    let query = db().from('bookings')
+      .select('id,reference,provider_id,service_title,starts_at,status,total_centavos,created_at')
+      .eq(role === 'provider' ? 'provider_id' : 'customer_id', userId)
+      .order('created_at', { ascending: false }).order('id', { ascending: false });
+    if (status) query = query.eq('status', status);
+    if (before) query = query.or(`created_at.lt.${before.created_at},and(created_at.eq.${before.created_at},id.lt.${before.id})`);
+    const rows = await result(query.limit(26));
     const providerIds = [...new Set(rows.map(row => row.provider_id).filter(Boolean))];
     const providers = providerIds.length ? await result(db().from('provider_profiles').select('id,display_name').in('id', providerIds)) : [];
     return withProviderNames(rows, providers);
+  },
+  providerUpcoming: async userId => {
+    const states = [['requested'], ['en_route', 'in_progress'], ['confirmed']];
+    return Promise.all(states.map(statuses => result(db().from('bookings')
+      .select('id,reference,service_title,starts_at,status').eq('provider_id', userId)
+      .in('status', statuses).order('starts_at').order('id').limit(5))));
   },
   booking: async id => {
     if (!id) return null;

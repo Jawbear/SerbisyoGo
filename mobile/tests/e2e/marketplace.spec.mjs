@@ -51,3 +51,57 @@ test('provider workspace retains split shifts and updates service pricing', asyn
   await expect(page.getByText('Weekly hours saved.',{exact:true})).toBeVisible();
   expect(hours.p_week).toEqual([{...week[0],starts_minute:450},week[1]]);
 });
+
+test('booking history requests older pages and clears the cursor when filtering', async ({ page }) => {
+  await installBackend(page);
+  const record = n => ({ id: String(n), reference: 'BK-' + n, status: 'confirmed', service_title: 'Pipe repair',
+    starts_at: '2026-12-10T00:00:00Z', created_at: '2026-11-01T00:00:00Z', total_centavos: 50000 });
+  await page.route('**/rest/v1/bookings?*', route => {
+    const query = new URL(route.request().url()).searchParams;
+    expect(query.get('limit')).toBe('26');
+    expect(query.get('order')).toBe('created_at.desc,id.desc');
+    let rows = Array.from({ length: 26 }, (_, i) => record(99 - i));
+    if (query.has('or')) {
+      expect(query.get('or')).toContain('id.lt.75');
+      rows = [record(74)];
+    }
+    if (query.has('status')) {
+      expect(query.get('status')).toBe('eq.completed');
+      expect(query.has('or')).toBe(false);
+      rows = [];
+    }
+    return route.fulfill({ json: rows });
+  });
+  await page.goto('/sign-in'); await signIn(page);
+  await page.getByRole('button', { name: 'Navigate to Bookings' }).click();
+  await expect(page.getByRole('button', { name: 'Open booking BK-75' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open booking BK-74' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Older bookings' }).click();
+  await expect(page.getByRole('button', { name: 'Open booking BK-74' })).toBeVisible();
+  await page.getByRole('button', { name: 'Completed', exact: true }).click();
+  await expect(page.getByText('No requests in this status')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Newer bookings' })).toHaveCount(0);
+});
+
+test('customer uploads a profile photo through the authenticated files API', async ({ page }) => {
+  await installBackend(page);
+  let uploaded = false;
+  await page.route('**/functions/v1/files', route => {
+    const request = route.request();
+    expect(request.method()).toBe('POST');
+    expect(request.headers()['authorization']).toMatch(/^Bearer /);
+    const multipart = request.postDataBuffer().toString('latin1');
+    expect(multipart).toContain('name="kind"\r\n\r\navatar');
+    expect(multipart).toContain('filename="portrait.png"');
+    uploaded = true;
+    return route.fulfill({ json: { id: 'photo-1' } });
+  });
+  await page.goto('/sign-in'); await signIn(page);
+  await page.getByRole('button', { name: 'Navigate to Profile' }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Choose profile photo' }).click();
+  await (await chooser).setFiles({ name: 'portrait.png', mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jp0sAAAAASUVORK5CYII=', 'base64') });
+  await expect(page.getByText('Profile photo saved.', { exact: true })).toBeVisible();
+  expect(uploaded).toBe(true);
+});

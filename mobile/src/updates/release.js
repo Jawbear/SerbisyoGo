@@ -21,7 +21,7 @@ export async function loadAvailableRelease(installedCode, sdkInt, signal, reques
     if (!feed.ok) throw new Error('Release checking is unavailable.');
     const releases = await feed.json();
     if (!Array.isArray(releases)) throw new Error('Invalid release feed.');
-    for (const release of releases.filter(row=>!row.draft&&/^android-v\d+\.\d+\.\d+$/.test(row.tag_name)).slice(0,3)) {
+    for (const release of releases.filter(row=>!row.draft&&!row.prerelease&&/^android-v\d+\.\d+\.\d+$/.test(row.tag_name)).slice(0,3)) {
       const version=release.tag_name.slice('android-v'.length);
       const asset=release.assets?.find(row=>row.name==='build-metadata.json');
       const address=`https://github.com/Jawbear/SerbisyoGo/releases/download/${release.tag_name}/build-metadata.json`;

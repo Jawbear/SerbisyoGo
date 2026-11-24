@@ -93,9 +93,14 @@ function Conversation({ thread, userId }: { thread: Thread; userId: string }) {
         {!q.data.messages.length && <Empty title="Start the conversation" description="Share the details that will help your professional prepare." />}
       </div>{readError && <p className="small muted" role="status">{readError}</p>}
     </>}</QueryState>
-    <div className="chat-form"><MutationForm submit="Send message" success="Message sent." onSubmit={async () => {
-      await rpc('send_message', { p_conversation: thread.id, p_body: body.trim(), p_nonce: nonce.current });
-      nonce.current = crypto.randomUUID(); setBody(''); setPages([]);
+    <div className="chat-form"><MutationForm submit="Send message" success="Message sent." disabled={!body.trim()} onSubmit={async () => {
+      const sentNonce = nonce.current;
+      await rpc('send_message', { p_conversation: thread.id, p_body: body.trim(), p_nonce: sentNonce });
+      if (nonce.current === sentNonce) {
+        nonce.current = crypto.randomUUID();
+        setBody('');
+      }
+      setPages([]);
     }}><Textarea label="Your message" name="body" rows={2} required maxLength={4000} value={body} onChange={e => { nonce.current = crypto.randomUUID(); setBody(e.target.value); }} placeholder="Write a message…" /></MutationForm></div>
   </section>;
 }

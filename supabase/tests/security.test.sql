@@ -16,6 +16,7 @@ insert into public.provider_profiles(id,display_name,headline,bio,city,service_a
 insert into public.provider_services(id,provider_id,category_id,title,rate_centavos,duration_minutes,pricing_mode) values
 ('dddddddd-0000-4000-8000-000000000001','bbbbbbbb-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Test electrical service',45000,60,'fixed');
 insert into public.weekly_availability(provider_id,weekday,starts_minute,ends_minute) select 'bbbbbbbb-0000-4000-8000-000000000001',i,480,1080 from generate_series(0,6) i;
+insert into public.weekly_availability(provider_id,weekday,starts_minute,ends_minute) select 'bbbbbbbb-0000-4000-8000-000000000001',i,1380,1440 from generate_series(0,6) i;
 update public.app_settings set active=false where active;
 insert into public.app_settings(fee_centavos,commission_bps,active) values(5000,1000,true);
 insert into public.support_cases(id,owner_id,subject,body) values('eeeeeeee-0000-4000-8000-000000000001','aaaaaaaa-0000-4000-8000-000000000001','Test support concern','Fictional evidence for case ownership testing.');
@@ -36,6 +37,11 @@ select throws_ok($$select public.create_release_draft('1.0.0',1,'8.0','Test rele
 select throws_ok($$select public.publish_release('ffffffff-0000-4000-8000-000000000002',false)$$,'42501',null,'customer cannot publish APKs');
 select throws_ok($$insert into storage.objects(bucket_id,name) values('android-releases','malicious.apk')$$,'42501',null,'browser cannot upload APK storage objects');
 -- Use a server-available slot. Only availability, never unrelated private booking details, is returned.
+select ok(exists(
+  select 1 from jsonb_array_elements(public.available_slots('dddddddd-0000-4000-8000-000000000001',(now() at time zone 'Asia/Manila')::date+2)) s
+  where ((s->>'starts_at')::timestamptz at time zone 'Asia/Manila')::time = time '23:00'
+    and ((s->>'ends_at')::timestamptz at time zone 'Asia/Manila')::time = time '00:00'
+), 'a service that fits exactly in the last hour of the working day is offered');
 select set_config('test.slot',(public.available_slots('dddddddd-0000-4000-8000-000000000001',(now() at time zone 'Asia/Manila')::date+2)->0->>'starts_at'),true);
 select set_config('test.draft_a',public.save_booking_draft(null,'dddddddd-0000-4000-8000-000000000001','A sufficiently detailed customer task','{"label":"Home","line1":"Fictional test address","city":"Makati City","postal_code":"1200"}',current_setting('test.slot')::timestamptz)::text,true);
 select is((public.draft_price(current_setting('test.draft_a')::uuid)->>'total_centavos')::int,50000,'server computes price from trusted service and settings');
@@ -47,6 +53,7 @@ select throws_ok($$select public.submit_review(current_setting('test.booking_a')
 select set_config('test.conversation',(select id::text from public.conversations where booking_id=current_setting('test.booking_a')::uuid),true);
 select lives_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Authorized customer message','99999999-0000-4000-8000-000000000001')$$,'member can send a message');
 select lives_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Authorized customer message','99999999-0000-4000-8000-000000000001')$$,'duplicate message nonce is idempotent');
+select throws_ok($$select public.send_message(current_setting('test.conversation')::uuid,'Edited message with the same identifier','99999999-0000-4000-8000-000000000001')$$,'22023',null,'a changed message cannot receive an earlier message acknowledgement');
 select is((select count(*) from public.messages),1::bigint,'duplicate message created once');
 select set_config('test.message', (select id::text from public.messages limit 1), true);
 select is((select count(*) from public.conversation_inbox),1::bigint,'sender sees their booking thread');
@@ -84,6 +91,7 @@ select lives_ok($$select public.transition_booking(current_setting('test.booking
 select lives_ok($$select public.update_location(current_setting('test.booking_a')::uuid,14.55,121.02)$$,'active assigned provider can explicitly share its position');
 select lives_ok($$select public.transition_booking(current_setting('test.booking_a')::uuid,'in_progress','')$$,'provider can start work');
 select lives_ok($$select public.transition_booking(current_setting('test.booking_a')::uuid,'completed','')$$,'provider can complete work');
+select throws_ok($$select public.update_location(current_setting('test.booking_a')::uuid,14.55,121.02)$$,'42501',null,'late device location update is rejected after completion');
 select is((select count(*) from public.invoices),1::bigint,'completion issues one persisted invoice');
 select is((select count(*) from public.booking_locations),0::bigint,'completion removes current location');
 
@@ -109,9 +117,18 @@ select set_config('request.jwt.claims','{"sub":"aaaaaaaa-0000-4000-8000-00000000
 select throws_ok($$select public.booking_quote(current_setting('test.quote_booking')::uuid,null,true)$$,'42501',null,'second customer cannot accept another quotation');
 select set_config('request.jwt.claims','{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select throws_ok($$select public.accept_booking_quote(current_setting('test.quote_booking')::uuid,50000)$$,'P0001',null,'stale displayed labor requires renewed consent');
+select throws_ok($$select public.booking_quote(current_setting('test.quote_booking')::uuid,50000,true)$$,'P0001',null,'original quote RPC checks the displayed amount too');
+select throws_ok($$select public.booking_quote(current_setting('test.quote_booking')::uuid,null,true)$$,'P0001',null,'a quotation requires an explicit accepted price');
+select is((select quote_accepted from public.bookings where id=current_setting('test.quote_booking')::uuid),false,'rejected quotation acknowledgements leave the original terms pending');
 select lives_ok($$select public.accept_booking_quote(current_setting('test.quote_booking')::uuid,55000)$$,'owning customer accepts the displayed quotation');
 select is((select total_centavos from public.bookings where id=current_setting('test.quote_booking')::uuid),60000,'accepted quote preserves the original fee and recalculates total');
 select set_config('request.jwt.claims','{"sub":"cccccccc-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select public.transition_booking(current_setting('test.booking_b')::uuid,'cancelled',null)$$,'P0001','A reason of at least 5 characters is required','cancellations require a reason even when the caller supplies null');
+select lives_ok($$select public.transition_booking(current_setting('test.booking_b')::uuid,'cancelled','Schedule no longer available')$$,'administrator can cancel a pending request with a reason');
+reset role;
+select is((select count(distinct user_id) from public.notifications where title='Booking updated' and href='/bookings/detail/?id='||current_setting('test.booking_b')
+  and user_id in ('aaaaaaaa-0000-4000-8000-000000000002','bbbbbbbb-0000-4000-8000-000000000001')),2::bigint,'both booking participants receive an administrator cancellation notice');
+set local role authenticated;
 select set_config('test.payment',(select id::text from public.payments where booking_id=current_setting('test.booking_a')::uuid),true);
 select lives_ok($$select public.settle_payment(current_setting('test.payment')::uuid,'99999999-0000-4000-8000-000000000009','paid','cash','Verified fictional cash settlement reference TEST001')$$,'administrator records an authorized settlement');
 select lives_ok($$select public.settle_payment(current_setting('test.payment')::uuid,'99999999-0000-4000-8000-000000000009','paid','cash','Verified fictional cash settlement reference TEST001')$$,'repeated payment event is idempotent');

@@ -9,7 +9,7 @@ Deno.serve(async req=>{
    const pid=url.searchParams.get('avatar')!;const {privileged}=clients(req);
    const p=unwrap(await privileged.from('provider_profiles').select('id,avatar_path').eq('id',pid).eq('status','approved').maybeSingle());
    const active=unwrap(await privileged.from('profiles').select('status').eq('id',pid).maybeSingle());
-   if(!p?.avatar_path||active?.status!=='active')return json({error:'Avatar unavailable'},headers,404);
+   if(!p?.avatar_path||!p.avatar_path.startsWith(p.id+'/avatar/')||active?.status!=='active')return json({error:'Avatar unavailable'},headers,404);
    const signed=requireData(await privileged.storage.from('avatars').createSignedUrl(p.avatar_path,60));
    return new Response(null,{status:302,headers:{...headers,Location:browserStorageUrl(signed.signedUrl),'Cache-Control':'no-store'}});
  }

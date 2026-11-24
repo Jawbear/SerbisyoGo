@@ -9,7 +9,10 @@ export const db = backendConfigured ? createClient(config.supabaseUrl, config.su
     flowType: 'pkce',
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    // The dedicated callback exchanges a single-use link and verifies the
+    // resulting account before redirecting. Let it own that exchange.
+    detectSessionInUrl: typeof window === 'undefined' ||
+      !window.location.pathname.replace(/\/$/, '').endsWith('/auth/callback')
   }
 }) : null;
 export function requireDb() {

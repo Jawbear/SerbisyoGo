@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useSession } from '@/components/session';
-import { ActionButton, ButtonLink, Card, DataTable, Dialog, Field, MutationForm, Notice, PageHeading, QueryState, useQuery } from '@/components/ui';
+import { ActionButton, ButtonLink, Card, DataTable, Dialog, Field, MutationForm, Notice, PageHeading, QueryState, RealtimeRefresh, useQuery } from '@/components/ui';
 import { list } from '@/lib/data';
 import { rpc, requireDb, result } from '@/lib/backend';
 import { addressSchema, profileSchema } from '@/lib/schemas';
@@ -82,7 +82,7 @@ export function Notifications() {
   }), !!s.user);
   return <><PageHeading title="Your updates" action={<ActionButton secondary action={() => rpc('mark_read', {
       p_conversation: null
-    })}>Mark all as read</ActionButton>} /><QueryState {...q}><Card><DataTable rows={q.data || []} columns={[{
+    })}>Mark all as read</ActionButton>} /><RealtimeRefresh tables={['notifications']} filter={`user_id=eq.${s.user?.id}`} /><QueryState {...q} loading={q.loading && !q.data}><Card><DataTable rows={q.data || []} columns={[{
           key: 'title',
           label: 'Update',
           render: r => <><strong>{String(r.title)}</strong><p className="small muted">{String(r.body)}</p></>

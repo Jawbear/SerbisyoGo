@@ -750,7 +750,7 @@ function SettingsPanel({
       marginBottom: 20
     }}>No fee or commission policy is assumed. Save a draft for review or explicitly activate new values for future bookings.</p><MutationForm key={String(current?.id || 'new')} submit="Save settings version" onSubmit={async f => {
       const action = String(f.get('action'));
-      if (action === 'activate' && !window.confirm('Activate these fee and commission settings for future booking requests?')) return;
+      if (action === 'activate' && !window.confirm('Activate these fee and commission settings for future booking requests?')) return false;
       await rpc('admin_action', {
         p_entity: 'settings',
         p_id: null,

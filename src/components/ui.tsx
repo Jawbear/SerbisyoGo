@@ -280,8 +280,9 @@ export function RealtimeRefresh({
     user
   } = useSession();
   const names = tables.join(',');
+  const userId = user?.id;
   useEffect(() => {
-    if (!db || !user) return;
+    if (!db || !userId) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let channel = db.channel(`changes-${crypto.randomUUID()}`);
     for (const table of names.split(',')) channel = channel.on('postgres_changes', {
@@ -299,13 +300,15 @@ export function RealtimeRefresh({
     const polling = setInterval(refresh, 30000);
     const focus = () => refresh();
     window.addEventListener('focus', focus);
+    window.addEventListener('online', focus);
     return () => {
       clearTimeout(timer);
       clearInterval(polling);
       window.removeEventListener('focus', focus);
+      window.removeEventListener('online', focus);
       void db?.removeChannel(channel);
     };
-  }, [names, filter, user, refresh]);
+  }, [names, filter, userId, refresh]);
   return null;
 }
 export function Stats({

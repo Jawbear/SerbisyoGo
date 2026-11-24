@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck, CalendarDays, MessagesSquare, MailCheck } from 'lucide-react';
 import { requireDb, rpc } from '@/lib/backend';
 import { backendConfigured, config } from '@/lib/config';
@@ -264,52 +264,47 @@ export function AuthCallback() {
   const session = useSession(),
     params = useSearchParams(),
     router = useRouter();
+  const verification = useRef<Promise<string> | null>(null);
+  const [verifiedUserId, setVerifiedUserId] = useState('');
   const [error, setError] = useState('');
   useEffect(() => {
-    const url = new URL(window.location.href);
-    const rawError = url.searchParams.get('error_description') || url.searchParams.get('error');
-    if (rawError) {
-      const friendly = rawError.includes('Unable to exchange external code')
-        ? 'Google rejected the authentication token exchange. Please ensure your Google Cloud OAuth consent screen is Published (or your Gmail address is added under Test Users), and that the Client Secret in Supabase has no spaces.'
-        : rawError;
-      queueMicrotask(() => setError(friendly));
+    let mounted = true;
+    async function verifyLink() {
+      const url = new URL(window.location.href);
+      const fragment = new URLSearchParams(url.hash.slice(1));
+      if (['error', 'error_description', 'error_code'].some(key => url.searchParams.has(key) || fragment.has(key))) {
+        throw new Error('Sign-in could not be completed. Try signing in again or request a new email link.');
+      }
+      const client = requireDb();
+      const code = url.searchParams.get('code');
+      const flowId = url.searchParams.get('sb_flow_id');
+      const tokenHash = url.searchParams.get('token_hash');
+      const type = url.searchParams.get('type');
+      let response;
+      if (code) {
+        response = await client.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined);
+      } else if (tokenHash && (type === 'signup' || type === 'recovery' || type === 'email')) {
+        response = await client.auth.verifyOtp({ token_hash: tokenHash, type });
+      } else {
+        throw new Error('This link is incomplete. Open the latest email link or sign in again.');
+      }
+      if (response.error) throw response.error;
+      if (!response.data.session?.user.id) throw new Error('This link did not establish a session. Request a new link.');
+      return response.data.session.user.id;
     }
-    const token_hash = url.searchParams.get('token_hash');
-    const type = url.searchParams.get('type');
-    const code = url.searchParams.get('code');
-
-    const client = requireDb();
-    if (code) {
-      void client.auth.getSession().then(({ data: { session: existingSession } }) => {
-        if (existingSession) {
-          session.refresh();
-          return;
-        }
-        return client.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
-          if (exchangeError && !exchangeError.message.toLowerCase().includes('already')) {
-            setError(exchangeError.message);
-          } else {
-            session.refresh();
-          }
-        });
-      });
-    } else if (token_hash && (type === 'signup' || type === 'recovery' || type === 'email')) {
-      void client.auth.verifyOtp({
-        token_hash,
-        type
-      }).then(({
-        error: otpError
-      }) => {
-        if (otpError) setError(otpError.message);
-        else session.refresh();
-      });
-    }
-  }, [session]);
+    verification.current ??= verifyLink();
+    void verification.current.then(id => {
+      if (mounted) setVerifiedUserId(id);
+    }, reason => {
+      if (mounted) setError(reason instanceof Error ? reason.message : 'Unable to verify this link. Request a new link.');
+    });
+    return () => { mounted = false; };
+  }, []);
   useEffect(() => {
-    if (session.user && !session.loading) {
+    if (verifiedUserId && session.user?.id === verifiedUserId && !session.loading) {
       const next = safeRedirect(params.get('next'), session.role === 'provider' ? '/provider/' : session.role === 'admin' ? '/admin/' : '/dashboard/');
       router.replace(next);
     }
-  }, [session.user, session.loading, session.role, params, router]);
-  return <><PageHeading title="Verifying your account" /><Card><div className="empty"><MailCheck size={40} />{error ? <Notice error>{error}</Notice> : session.user ? <p>Verified. Opening your account…</p> : <p className="muted">Validating your authentication. If you were signing in with Google or an email link, you will be redirected shortly.</p>}<ButtonLink href="/verify/" secondary>Request a new verification link</ButtonLink><ButtonLink href="/forgot-password/" secondary>Password recovery</ButtonLink></div></Card></>;
+  }, [verifiedUserId, session.user, session.loading, session.role, params, router]);
+  return <><PageHeading title="Verifying your account" /><Card><div className="empty"><MailCheck size={40} />{(error || session.error) ? <Notice error>{error || session.error}</Notice> : verifiedUserId && session.user?.id === verifiedUserId ? <p>Verified. Opening your account…</p> : <p className="muted">Validating your authentication. If you were signing in with Google or an email link, you will be redirected shortly.</p>}<ButtonLink href="/verify/" secondary>Request a new verification link</ButtonLink><ButtonLink href="/forgot-password/" secondary>Password recovery</ButtonLink></div></Card></>;
 }

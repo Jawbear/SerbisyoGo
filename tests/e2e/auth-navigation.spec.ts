@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { publicFixtures } from './public-fixtures';
 
 // Auth responses are intercepted; these checks never create or change an account.
-async function loginFixture(page: Page, role: 'customer' | 'admin') {
+async function loginFixture(page: Page, role: 'customer' | 'provider' | 'admin') {
   await publicFixtures(page);
   const user = {
     id: '40000000-0000-4000-8000-000000000001', email: 'navigation@example.test',
@@ -25,6 +25,98 @@ async function loginFixture(page: Page, role: 'customer' | 'admin') {
 
 test.beforeEach(() => {
   test.skip(!process.env.NEXT_PUBLIC_SUPABASE_URL, 'Requires configured client for intercepted authentication.');
+});
+
+test('a failed message retries with the same ID and a delayed acknowledgement preserves the next draft', async ({ page }) => {
+  await loginFixture(page, 'customer');
+  await page.route('**/rest/v1/conversation_inbox?**', route => route.fulfill({ json: [{
+    id: '40000000-0000-4000-8000-000000000021',
+    booking_id: '40000000-0000-4000-8000-000000000022',
+    service_title: 'Repair visit', reference: 'SG-TEST', unread: 0
+  }] }));
+  await page.goto('/login/?next=%2Fmessages%2F');
+  await page.getByLabel('Email address', { exact: true }).fill('navigation@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('FixturePasswordOnly123!');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const composer = page.getByLabel('Your message');
+  const send = page.getByRole('button', { name: 'Send message', exact: true });
+  const attempts: { p_nonce: string; p_body: string }[] = [];
+  let acknowledge!: () => void;
+  const delayedResponse = new Promise<void>(resolve => { acknowledge = resolve; });
+  await page.route('**/rest/v1/rpc/send_message', async route => {
+    attempts.push(route.request().postDataJSON());
+    if (attempts.length === 1) {
+      await route.fulfill({ status: 400, json: { message: 'Message acknowledgement unavailable' } });
+      return;
+    }
+    if (attempts.length === 2) await delayedResponse;
+    await route.fulfill({ json: '40000000-0000-4000-8000-000000000023' });
+  });
+  await composer.fill('   ');
+  await expect(send).toBeDisabled();
+  await composer.fill('First message');
+  await send.click();
+  await expect(page.getByText('Message acknowledgement unavailable')).toBeVisible();
+  await expect(composer).toHaveValue('First message');
+  await send.click();
+  try {
+    await expect.poll(() => attempts.length).toBe(2);
+    await composer.fill('Next message');
+  } finally {
+    acknowledge();
+  }
+  await expect(page.getByText('Message sent.', { exact: true })).toBeVisible();
+  await expect(composer).toHaveValue('Next message');
+  expect(attempts[0]).toEqual(attempts[1]);
+  await send.click();
+  await expect(composer).toHaveValue('');
+  expect(attempts[2].p_nonce).not.toEqual(attempts[1].p_nonce);
+  expect(attempts[2].p_body).toBe('Next message');
+});
+
+test('an incomplete email callback shows recovery actions', async ({ page }) => {
+  await loginFixture(page, 'customer');
+  await page.goto('/auth/callback/');
+  await expect(page.getByText('This link is incomplete.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Password recovery' })).toHaveAttribute('href', '/forgot-password/');
+});
+
+test('the notification inbox catches up when the browser reconnects', async ({ page }) => {
+  await loginFixture(page, 'customer');
+  const updates: { id: string; title: string; body: string; href: string; created_at: string; read_at: null }[] = [];
+  await page.route('**/rest/v1/notifications?**', route => route.fulfill({ json: updates }));
+  await page.goto('/login/?next=%2Fnotifications%2F');
+  await page.getByLabel('Email address', { exact: true }).fill('navigation@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('FixturePasswordOnly123!');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByText('No matching records')).toBeVisible();
+  updates.push({ id: '40000000-0000-4000-8000-000000000011', title: 'Booking updated', body: 'Appointment confirmed', href: '/bookings/', created_at: new Date().toISOString(), read_at: null });
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByText('Appointment confirmed')).toBeVisible();
+  await expect(page.getByText('Unread', { exact: true })).toBeVisible();
+});
+
+test('a provider cannot accept an estimate before the customer approves the quotation', async ({ page }) => {
+  await loginFixture(page, 'provider');
+  const booking = {
+    id: '40000000-0000-4000-8000-000000000031', reference: 'SG-QUOTE',
+    service_title: 'Estimate repair', description: 'Fixture-only estimate request.',
+    address_snapshot: { label: 'Home', line1: '1 Test Street', city: 'Bunawan', postal_code: '8508' },
+    status: 'requested', is_estimate: true, quote_accepted: false,
+    quoted_labor_centavos: 55000, labor_centavos: 45000, fee_centavos: 5000, total_centavos: 50000,
+    customer_id: '40000000-0000-4000-8000-000000000002', provider_id: '40000000-0000-4000-8000-000000000001',
+    starts_at: new Date(Date.now() + 86400000).toISOString(), created_at: new Date().toISOString()
+  };
+  await page.route('**/rest/v1/bookings?**', route => route.fulfill({ json: booking }));
+  await page.goto('/login/?next=%2Fbookings%2Fdetail%2F%3Fid%3D' + booking.id);
+  await page.getByLabel('Email address', { exact: true }).fill('navigation@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('FixturePasswordOnly123!');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByText('Awaiting customer approval.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Accept booking', exact: true })).toHaveCount(0);
+  booking.quote_accepted = true;
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Accept booking', exact: true })).toBeVisible();
 });
 
 test('sign-in returns a customer to their selected booking service', async ({ page }) => {

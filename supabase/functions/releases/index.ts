@@ -4,6 +4,7 @@ import {authorize,clients,cors,json,limitedFile,unwrap,requireData,browserStorag
 import {validateUpload} from '../../../src/lib/domain.ts';
 import {readAndroidManifest,androidVersions,APK_MAX_BYTES} from '../../../src/lib/apk.ts';
 import {limitedBytes} from '../_shared/upload.ts';
+import {requireApprovedApk} from './approval.ts';
 async function releaseInput(req:Request,max:number) {
  const form=await limitedFile(req,Math.min(max,16*1024*1024));const file=form.get('file');
  if(!(file instanceof File))throw new Error('APK file required');validateUpload('apk',file.size,file.type||'application/octet-stream',file.name,max);
@@ -16,7 +17,7 @@ Deno.serve(async req=>{
  headers=cors(req);if(req.method==='OPTIONS')return new Response(null,{headers});
  if(req.method==='GET'){
    const {privileged}=clients(req);const id=new URL(req.url).searchParams.get('id');
-   let query=privileged.from('app_releases').select('id,artifact_path,byte_size,version_name').eq('status','published').not('verified_at','is',null).order('version_code',{ascending:false}).limit(1);
+   let query=privileged.from('app_releases').select('id,artifact_path,byte_size,version_name').eq('status','published').lte('published_at',new Date().toISOString()).not('verified_at','is',null).order('version_code',{ascending:false}).limit(1);
    if(id)query=query.eq('id',id);const r=unwrap(await query.maybeSingle());
    if(!r)return json({error:'Android app coming soon'},headers,404);
    const artifact=await privileged.storage.from('android-releases').info(r.artifact_path);
@@ -43,6 +44,8 @@ Deno.serve(async req=>{
   input={bytes,version:draft.version_name,code:draft.version_code,minimum:draft.min_android,notes:draft.release_notes};
  }
  const {bytes,version,code,minimum,notes}=input;
+ const checksum=createHash('sha256').update(bytes).digest('hex');
+ requireApprovedApk(checksum,Deno.env.get('APPROVED_SIGNED_APK_SHA256'));
  if(bytes[0]!==80||bytes[1]!==75)throw new Error('APK must be an Android package ZIP');
  // Inspect required entries with bounded decompression to reject unrelated ZIPs and zip bombs.
  let expanded=0;let executablePresent=false;
@@ -55,12 +58,14 @@ Deno.serve(async req=>{
  if(!entries['AndroidManifest.xml']||!executablePresent)throw new Error('Missing Android manifest or executable. Supply the actual signed APK.');
  const manifest=readAndroidManifest(entries['AndroidManifest.xml']);
  if(manifest.version_name!==version||manifest.version_code!==code||androidVersions[manifest.min_sdk]!==minimum)throw new Error(`Metadata must match the APK: ${manifest.version_name}, code ${manifest.version_code}, minimum Android ${androidVersions[manifest.min_sdk]||'unsupported SDK '+manifest.min_sdk}`);
- const checksum=createHash('sha256').update(bytes).digest('hex');
  release ||= unwrap(await user.rpc('create_release_draft',{p_version_name:version,p_version_code:code,p_min_android:minimum,p_notes:notes}));
  if(!release)throw new Error('Release draft is required');
  let offset=0;
  const uploadStream=new ReadableStream<Uint8Array>({pull(controller){if(offset>=bytes.length){controller.close();return;}const end=Math.min(offset+65536,bytes.length);controller.enqueue(bytes.subarray(offset,end));offset=end;}});
- unwrap(await privileged.storage.from('android-releases').upload(release.artifact_path,uploadStream,{contentType:'application/vnd.android.package-archive',upsert:false,duplex:'half'}));
+ const upload=await privileged.storage.from('android-releases').upload(release.artifact_path,uploadStream,{contentType:'application/vnd.android.package-archive',upsert:false,duplex:'half'});
+ // A previous attempt may have stored the bytes before its verification timed out.
+ // Only the complete size and checksum comparison below can finish the draft.
+ if(upload.error && !('code' in upload.error && ['Duplicate','ResourceAlreadyExists','KeyAlreadyExists'].includes(String(upload.error.code)))) throw new Error(upload.error.message);
  // Read it back: never trust upload metadata or a browser-provided checksum.
  const signed=requireData(await privileged.storage.from('android-releases').createSignedUrl(release.artifact_path,60));
  const stored=await fetch(signed.signedUrl,{signal:AbortSignal.timeout(60000)});
@@ -68,7 +73,7 @@ Deno.serve(async req=>{
  const reader=stored.body.getReader();const savedHash=createHash('sha256');let savedSize=0;
  try{while(true){const {done,value}=await reader.read();if(done)break;savedSize+=value.byteLength;if(savedSize>bytes.length){await reader.cancel();throw new Error('Stored artifact size mismatch. Draft remains unpublished.');}savedHash.update(value);}}finally{reader.releaseLock();}
  if(savedHash.digest('hex')!==checksum||savedSize!==bytes.length)throw new Error('Stored artifact verification failed. Draft remains unpublished.');
- unwrap(await privileged.from('app_releases').update({byte_size:savedSize,sha256:checksum,verified_at:new Date().toISOString()}).eq('id',release.id).eq('status','draft'));
+ unwrap(await privileged.from('app_releases').update({byte_size:savedSize,sha256:checksum,verified_at:new Date().toISOString()}).eq('id',release.id).eq('status','draft').select('id').single());
  return json({id:release.id,sha256:checksum,byte_size:savedSize,status:'draft'},headers,201);
  }catch(error){return json({error:error instanceof Error?error.message:'Release operation failed'},headers,400);}
 });

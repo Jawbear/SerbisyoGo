@@ -37,23 +37,9 @@ The [policy approval gate](policy-approval.md) keeps `/terms/`, `/privacy/` and
 `src/lib/policy-approval.ts`; the production preflight fails while the record is
 still a draft.
 
-## One-command Cloudflare deployment
+## Local Cloudflare validation
 
-For a local deployment instead of the GitHub workflow:
-
-```powershell
-if (!(Test-Path .env.production.local)) { Copy-Item .env.production.example .env.production.local }
-# fill in the public Supabase URL/key and the real Worker URL
-npx.cmd wrangler login
-npm.cmd run deploy:cloudflare -- --confirm
-```
-
-The script loads `.env.production.local`, builds with the production public
-environment, runs the existing preflight (including the approved-policy gate), and
-then runs `wrangler deploy --config wrangler.jsonc`. Add `--dry-run` to validate the
-build and Worker bundle without publishing. In CI, the same steps use repository
-`NEXT_PUBLIC_*` variables and the `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
-secrets. Never put `SUPABASE_SECRET_KEY` or the Google App Password in either place.
+Set the intended public build values in `.env.production.local` and run `npm run deploy:cloudflare -- --dry-run`. The command rebuilds the export, checks the compiled client configuration and runs Wrangler packaging locally. Publish the reviewed archive through the protected workflow described above.
 
 ## GitHub Pages preview
 
@@ -91,7 +77,7 @@ npx supabase secrets set --project-ref qkopbbxmeqqzomrawltf ALLOWED_ORIGINS=http
 
 Check login, email verification/recovery, QR download-page links and photo uploads on the new hostname. This changes frontend origins, not Supabase user IDs or stored data. The agent has not independently verified the live hostname or changed dashboard settings.
 
-If the Cloudflare Git import created a **Worker** instead of Pages, keep it: the tracked `wrangler.jsonc` deploys the Next.js static export directly, without a Worker script or Next.js server. Keep build command `npm run build`, deploy command `npx wrangler deploy --config wrangler.jsonc`, project name `serbisyogo`, and root `/`. The assets directory is `out`; directory indexes preserve trailing-slash routes and unknown routes serve the exported 404 page.
+The production Worker serves the static export in `out/`. The tracked Wrangler configuration enables trailing-slash routes and the exported 404 page. Configure production publication through the protected workflow above.
 
 In Cloudflare's **Settings → Build → Build variables and secrets**, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` using the public values from your local environment. Set `NEXT_PUBLIC_SITE_URL` to the actual HTTPS Worker/custom-domain URL when it is assigned, and rebuild after changing these variables. Remove `NEXT_PUBLIC_BASE_PATH` for deployment at the domain root; do not copy `/SerbisyoGo` from the GitHub preview. Runtime-only Worker variables do not configure a previously compiled browser bundle. Never copy `SUPABASE_SECRET_KEY`, service-role keys, test credentials, or `.env.local` into the build/deployment configuration.
 
@@ -119,7 +105,7 @@ npx supabase secrets set ALLOWED_ORIGINS=https://your-domain.example APK_MAX_BYT
 
 Both functions use `verify_jwt=false` because their public download/avatar GETs must work without a user session and new publishable keys are not JWTs. **Every protected branch independently validates the access token with Supabase Auth and checks database role/ownership before elevated access.** Do not remove those checks.
 
-The APK bucket and global project Storage limit must both permit 64 MiB. Hosted plan limits may prevent that setting; check the actual project before rollout. The admin uploader creates an unverified draft, then sends the binary APK to `releases?id=...`; the function checks its manifest and stored SHA-256 before allowing publication. Large APKs must use this binary path; legacy multipart uploads are limited to 16 MiB. If an internal gateway/proxy is used, set `PUBLIC_SUPABASE_URL` to the browser-accessible Supabase API root. Otherwise it defaults to `SUPABASE_URL`. Signed Storage URLs retain their path and token; server-side read-back still uses the internal service address.
+The APK bucket and global project Storage limit must both permit 64 MiB. Hosted plan limits may prevent that setting; check the actual project before rollout. The admin uploader creates an unverified draft, then sends the binary APK to `releases?id=...`; the function requires the verified signed-file digest from the signing owner in `APPROVED_SIGNED_APK_SHA256`, checks the manifest and reads back the stored bytes before allowing publication. See [APK release uploads](android-apk-release.md#supabase-release-uploads). Large APKs must use this binary path; legacy multipart uploads are limited to 16 MiB. If an internal gateway/proxy is used, set `PUBLIC_SUPABASE_URL` to the browser-accessible Supabase API root. Otherwise it defaults to `SUPABASE_URL`. Signed Storage URLs retain their path and token; server-side read-back still uses the internal service address.
 
 Configure Auth Site URL, exact callback redirects, email confirmation and SMTP. Verify the private buckets, configured limits, publication/RLS and source-table Realtime settings after migrations. Create/verify the initial administrator and provision its protected role using the documented script. Set explicit fee/commission settings in the admin UI before accepting bookings.
 

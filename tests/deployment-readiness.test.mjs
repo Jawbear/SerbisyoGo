@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deploymentProblems, isPublishableKey, publicHttpsOrigin } from '../scripts/deployment-readiness.mjs';
@@ -25,4 +25,27 @@ test('deployment check fails for a missing build and missing configuration', () 
     assert.ok(problems.some(value => value.includes('headers')));
     assert.ok(problems.some(value => value.includes('Email template')));
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('export validation checks the public values actually delivered to browsers', () => {
+  const root = mkdtempSync(join(tmpdir(), 'serbisyogo-export-'));
+  const env = {
+    NEXT_PUBLIC_SUPABASE_URL: 'https://backend.example.org',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_localtest',
+    NEXT_PUBLIC_SITE_URL: 'https://web.example.org',
+  };
+  try {
+    const chunks = join(root, 'out', '_next', 'static', 'chunks');
+    mkdirSync(chunks, {recursive:true});
+    const values = JSON.stringify(Object.values(env));
+    writeFileSync(join(root, 'out', 'index.html'), values);
+    writeFileSync(join(chunks, 'app.js'), JSON.stringify([env.NEXT_PUBLIC_SITE_URL, env.NEXT_PUBLIC_SUPABASE_URL]));
+    const bindingProblems = () => deploymentProblems(root, env, true).filter(problem => problem.startsWith('Exported client JavaScript'));
+    assert.equal(bindingProblems().length, 1);
+    assert.match(bindingProblems()[0], /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+    writeFileSync(join(chunks, 'app.js'), values);
+    assert.deepEqual(bindingProblems(), []);
+  } finally {
+    rmSync(root, {recursive:true, force:true});
+  }
 });

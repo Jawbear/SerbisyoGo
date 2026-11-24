@@ -55,3 +55,8 @@ Released on November 11, 2026 from source `2848e5608b4972145946288b6db8a01619bde
 - Build, signature verification, emulator installation/startup, discovery navigation, Android Back and publication passed in [run 43022959821](https://github.com/Jawbear/SerbisyoGo/actions/runs/43022959821).
 - Admin account editing, deletion confirmation, incomplete-deletion retry and customer denial passed mobile browser checks. Physical-phone testing remains pending.
 
+## Supabase release uploads
+
+Before enabling a new APK upload, the signing owner verifies the signed file with Android Build Tools, compares its signing certificate with the established production fingerprint, and checks its package, version and version code. Compute SHA-256 over those signed bytes. An authorized backend operator sets `APPROVED_SIGNED_APK_SHA256` for the releases Edge Function to that digest through the existing protected configuration. The function requires an exact match before storing a new APK. The administrator can then upload it as a draft. Public release approval is a separate step.
+
+When introducing this gate, reconcile any already verified drafts with the signing record before approving publication. Existing published downloads stay available while a new upload is being prepared. For isolated integration testing, the local stack uses the checksum of the repository's retained public release.

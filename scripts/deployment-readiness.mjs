@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { policyApproval, policyApprovalProblems } from '../src/lib/policy-approval.ts';
 
 export function publicHttpsOrigin(value) {
@@ -32,7 +32,7 @@ export function deploymentProblems(root, env, requireBuild = false) {
     if (worker.assets?.directory !== './out' || worker.assets?.html_handling !== 'force-trailing-slash') problems.push('Worker assets must serve ./out with trailing slashes.');
   } catch { problems.push('Worker configuration is missing or invalid.'); }
   const headers = read('public/_headers');
-  for (const name of ['X-Content-Type-Options: nosniff', 'Referrer-Policy:', 'X-Frame-Options: DENY', 'Permissions-Policy:']) {
+  for (const name of ['X-Content-Type-Options: nosniff', 'Referrer-Policy:', 'X-Frame-Options: DENY', "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'", 'Permissions-Policy:']) {
     if (!headers.includes(name)) problems.push(`Missing host security header: ${name}`);
   }
   for (const template of ['confirmation', 'recovery', 'email_change', 'magic_link']) {
@@ -46,18 +46,28 @@ export function deploymentProblems(root, env, requireBuild = false) {
     const secrets = Object.entries(env).filter(([name, value]) =>
       /^(SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY)$/.test(name) && value?.length > 16
     ).map(([, value]) => value);
+    const bindings = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SITE_URL'];
+    const missingBindings = new Set(bindings);
     const walk = dir => {
       if (!existsSync(dir)) return;
       for (const item of readdirSync(dir, { withFileTypes: true })) {
         const path = join(dir, item.name);
         if (item.isDirectory()) walk(path);
-        else if (/\.(html|js|json|txt|css)$/.test(item.name) && secrets.some(secret => readFileSync(path, 'utf8').includes(secret))) {
-          problems.push('A configured server-only key was found in the export. Remove it and rebuild.');
-          return;
+        else if (/\.(html|js|json|txt|css|map)$/.test(item.name)) {
+          const content = readFileSync(path, 'utf8');
+          if (item.name.endsWith('.js') && dir.startsWith(join(root, 'out', '_next', 'static') + sep)) {
+            for (const name of missingBindings) {
+              if (env[name] && content.includes(JSON.stringify(env[name]))) missingBindings.delete(name);
+            }
+          }
+          if (secrets.some(secret => content.includes(secret))) {
+            problems.push('A configured server-only key was found in the export. Remove it and rebuild.');
+          }
         }
       }
     };
-    if (secrets.length) walk(join(root, 'out'));
+    walk(join(root, 'out'));
+    for (const name of missingBindings) problems.push(`Exported client JavaScript is missing the configured ${name}; rebuild for this deployment.`);
   }
   return [...new Set(problems)];
 }

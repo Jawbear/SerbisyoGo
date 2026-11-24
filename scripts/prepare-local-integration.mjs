@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 // Obtain credentials from this checkout's local stack, never from hosted .env.local.
 const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -27,7 +27,9 @@ const values = {
 if (Object.values(values).some(value => /[\r\n]/.test(value))) throw new Error('Invalid local test configuration.');
 mkdirSync('.cache', { recursive: true });
 writeFileSync('.cache/local-integration.env', Object.entries(values).map(([name, value]) => `${name}=${JSON.stringify(value)}`).join('\n') + '\n', { mode: 0o600 });
-writeFileSync('.cache/edge-test.env', `ALLOWED_ORIGINS=http://localhost:3000\nAPK_MAX_BYTES=67108864\nPUBLIC_SUPABASE_URL=${url}\n`, { mode: 0o600 });
+const publicRelease = JSON.parse(readFileSync(new URL('../src/features/app-releases/android-release.json', import.meta.url), 'utf8'));
+if (!/^[0-9a-f]{64}$/.test(publicRelease.sha256)) throw new Error('Missing published test APK digest.');
+writeFileSync('.cache/edge-test.env', `ALLOWED_ORIGINS=http://localhost:3000\nAPK_MAX_BYTES=67108864\nAPPROVED_SIGNED_APK_SHA256=${publicRelease.sha256}\nPUBLIC_SUPABASE_URL=${url}\n`, { mode: 0o600 });
 if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_ENV) {
   for (const value of [key, secret]) console.log(`::add-mask::${value}`);
   appendFileSync(process.env.GITHUB_ENV, Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n') + '\n');

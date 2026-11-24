@@ -1,5 +1,6 @@
 import {authorize,json,unwrap} from '../_shared/http.ts';
 import {uuid,text,email,phone,password} from './validation.ts';
+import {limitedBytes} from '../_shared/upload.ts';
 
 function accountCors(req:Request) {
  const origin=req.headers.get('origin')||'';
@@ -32,7 +33,7 @@ Deno.serve(async req=>{
    const data=unwrap(await user.rpc('admin_accounts',{p_id:params.get('id')?uuid(params.get('id')):null,p_search:params.get('search')||'',p_role:params.get('role')||'',p_status:params.get('status')||'',p_limit:limit,p_offset:offset}));
    return json(data,headers);
   }
-  const raw=await req.text();if(new TextEncoder().encode(raw).length>16384)throw new Error('Request is too large');
+  const raw=new TextDecoder().decode(await limitedBytes(req,16384));
   const body=JSON.parse(raw);if(!body||Array.isArray(body)||typeof body!=='object')throw new Error('Invalid account request');
   const action=String(body.action||'');const reason=text(body.reason,'Reason',5,1000);
   if(action==='create'){

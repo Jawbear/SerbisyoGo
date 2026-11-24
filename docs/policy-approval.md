@@ -19,7 +19,7 @@ While `policyApproval.status` is `draft`:
 - Every policy page shows a **DRAFT — pending operator approval** banner.
 - The pages emit `noindex, nofollow` metadata.
 - `npm run policy:check` warns instead of claiming approval.
-- `npm run deploy:check` and `npm run deploy:cloudflare -- --confirm` fail, so an
+- `npm run deploy:check` and `npm run deploy:cloudflare -- --dry-run` fail, so an
   unapproved draft cannot be published by the production path.
 
 ## Decisions the operator must make

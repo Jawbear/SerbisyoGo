@@ -59,7 +59,7 @@ ck('Password recovery tested');
 
 s('PHASE 4 — Cloudflare Worker');
 ck('Build vars in Cloudflare Dashboard (NEXT_PUBLIC_*)');
-ck('Deploy tested'); cm('npm run build && npx wrangler deploy --config wrangler.jsonc');
+ck('Deploy tested'); cm('npm run deploy:cloudflare -- --dry-run');
 ck('CI/CD secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID');
 ck('HTTPS verified on live URL');
 

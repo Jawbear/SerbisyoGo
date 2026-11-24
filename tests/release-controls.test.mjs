@@ -1,5 +1,7 @@
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { requireApprovedApk } from '../supabase/functions/releases/approval.ts';
 import { verifyRelease } from '../.github/scripts/check-release.mjs';
 
 const sha = 'a'.repeat(40);
@@ -42,4 +44,24 @@ test('reused APKs must come from an earlier successful Android run on the same s
     {head_repository:{full_name:'other/repo'}}, {head_sha:'b'.repeat(40)}, {status:'in_progress'}, {conclusion:'failure'}]) {
     assert.throws(() => check('100', {...run, ...override}), /successful Android workflow/);
   }
+});
+
+test('local release shortcuts require a stable published version or dry-run', () => {
+  for (const [script,args,expected] of [
+    ['scripts/deploy-cloudflare.mjs', ['--confirm'], /protected|reviewed/i],
+    ['scripts/prepare-apk-push.mjs', [], /published Android version/],
+    ['scripts/prepare-apk-push.mjs', ['0.5.8-rc.1'], /published Android version/]
+  ]) {
+    const result = spawnSync(process.execPath, [script, ...args], {encoding:'utf8'});
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, expected);
+  }
+});
+
+test('release upload accepts only the digest selected by the signing owner', () => {
+  const digest = '12ab'.repeat(16);
+  for (const configured of [undefined, '', 'invalid', '0'.repeat(64)]) {
+    assert.throws(() => requireApprovedApk(digest, configured));
+  }
+  assert.doesNotThrow(() => requireApprovedApk(digest, digest.toUpperCase()));
 });

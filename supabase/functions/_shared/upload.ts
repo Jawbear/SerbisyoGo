@@ -50,6 +50,6 @@ export async function limitedBytes(req: Request, max: number) {
       bytes.set(value, size); size += value.byteLength;
     }
   } finally { reader.releaseLock(); }
-  if (declared && declared !== size) throw new Error('Incomplete APK upload');
+  if (declared && declared !== size) throw new Error('Incomplete request body');
   return bytes.subarray(0, size);
 }

@@ -3,16 +3,31 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the validated export to the production Worker
+        type: boolean
+        default: false
+      reviewed_sha:
+        description: Full reviewed main commit SHA (required to publish)
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: cloudflare-${{ github.ref }}
-  cancel-in-progress: true
+  group: cloudflare-${{ github.ref }}-${{ inputs.publish || false }}
+  cancel-in-progress: false
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-24.04
+    outputs:
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
+      artifact: ${{ steps.package.outputs.artifact }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: node .github/scripts/check-release.mjs checkout
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -32,15 +47,58 @@ jobs:
           NEXT_PUBLIC_MAP_ATTRIBUTION: ${{ vars.NEXT_PUBLIC_MAP_ATTRIBUTION }}
           NEXT_PUBLIC_MAP_ATTRIBUTION_URL: ${{ vars.NEXT_PUBLIC_MAP_ATTRIBUTION_URL }}
           NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL }}
-      - name: Deploy to Cloudflare Workers
-        # Keep the same public configuration for the export and readiness check.
-        run: |
-          node --experimental-strip-types scripts/production-deploy.mjs --check --require-build
-          npx wrangler deploy --config wrangler.jsonc
+      - name: Validate deployment configuration
+        run: node --experimental-strip-types scripts/production-deploy.mjs --check --require-build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_BASE_PATH: ''
+      - name: Package the validated export
+        id: package
+        run: |
+          tar -czf "website-$GITHUB_SHA.tar.gz" out
+          hash=$(sha256sum "website-$GITHUB_SHA.tar.gz" | cut -d' ' -f1)
+          echo "archive_sha256=$hash" >> "$GITHUB_OUTPUT"
+          echo "artifact=cloudflare-website-$GITHUB_SHA-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          echo "Website source \`$GITHUB_SHA\` · archive SHA-256 \`$hash\`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact }}
+          path: website-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    environment: cloudflare-production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify the approved commit and environment review
+        run: node .github/scripts/check-release.mjs approval cloudflare-production
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEWED_SHA: ${{ inputs.reviewed_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify and unpack the build from this run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
+          ARTIFACT: ${{ needs.build.outputs.artifact }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --name "$ARTIFACT" --dir "$RUNNER_TEMP/website"
+          archive="$RUNNER_TEMP/website/website-$GITHUB_SHA.tar.gz"
+          echo "$ARCHIVE_SHA256  $archive" | sha256sum --check --strict
+          tar -xzf "$archive"
+      - name: Deploy approved export to Cloudflare Workers
+        run: npx --yes wrangler@4.164.0 deploy --config wrangler.jsonc
+        env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

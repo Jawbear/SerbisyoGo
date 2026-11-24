@@ -1,7 +1,61 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeMobile, registration, validatePassword } from '../src/auth.js';
+import { createNativeSessionStorage } from '../src/data/sessionStorage.js';
 import { createGoogleCallbackHandler, isGoogleAuthCallback, startGoogleAuth, mobileAuthRedirect } from '../src/googleAuth.js';
+
+function sessionStores() {
+  const old = new Map();
+  const encrypted = new Map();
+  const native = {
+    getItemAsync: async key => encrypted.get(key) ?? null,
+    setItemAsync: async (key, value) => { encrypted.set(key, value); },
+    deleteItemAsync: async key => { encrypted.delete(key); },
+  };
+  const legacy = {
+    getItem: async key => old.get(key) ?? null,
+    removeItem: async key => { old.delete(key); },
+  };
+  return { storage: createNativeSessionStorage(native, legacy), native, old, encrypted };
+}
+
+test('native auth migrates an existing session once and removes stale plaintext after a refresh', async () => {
+  const { storage, old, encrypted } = sessionStores();
+  old.set('auth', 'existing session');
+  assert.equal(await storage.getItem('auth'), 'existing session');
+  assert.equal(encrypted.get('auth'), 'existing session');
+  assert.equal(old.size, 0);
+  old.set('auth', 'outdated session');
+  await storage.setItem('auth', 'refreshed session');
+  assert.equal(await storage.getItem('auth'), 'refreshed session');
+  assert.equal(old.size, 0);
+});
+
+test('a failed native migration surfaces an error and can retry without losing the session', async () => {
+  const { storage, native, old, encrypted } = sessionStores();
+  old.set('auth', 'existing session');
+  const write = native.setItemAsync;
+  native.setItemAsync = async () => { throw new Error('Keystore unavailable'); };
+  await assert.rejects(storage.getItem('auth'), /Keystore unavailable/);
+  await assert.rejects(storage.setItem('new-auth', 'new session'), /Keystore unavailable/);
+  assert.equal(old.get('auth'), 'existing session');
+  assert.equal(old.has('new-auth'), false);
+  native.setItemAsync = write;
+  assert.equal(await storage.getItem('auth'), 'existing session');
+  assert.equal(encrypted.get('auth'), 'existing session');
+});
+
+test('a concurrent migration and sign-out clear both copies and cannot restore the session', async () => {
+  const { storage, old, encrypted } = sessionStores();
+  old.set('auth', 'outdated session');
+  encrypted.set('auth', 'current session');
+  const read = storage.getItem('auth');
+  const signOut = storage.removeItem('auth');
+  assert.equal(await read, 'current session');
+  await signOut;
+  assert.equal(await storage.getItem('auth'), null);
+  assert.equal(old.size + encrypted.size, 0);
+});
 
 test('Google sign-in opens the provider with the native app as its return address', async () => {
   let options;

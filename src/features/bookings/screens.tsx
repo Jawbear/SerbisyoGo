@@ -109,10 +109,9 @@ export function BookingDetail({
                 p_labor: pesosToCentavos(String(f.get('labor'))),
                 p_accept: false
               });
-            }}><Field label="Final labor quotation (₱)" name="labor" inputMode="decimal" required placeholder="0.00" /><p className="small muted">Agree on the full scope, including materials, in the conversation before sending the quotation.</p></MutationForm>}{actor === 'customer' && b.quoted_labor_centavos !== null && !b.quote_accepted && <ActionButton action={() => rpc('booking_quote', {
+            }}><Field label="Final labor quotation (₱)" name="labor" inputMode="decimal" required placeholder="0.00" /><p className="small muted">Agree on the full scope, including materials, in the conversation before sending the quotation.</p></MutationForm>}{actor === 'customer' && b.quoted_labor_centavos !== null && !b.quote_accepted && <ActionButton action={() => rpc('accept_booking_quote', {
               p_booking: b.id,
-              p_labor: null,
-              p_accept: true
+              p_expected_labor: b.quoted_labor_centavos
             })} confirm="Accept this labor quotation and the snapshotted booking fee?">Accept quotation</ActionButton>}</div>}</Card><Card><h2>Next steps</h2><div className="stack">{(['confirmed', 'en_route', 'in_progress', 'completed'] as BookingStatus[]).filter(next => canTransition(actor, b.status, next)).map(next => <ActionButton key={next} action={() => rpc('transition_booking', {
               p_booking: b.id,
               p_status: next,

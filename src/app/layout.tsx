@@ -14,7 +14,7 @@ import './information.css';
 import { SessionProvider } from '@/components/session';
 import { Shell } from '@/components/shell';
 import { config } from '@/lib/config';
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#0B0F0E' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#080F0B' };
 export const metadata: Metadata = {
   icons: {
     icon: { url: `${config.basePath}/brand/favicon-green.png`, type: 'image/png' },

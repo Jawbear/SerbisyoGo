@@ -50,7 +50,8 @@ export async function installBackend(page) {
       const draft = state.drafts.find(row => row.id === body.p_draft);
       const service = fixtureCatalog.services.find(row => row.id === draft?.provider_service_id);
       data = { labor_centavos: service.rate_centavos, fee_centavos: 5000, total_centavos: service.rate_centavos + 5000, is_estimate: false };
-    } else if (table === 'confirm_booking') {
+    } else if (table === 'discovery_available_services') data = body.p_services.filter(id => id === 'service-2');
+    else if (table === 'confirm_booking') {
       state.confirmations++;
       if (state.failSubmit) return route.fulfill({ status: 400, json: { message: 'This time is no longer available. Choose another schedule.', code: 'P0001' } });
       let booking = state.bookings.find(row => row.idempotency_key === body.p_draft);
@@ -62,7 +63,7 @@ export async function installBackend(page) {
       }
       data = booking.id;
     } else {
-      const tables = { provider_credential_reviews: [], categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_profiles: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
+      const tables = { notifications: [], files: [], booking_events: [], invoices: [], reviews: [], provider_credential_reviews: [], categories: fixtureCatalog.categories, public_providers: fixtureCatalog.providers, provider_profiles: fixtureCatalog.providers, provider_services: fixtureCatalog.services, booking_drafts: state.drafts, bookings: state.bookings, gcash_settings: [], payments: state.bookings.map(row => ({ id: row.id, booking_id: row.id, amount_centavos: row.total_centavos, status: 'pending' })), gcash_submissions: [] };
       if (!(table in tables)) throw new Error(`Unexpected backend call: ${table}`);
       if (state.failCatalog && table === 'categories') return route.fulfill({ status: 503, json: { message: 'Services are temporarily unavailable.' } });
       let rows = tables[table];

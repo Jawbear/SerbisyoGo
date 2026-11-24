@@ -27,7 +27,7 @@ export async function limitedFile(req: Request, max: number) {
   const init: RequestInit & { duplex: 'half' } = {
     method: 'POST', headers: { 'Content-Type': req.headers.get('content-type') || '' }, body, duplex: 'half'
   };
-  return new Request(req.url, init).formData();
+  return await new Request(req.url, init).formData();
 }
 
 // Raw APK bodies use one bounded allocation, avoiding multipart Blob copies.

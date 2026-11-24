@@ -33,7 +33,7 @@ test('phone navigation supports keyboard dismissal and page navigation', async (
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(menu).toBeFocused();
   await menu.click();
-  await page.getByRole('dialog').getByRole('link', { name: 'Find a professional' }).click();
+  await page.getByRole('dialog').getByRole('link', { name: 'Find Professionals' }).click();
   await expect(page).toHaveURL(/\/find\//);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
@@ -65,8 +65,8 @@ test('discovery filters survive reload and profile navigation', async ({ page })
 test('published APK remains available if optional release lookup fails', async ({ page }) => {
   await page.route('**/*.supabase.co/rest/v1/app_releases*', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Release lookup unavailable' }) }));
   await page.goto('/download/');
-  await expect(page.getByRole('link', { name: 'Download APK', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Take SerbisyoGo with you.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download for Android', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Official Android app' })).toBeVisible();
 });
 
 test('every admin section and private workflow denies anonymous access', async ({ page }) => {
@@ -94,7 +94,7 @@ test('provider service links lead to a protected booking form', async ({ page })
 test('phone calls to action keep normal button heights', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  for (const name of ['Become a provider', 'Download Android app']) {
+  for (const name of ['Become a Provider', 'Download for Android']) {
     const button = page.getByRole('main').getByRole('link', { name, exact: true });
     await expect(button).toBeVisible();
     const bounds = await button.boundingBox();

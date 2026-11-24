@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { publicFixtures } from './public-fixtures';
 
 const accountId = '40000000-0000-4000-8000-000000000009';
-async function sessionFixture(page: Page, role: 'admin' | 'customer') {
+async function sessionFixture(page: Page, role: 'admin' | 'customer' | 'provider') {
   await publicFixtures(page);
   const user = { id: accountId, email: 'safety-ui@example.test', aud: 'authenticated', role: 'authenticated' };
   const payload = Buffer.from(JSON.stringify({ sub: user.id, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
@@ -175,4 +175,31 @@ test('admin retries a binary APK request against the same unverified draft', asy
   await form.getByRole('button', { name: 'Upload & verify draft APK', exact: true }).click();
   await expect.poll(() => uploads).toBe(2);
   expect(drafts).toBe(1);
+});
+
+test('web schedule edits preserve split shifts and midnight from Android', async ({ page }) => {
+  await sessionFixture(page, 'provider');
+  const shifts = [
+    { weekday: 1, starts_minute: 0, ends_minute: 480 },
+    { weekday: 1, starts_minute: 1080, ends_minute: 1440 }
+  ];
+  let saved: typeof shifts | undefined;
+  await page.route('**/rest/v1/**', route => {
+    const endpoint = new URL(route.request().url()).pathname.split('/').pop();
+    if (endpoint === 'user_context') return route.fallback();
+    if (endpoint === 'weekly_availability') return route.fulfill({ json: saved || shifts });
+    if (endpoint === 'save_availability') {
+      saved = route.request().postDataJSON().p_week;
+      return route.fulfill({ json: null });
+    }
+    return route.fulfill({ json: [] });
+  });
+  await page.goto('/provider/availability/');
+  await expect(page.getByLabel('Monday start 1')).toHaveValue('00:00');
+  await expect(page.getByLabel('Monday end 2')).toHaveValue('00:00');
+  await page.getByLabel('Monday end 1').fill('07:00');
+  await page.getByRole('button', { name: 'Add shift for Tuesday' }).click();
+  await page.getByRole('button', { name: 'Remove Tuesday shift 1' }).click();
+  await page.getByRole('button', { name: 'Save weekly hours' }).click();
+  await expect.poll(() => saved).toEqual([{ ...shifts[0], ends_minute: 420 }, shifts[1]]);
 });

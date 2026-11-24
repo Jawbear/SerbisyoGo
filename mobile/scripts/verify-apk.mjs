@@ -6,6 +6,7 @@ import { signingCertificate } from './apk-signature.mjs';
 import { androidTool } from './android-tool.mjs';
 
 const config = JSON.parse(readFileSync('app.json', 'utf8')).expo;
+const output = resolve(process.env.SERBISYOGO_APK_OUTPUT_DIR || 'builds');
 const source = resolve('android/app/build/outputs/apk/release/app-release.apk');
 const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
 if (!sdk) throw new Error('The Android SDK is required for APK verification.');
@@ -24,18 +25,23 @@ if (!entries.includes('assets/index.android.bundle')) throw new Error('The stand
 for (const abi of ['arm64-v8a', 'armeabi-v7a', 'x86_64']) if (!entries.some(name => name.startsWith(`lib/${abi}/`) && name.endsWith('.so'))) throw new Error(`Missing native libraries for ${abi}.`);
 const bytes = readFileSync(source);
 const sha256 = createHash('sha256').update(bytes).digest('hex');
+const sourceCommit = process.env.GITHUB_RUN_ID ? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() : null;
+if (process.env.GITHUB_RUN_ID && (!/^[0-9a-f]{40}$/.test(sourceCommit) || sourceCommit !== process.env.GITHUB_SHA)) {
+  throw new Error('The build checkout differs from the workflow commit.');
+}
 const fileName = `SerbisyoGo-${config.version}.apk`;
-mkdirSync('builds', { recursive: true });
-copyFileSync(source, join('builds', fileName));
-writeFileSync(join('builds', `${fileName}.sha256`), `${sha256}  ${fileName}\n`);
+mkdirSync(output, { recursive: true });
+copyFileSync(source, join(output, fileName));
+writeFileSync(join(output, `${fileName}.sha256`), `${sha256}  ${fileName}\n`);
 const metadata = {
   fileName, packageName: config.android.package, version: config.version, versionCode: config.android.versionCode,
   minSdk: Number(manifest.match(/^sdkVersion:'(\d+)'/m)?.[1]),
   targetSdk: Number(manifest.match(/^targetSdkVersion:'(\d+)'/m)?.[1]),
   architectures: ['arm64-v8a', 'armeabi-v7a', 'x86_64'], sizeBytes: bytes.length, sha256, certificateSha256,
-  standaloneBundle: true, debuggable: false, sourceCommit: process.env.GITHUB_SHA || null,
+  standaloneBundle: true, debuggable: false,
+  sourceCommit,
   buildUrl: process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null
 };
 if (!Number.isInteger(metadata.minSdk) || !Number.isInteger(metadata.targetSdk)) throw new Error('APK SDK metadata is missing.');
-writeFileSync('builds/build-metadata.json', JSON.stringify(metadata, null, 2) + '\n');
+writeFileSync(join(output, 'build-metadata.json'), JSON.stringify(metadata, null, 2) + '\n');
 console.log(JSON.stringify(metadata, null, 2));

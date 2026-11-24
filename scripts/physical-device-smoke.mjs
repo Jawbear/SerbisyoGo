@@ -14,11 +14,12 @@
  *   node scripts/physical-device-smoke.mjs [path-to-apk]
  */
 
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { execFileSync } from 'child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { setTimeout as sleep } from 'node:timers/promises';
 
-const PACKAGE = 'com.serbisyogo.app';
+const PACKAGE = JSON.parse(readFileSync(new URL('../mobile/app.json', import.meta.url), 'utf8')).expo.android.package;
 const REPORT_DIR = '.cache/device-test-report';
 const REPORT_FILE = '.cache/device-test-report.json';
 const TIMEOUT = 10_000;
@@ -34,7 +35,7 @@ const results = [];
 
 function adb(cmd, opts = {}) {
   try {
-    return execSync(`adb ${cmd}`, { timeout: TIMEOUT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], ...opts }).trim();
+    return execFileSync('adb', Array.isArray(cmd) ? cmd : cmd.split(' '), { timeout: TIMEOUT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], ...opts }).trim();
   } catch (e) {
     throw new Error(`adb ${cmd} failed: ${e.message}`);
   }
@@ -45,7 +46,7 @@ function screenshot(name) {
     const remotePath = `/sdcard/serbisyogo-smoke-${name}.png`;
     const localPath = join(REPORT_DIR, `${name}.png`);
     adb(`shell screencap -p ${remotePath}`);
-    adb(`pull ${remotePath} "${localPath}"`, { timeout: 15_000 });
+    adb(['pull', remotePath, localPath], { timeout: 15_000 });
     adb(`shell rm ${remotePath}`);
     log(`Screenshot saved: ${localPath}`);
     return localPath;
@@ -55,7 +56,6 @@ function screenshot(name) {
   }
 }
 
-function sleep(ms) { execSync(`ping -n ${Math.ceil(ms / 1000) + 1} 127.0.0.1 > nul`, { stdio: 'ignore', shell: true }); }
 
 // ─── Main ───
 
@@ -94,14 +94,15 @@ try {
 
 // 3. Check APK path
 const apkPath = process.argv[2] || process.env.TEST_APK_PATH;
-if (!apkPath || !existsSync(apkPath)) {
-  warn('No APK path provided or file not found. Skipping installation test.');
+if (apkPath && !existsSync(apkPath)) throw new Error('The selected APK does not exist.');
+if (!apkPath) {
+  warn('Using the installed app. Installation and upgrade are untested.');
   warn('Usage: node scripts/physical-device-smoke.mjs path/to/SerbisyoGo.apk');
 } else {
   // 4. Install APK
   log(`Installing APK: ${apkPath}`);
   try {
-    adb(`install -r "${apkPath}"`, { timeout: 60_000 });
+    adb(['install', '-r', apkPath], { timeout: 60_000 });
     pass('APK installed successfully');
   } catch (e) {
     fail('APK installation', e.message);
@@ -112,9 +113,10 @@ if (!apkPath || !existsSync(apkPath)) {
 log('Launching SerbisyoGo...');
 try {
   adb(`shell am force-stop ${PACKAGE}`);
-  sleep(1000);
+  await sleep(1000);
   adb(`shell am start -n ${PACKAGE}/.MainActivity`);
-  sleep(4000);
+  await sleep(4000);
+  if (!adb(`shell pidof ${PACKAGE}`)) throw new Error('The selected application is not running.');
   pass('App launched');
   screenshot('01-launch');
 } catch (e) {
@@ -125,7 +127,7 @@ try {
 log('Checking logcat for crashes...');
 try {
   adb('logcat -c');
-  sleep(3000);
+  await sleep(3000);
   const logcat = adb('logcat -d -s AndroidRuntime:E');
   const crashes = logcat.split('\n').filter(l => l.includes('FATAL EXCEPTION') || l.includes('java.lang.') || l.includes('Error'));
   if (crashes.length > 0) {
@@ -142,7 +144,7 @@ try {
 log('Testing hardware Back button...');
 try {
   adb('shell input keyevent KEYCODE_BACK');
-  sleep(2000);
+  await sleep(2000);
   screenshot('02-after-back');
   pass('Back button press registered');
 } catch (e) {
@@ -154,10 +156,10 @@ log('Testing screen rotation...');
 try {
   adb('shell settings put system accelerometer_rotation 0');
   adb('shell settings put system user_rotation 1'); // landscape
-  sleep(2000);
+  await sleep(2000);
   screenshot('03-landscape');
   adb('shell settings put system user_rotation 0'); // portrait
-  sleep(2000);
+  await sleep(2000);
   screenshot('04-portrait');
   adb('shell settings put system accelerometer_rotation 1');
   pass('Screen rotation handled');
@@ -169,9 +171,9 @@ try {
 log('Testing app backgrounding...');
 try {
   adb('shell input keyevent KEYCODE_HOME');
-  sleep(2000);
+  await sleep(2000);
   adb(`shell am start -n ${PACKAGE}/.MainActivity`);
-  sleep(3000);
+  await sleep(3000);
   screenshot('05-resumed');
   pass('App resumed from background');
 } catch (e) {

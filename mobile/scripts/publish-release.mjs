@@ -5,8 +5,19 @@ if(process.env.CI!=='1')throw new Error('Publication runs through the release wo
 const build=JSON.parse(readFileSync('builds/build-metadata.json','utf8'));
 const config=JSON.parse(readFileSync('app.json','utf8')).expo;
 const repository=process.env.GITHUB_REPOSITORY;
+if (!/^[0-9a-f]{40}$/.test(process.env.GITHUB_SHA || '') || build.sourceCommit !== process.env.GITHUB_SHA) {
+  throw new Error('Select a signed artifact built from the commit approved for this release.');
+}
 if(repository!=='Jawbear/SerbisyoGo'||build.version!==config.version||build.versionCode!==config.android.versionCode||!build.emulatorSmoke?.hardwareBack)throw new Error('Release identity or native checks are incomplete.');
 const tag=`android-v${build.version}`;
+// GitHub's --target only selects the commit when creating a new tag.
+const readGit = path => JSON.parse(execFileSync('gh', ['api', `repos/${repository}/git/${path}`], {encoding:'utf8',timeout:30000}));
+const tagRef = readGit(`matching-refs/tags/${tag}`).find(ref => ref.ref === `refs/tags/${tag}`);
+if (tagRef) {
+  let target = tagRef.object;
+  while (target.type === 'tag') target = readGit(`tags/${target.sha}`).object;
+  if (target.type !== 'commit' || target.sha !== build.sourceCommit) throw new Error('Existing Android tag points to a different commit.');
+}
 const probe=spawnSync('gh',['api',`repos/${repository}/releases/tags/${tag}`],{encoding:'utf8',timeout:30000});
 if(probe.status===0){
  const release=JSON.parse(probe.stdout),apk=release.assets.find(asset=>asset.name===build.fileName),metadata=release.assets.find(asset=>asset.name==='build-metadata.json');

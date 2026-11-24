@@ -21,7 +21,7 @@ export default function BookingActions({ booking: b }) {
         if (!/^\d+(\.\d{1,2})?$/.test(labor) || Number(labor) > 1000000) throw new Error('Enter a valid quotation in pesos.');
         await api.quote(b.id, Math.round(Number(labor) * 100)); refresh();
       })} /></>}
-      {customer && b.quoted_labor_centavos != null && !b.quote_accepted && <Button title="Accept labor quotation" busy={action.busy} onPress={() => action.run(async () => { await api.quote(b.id, null, true); refresh(); })} />}
+      {customer && b.quoted_labor_centavos != null && !b.quote_accepted && <Button title="Accept labor quotation" busy={action.busy} onPress={() => action.run(async () => { await api.acceptQuote(b.id, b.quoted_labor_centavos); refresh(); })} />}
     </>}
     {next && <Button title={labels[next]} busy={action.busy} disabled={next === 'confirmed' && b.is_estimate && !b.quote_accepted} onPress={() => action.run(() => change(next))} />}
     {cancel && <><Field label="Reason for cancellation or decline" value={reason} onChangeText={setReason} multiline maxLength={1000} /><Button title={provider && b.status === 'requested' ? 'Decline request' : 'Cancel booking'} secondary busy={action.busy} onPress={() => action.run(async () => {

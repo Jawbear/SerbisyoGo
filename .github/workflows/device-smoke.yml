@@ -22,7 +22,7 @@ jobs:
           adb version
           adb devices -l
       - name: Run smoke test
-        run: node scripts/physical-device-smoke.mjs ${{ inputs.apk_path }}
+        run: node scripts/physical-device-smoke.mjs
         env:
           TEST_APK_PATH: ${{ inputs.apk_path }}
       - name: Upload test report

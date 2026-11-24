@@ -16,7 +16,7 @@ import type { Booking } from '@/lib/types';
 import { BookingDetail } from '@/features/bookings/screens';
 import { CaseDetail } from '@/features/support/support';
 import { FileList } from '@/features/support/files';
-import { todayManila } from '@/features/bookings/flow';
+import { todayManila } from '@/lib/domain';
 import { GCashReview, GCashSettings } from '@/features/payments/gcash';
 type RecordRow = Record<string, unknown>;
 type Report = {
@@ -69,14 +69,12 @@ export function AdminWorkspace({
   const end = Number.isFinite(endTime) ? new Date(endTime + 86400000).toISOString() : '';
   const q = useQuery('admin-' + tab + '-' + from + '-' + to, async () => {
     if (!from || !to || !end || new Date(start) >= new Date(end)) throw new Error('Choose a valid date range.');
-    const report = await rpc<Report>('admin_report', {
-      p_from: start,
-      p_to: end
-    });
-    let rows = await list(tableFor[tab], {}, ['bookings', 'payments', 'support_cases', 'audit_logs', 'payout_requests'].includes(tableFor[tab]) ? {
-      from: start,
-      to: end
-    } : undefined);
+    const dateFiltered = ['bookings', 'payments', 'support_cases', 'audit_logs', 'payout_requests'].includes(tableFor[tab]);
+    const [report, records] = await Promise.all([
+      rpc<Report>('admin_report', { p_from: start, p_to: end }),
+      list(tableFor[tab], {}, dateFiltered ? { from: start, to: end } : undefined)
+    ]);
+    let rows = records;
     const roles = tab === 'customers' ? await list('role_assignments') : [];
     if (tab === 'customers') rows = rows.filter(r => roles.some(role => role.user_id === r.id && role.role === 'customer'));
     return {
@@ -212,8 +210,11 @@ function AdminTable({
     render: (r: RecordRow) => <Badge>{String(r.status)}</Badge>
   }] : ['dashboard', 'bookings', 'reports'].includes(tab) ? [{
     key: 'reference',
-    label: 'Reference / service',
-    render: (r: RecordRow) => <><strong>{String(r.reference)}</strong><p className="muted">{String(r.service_title)}</p></>
+    label: 'Booking reference',
+    render: (r: RecordRow) => <strong>{String(r.reference)}</strong>
+  }, {
+    key: 'service_title',
+    label: 'Service'
   }, {
     key: 'starts_at',
     label: 'Schedule',

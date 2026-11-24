@@ -1,10 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { findService, filterProviders, manilaDay, validateRequest, withProviderNames, parseDocInfo, formatVerificationFileName, checkVerificationCompleteness } from '../src/domain.js';
+import { availableServiceIds, hasServicePin, matchProfessionals } from '../src/data/discovery.js';
+import { watchReceiptReviews } from '../src/data/receiptReviews.js';
 import { fixtureCatalog } from './fixtures/catalog.mjs';
 
 const now = new Date('2026-11-11T01:00:00Z');
 const form = { description: 'Repair the leaking kitchen pipe.', label: 'Home', line1: '12 Sample Street', city: 'Bunawan', postal_code: '8506', starts_at: '2026-11-12T00:00:00Z' };
+
+test('receipt review catches up when the PostgreSQL feed starts or rejoins and ignores late callbacks after disposal', () => {
+  const handlers = new Map();
+  const channel = {
+    on(type, filter, handle) {
+      if (type === 'postgres_changes') {
+        assert.deepEqual(filter, { schema: 'public', table: 'gcash_submissions', event: '*', filter: 'payment_id=eq.test-payment' });
+      }
+      handlers.set(type, handle);
+      return this;
+    },
+    subscribe() { return this; }
+  };
+  let removed = false;
+  const client = {
+    channel: () => channel,
+    removeChannel(value) { assert.equal(value, channel); removed = true; }
+  };
+  let stored = 'pending';
+  const reads = [];
+  const dispose = watchReceiptReviews(client, 'test-payment', () => reads.push(stored));
+  const system = handlers.get('system');
+  stored = 'rejected';
+  system({extension: 'broadcast', status: 'ok'});
+  system({extension: 'postgres_changes', status: 'error'});
+  assert.deepEqual(reads, []);
+  const ready = {extension: 'postgres_changes', status: 'ok'};
+  system(ready);
+  stored = 'pending';
+  handlers.get('postgres_changes')();
+  stored = 'approved';
+  system(ready);
+  dispose();
+  handlers.get('postgres_changes')();
+  system(ready);
+  assert.equal(removed, true);
+  assert.deepEqual(reads, ['rejected', 'pending', 'approved']);
+});
 
 test('provider/service parameters resolve the selected record and reject mismatched IDs', () => {
   assert.equal(findService(fixtureCatalog, 'provider-2', 'service-2').provider.display_name, 'Francis Romay');
@@ -81,4 +121,22 @@ test('any one accepted credential satisfies submission, with admin review still 
   for (const category of ['other_proof', 'invented', null]) {
     assert.equal(checkVerificationCompleteness([{original_name:'[Government ID] misleading.pdf', verification_category:category}]).isComplete, false);
   }
+});
+
+test('discovery combines all offer filters and displays the lowest qualifying rate', async () => {
+  const fixture = {
+    ...fixtureCatalog, providers: [fixtureCatalog.providers[0]],
+    services: [fixtureCatalog.services[0], { ...fixtureCatalog.services[1], provider_id: 'provider-1', rate_centavos: 92000, title: 'Shower valve' }]
+  };
+  assert.deepEqual(matchProfessionals(fixture, { category: 'category-2', maximum: '500' }), []);
+  assert.deepEqual(matchProfessionals(fixture, { category: 'category-1', search: 'valve' }), []);
+  assert.deepEqual(matchProfessionals(fixture, { search: 'valve', available: ['service-1'] }), []);
+  assert.equal(matchProfessionals(fixture, { search: 'valve', available: ['service-2'] })[0].min_rate, 92000);
+  assert.equal(hasServicePin({ service_latitude: null, service_longitude: null }), false);
+  assert.equal(hasServicePin({ service_latitude: 8, service_longitude: 126 }), true);
+  const services = Array.from({ length: 105 }, (_, id) => ({ id }));
+  const sizes = [];
+  const ids = await availableServiceIds(services, '2027-01-01', async (_, batch) => { sizes.push(batch.length); return batch; });
+  assert.deepEqual(sizes, [50, 50, 5]);
+  assert.equal(ids[104], 104);
 });

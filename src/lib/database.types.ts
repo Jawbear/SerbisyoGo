@@ -163,6 +163,8 @@ export type Database = {
           headline: string;
           bio: string;
           city: string;
+          service_latitude: number | null;
+          service_longitude: number | null;
           avatar_path: string | null;
           service_areas: string[];
           status: string;
@@ -175,6 +177,8 @@ export type Database = {
           headline: string;
           bio: string;
           city: string;
+          service_latitude?: number | null;
+          service_longitude?: number | null;
           avatar_path?: string | null;
           service_areas?: string[];
           status?: string;
@@ -187,6 +191,8 @@ export type Database = {
           headline?: string;
           bio?: string;
           city?: string;
+          service_latitude?: number | null;
+          service_longitude?: number | null;
           avatar_path?: string | null;
           service_areas?: string[];
           status?: string;
@@ -1115,16 +1121,28 @@ export type Database = {
       };
     };
     Views: {
+      conversation_inbox: {
+        Row: { id: string; booking_id: string; reference: string; service_title: string; last_activity: string; unread: number | null };
+        Relationships: [];
+      };
       public_providers: {
         Row: Database['public']['Tables']['provider_profiles']['Row'] & {
           rating: number;
           review_count: number;
-          min_rate: number;
+          min_rate: number | null;
         };
         Relationships: [];
       };
     };
     Functions: {
+      accept_booking_quote: {
+        Args: { p_booking: string; p_expected_labor: number };
+        Returns: undefined;
+      };
+      read_through_message: {
+        Args: { p_message: string };
+        Returns: undefined;
+      };
       touch_updated_at: {
         Args: Record<string, unknown>;
         Returns: Json;
@@ -1195,6 +1213,18 @@ export type Database = {
       };
       slot_available: {
         Args: Record<string, unknown>;
+        Returns: Json;
+      };
+      marketplace_account: {
+        Args: { p_id: string };
+        Returns: boolean;
+      };
+      set_service_area_pin: {
+        Args: { p_latitude: number | null; p_longitude: number | null };
+        Returns: undefined;
+      };
+      discovery_available_services: {
+        Args: { p_day: string; p_services: string[] };
         Returns: Json;
       };
       available_slots: {

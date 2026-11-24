@@ -5,7 +5,9 @@ import { Buffer } from 'node:buffer';
 const config = JSON.parse(readFileSync('app.json', 'utf8')).expo;
 const backendUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const publicKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-if (!backendUrl?.startsWith('https://') || !publicKey || publicKey.startsWith('sb_secret_')) throw new Error('Configure the real public Supabase URL and publishable key before packaging.');
+if (backendUrl !== 'https://qkopbbxmeqqzomrawltf.supabase.co' || !publicKey || process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED === '1') {
+  throw new Error('The official APK requires the production Supabase project, its public client key and the live update feed.');
+}
 let allowedKey = publicKey.startsWith('sb_publishable_');
 try { allowedKey ||= JSON.parse(Buffer.from(publicKey.split('.')[1], 'base64url')).role === 'anon'; } catch { /* Opaque publishable keys have no JWT payload. */ }
 if (!allowedKey) throw new Error('A server/service key cannot be bundled in the APK.');

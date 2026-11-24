@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import { useApp } from '../AppContext';
-import { fileRequest } from '../data/backend';
+import { fileRequest, supabase } from '../data/backend';
+import { watchReceiptReviews } from '../data/receiptReviews';
 import { money } from '../domain';
 import { useAction, useData } from '../hooks';
+import { useLiveRows } from '../useLiveRows';
 import { colors as c } from '../theme';
 import { Button, Card, Field, Icon, Muted, Notice, Query, s } from './ui';
 
@@ -76,7 +79,14 @@ export default function GCashPayment({ booking }) {
   const picker = useAction();
   const busy = action.busy || picker.busy;
   const q = useData(`gcash-${booking.id}`, () => api.gcash(booking.id));
+  useLiveRows('payments', `booking_id=eq.${booking.id}`, q.retry, Boolean(booking.id));
   const { payment, settings, submissions = [] } = q.data ?? {};
+  const paymentId = payment?.id;
+  const focused = useIsFocused();
+  const retry = q.retry;
+  useEffect(() => {
+    if (focused) return watchReceiptReviews(supabase, paymentId, retry);
+  }, [focused, paymentId, retry]);
   const pending = submissions.find(row => row.status === 'pending');
   const latest = submissions[0];
   const rejected = latest?.status === 'rejected';
@@ -115,7 +125,7 @@ export default function GCashPayment({ booking }) {
 
   function paymentContent() {
     if (payment?.status === 'paid') {
-      return <PaymentStatus title="Paid" icon="checkmark-circle-outline" tone="success">Payment received and verified by the administrator.</PaymentStatus>;
+      return <PaymentStatus title="Paid" icon="checkmark-circle-outline" tone="success">An administrator recorded settlement of this booking.</PaymentStatus>;
     }
     if (payment?.status === 'refunded') {
       return <PaymentStatus title="Refunded" icon="return-up-back-outline" tone="success">Refund recorded.</PaymentStatus>;
@@ -127,7 +137,7 @@ export default function GCashPayment({ booking }) {
       return <PaymentStatus title="Payment closed" icon="lock-closed-outline">GCash payment is closed for this booking.</PaymentStatus>;
     }
     if (booking.status !== 'completed') {
-      return <PaymentStatus title="Pay after service" icon="lock-closed-outline">GCash payment opens when your provider completes the service.</PaymentStatus>;
+      return <PaymentStatus title="Pay after service" icon="lock-closed-outline">Check your settlement instructions after the provider completes the service.</PaymentStatus>;
     }
     if (!payment || payment.status !== 'pending') {
       return <PaymentStatus title="Payment unavailable" icon="alert-circle-outline" tone="error">Contact support with your booking reference.</PaymentStatus>;
@@ -163,7 +173,7 @@ export default function GCashPayment({ booking }) {
       <View style={styles.walletIcon}><Icon name="wallet-outline" size={23} color="#d3e5ff" /></View>
       <Text accessibilityRole="header" style={s.sectionTitle}>Pay with GCash</Text>
     </View>
-    <Query query={q}>
+    <Query query={{ ...q, loading: q.loading && !q.data }}>
       {q.data && <>
         {paymentContent()}
         {submissions.length > 0 && <View style={styles.history}>

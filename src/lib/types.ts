@@ -17,7 +17,9 @@ export interface Provider {
   service_areas: string[];
   rating: number;
   review_count: number;
-  min_rate: number;
+  min_rate: number | null;
+  service_latitude?: number | null;
+  service_longitude?: number | null;
 }
 export interface Service {
   id: string;

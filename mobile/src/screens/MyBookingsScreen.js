@@ -6,17 +6,20 @@ import { appointment, money } from '../domain';
 import { colors as c } from '../theme';
 import { Chip, Empty, Icon, Label, Muted, Notice, Query, Screen, StatusBadge, Title, s } from '../components/ui';
 import LoginPrompt from '../components/LoginPrompt';
+import { useLiveRows } from '../useLiveRows';
 
 export default function MyBookingsScreen({ navigation, route }) {
   const { api, identity } = useApp();
   const [status, setStatus] = useState('');
   const allowed = Boolean(identity);
   const query = useData(`bookings-${identity?.user.id || 'guest'}`, () => api.bookings(identity?.user.id, identity?.role), allowed);
+  useLiveRows('bookings', `${identity?.role === 'provider' ? 'provider_id' : 'customer_id'}=eq.${identity?.user.id}`, query.retry, allowed);
   const rows = (query.data || []).filter(row => !status || row.status === status);
   const saved = query.data?.some(row => row.id === route.params?.bookingId);
   return <Screen>
     <View style={s.stack}><Label>Your service records</Label><Title>Keep your home care together.</Title><Muted>Your saved requests and service history, securely linked to your account.</Muted></View>
-    {!allowed ? <LoginPrompt navigation={navigation} returnTo="MyBookings" /> : <Query query={query}>
+    {!allowed ? <LoginPrompt navigation={navigation} returnTo="MyBookings" /> : <Query query={{ ...query, loading: query.loading && !query.data }}>
+      {query.loading && <Muted>Refreshing your bookings…</Muted>}
       {saved && <Notice>Your booking request has been saved and sent for provider acceptance.</Notice>}
       <ScrollView horizontal style={s.chipStrip} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{[['', 'All requests'], ['requested', 'Awaiting provider'], ['confirmed', 'Confirmed'], ['completed', 'Completed']].map(([value, label]) => <Chip key={value} title={label} selected={status === value} onPress={() => setStatus(value)} />)}</ScrollView>
       {rows.map(row => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={`Open booking ${row.reference}`} onPress={() => navigation.navigate('BookingRecord', { bookingId: row.id })} style={[s.card, s.stack, row.id === route.params?.bookingId && { borderColor: c.green }]}>

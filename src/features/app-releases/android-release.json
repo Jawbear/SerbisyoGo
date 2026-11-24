@@ -1,12 +1,12 @@
 {
-  "version_name": "0.5.4",
-  "version_code": 12,
+  "version_name": "0.5.7",
+  "version_code": 15,
   "min_android": "7.0",
-  "published_at": "2026-11-18T12:35:13Z",
-  "byte_size": 55271324,
-  "sha256": "cf9baff788ded72f82c0e4a542a32455614355e548f32c42d680189c4adbb506",
-  "release_notes": "Uses the official neon-green 3D emblem on pure black for the Android launcher and splash screen. Includes adaptive, legacy and themed icons, plus matching in-app branding.",
-  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.4/SerbisyoGo-0.5.4.apk",
-  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.4",
-  "source_commit": "0cd32b9246f580724d48ce56cd66a35559fad50c"
+  "published_at": null,
+  "byte_size": 56888574,
+  "sha256": "ab1b16a43af427c09e810aa86cd5504a8cf6a4e6baaa3a6af51fd784e348c6bd",
+  "release_notes": "Official SerbisyoGo 0.5.7 Android release (version code 15) with production Supabase integration, real booking/messaging/GCash workflows, PSGC location discovery, and the 5.874s animated startup logo. Pending migrations 024/025, physical-device acceptance, and production DB backup before public activation.",
+  "download_url": "https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.5.7/SerbisyoGo-0.5.7.apk",
+  "release_url": "https://github.com/Jawbear/SerbisyoGo/releases/tag/android-v0.5.7",
+  "source_commit": "3e89d7ca1a82dc5658eb7abafde4f6c1c0db7bc6"
 }

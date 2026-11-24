@@ -11,7 +11,7 @@ const paths = [
   'package.json', 'package-lock.json', 'next.config.ts', 'next-env.d.ts', 'tsconfig.json',
   'postcss.config.mjs', 'playwright.config.ts', 'src', 'public', 'tests',
   'mobile/src/data/discovery.js', 'mobile/src/data/conversations.js', 'mobile/src/data/receiptReviews.js',
-  'scripts/prepare-local-integration.mjs', 'scripts/seed-demo.mjs', 'scripts/wait-for-local-edge.mjs',
+  'scripts/verify-published-apk.mjs', 'scripts/prepare-local-integration.mjs', 'scripts/seed-demo.mjs', 'scripts/wait-for-local-edge.mjs',
   'scripts/test-db-embedded.mjs', 'scripts/recovery-manifest.sql', 'scripts/run-staging-056.sh',
   'scripts/check-staging-bindings.mjs', 'scripts/generate-types.mjs',
   'supabase/config.toml', 'supabase/seed.sql', 'supabase/migrations/*.sql', 'supabase/tests/*.sql',
@@ -20,9 +20,10 @@ const paths = [
 const files = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', ...paths],
   { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
 const migrations = files.filter(file => file.startsWith('supabase/migrations/')).sort();
-if (migrations.length !== 25 || !migrations[22].endsWith('202611170023_provider_trust_badges.sql') ||
-    !migrations[23].endsWith('202611190024_discovery.sql') || !migrations[24].endsWith('202611190025_booking_communications.sql')) {
-  throw new Error('Expected the 0.5.6 migration set through 025.');
+if (migrations.length !== 27 || !migrations[22].endsWith('202611170023_provider_trust_badges.sql') ||
+    !migrations[23].endsWith('202611190024_discovery.sql') || !migrations[24].endsWith('202611190025_booking_communications.sql') ||
+    !migrations[25].endsWith('202611240026_booking_reliability.sql') || !migrations[26].endsWith('202611240027_booking_consent_and_location.sql')) {
+  throw new Error('Expected the reviewed migration set through 027.');
 }
 const cache = join(root, '.cache');
 await mkdir(cache, { recursive: true });

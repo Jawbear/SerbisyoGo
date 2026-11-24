@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { test, expect } from '@playwright/test';
 import { installBackend, signIn } from '../fixtures/backend.mjs';
 
@@ -58,6 +59,7 @@ test('booking history requests older pages and clears the cursor when filtering'
     starts_at: '2026-12-10T00:00:00Z', created_at: '2026-11-01T00:00:00Z', total_centavos: 50000 });
   await page.route('**/rest/v1/bookings?*', route => {
     const query = new URL(route.request().url()).searchParams;
+    if (query.get('select') === 'id,service_title,starts_at,status') return route.fallback();
     expect(query.get('limit')).toBe('26');
     expect(query.get('order')).toBe('created_at.desc,id.desc');
     let rows = Array.from({ length: 26 }, (_, i) => record(99 - i));

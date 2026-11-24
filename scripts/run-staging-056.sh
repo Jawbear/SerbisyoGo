@@ -70,16 +70,27 @@ local_node scripts/seed-demo.mjs
 manifest > .cache/before.tsv
 "$cli" db push --local --dry-run
 "$cli" db push --local --yes
-[[ $(sql -c "select string_agg(version, ',' order by version) from supabase_migrations.schema_migrations where version > '202611170023'") == 202611190024,202611190025 ]]
+[[ $(sql -c "select string_agg(version, ',' order by version) from supabase_migrations.schema_migrations where version > '202611170023'") == 202611190024,202611190025,202611240026,202611240027 ]]
 manifest > .cache/after.tsv
 diff -u .cache/before.tsv .cache/after.tsv
-echo 'Schema 023 to 025 preserved the historical staging rows.'
+echo 'Schema 023 to 027 preserved the historical staging rows.'
 
 "$cli" db reset --local >.cache/reset-tests.log 2>&1
 node scripts/check-staging-bindings.mjs
 "$cli" test db --local
 node scripts/generate-types.mjs
 npm run typecheck
+# Verify a retained public APK or fetch the same pinned release for private Storage tests.
+if [[ $# -gt 1 ]]; then echo "Expected at most one published APK path." >&2; exit 1; fi
+if [[ $# -eq 1 ]]; then
+  apk_path=$(realpath -- "$1")
+else
+  npm run apk:verify:published
+  apk_path=$(node -p "require('path').resolve('.cache/verified-public-apk', require('./.cache/verified-public-apk/verification.json').filename)")
+fi
+expected_hash=$(node -p "require('./src/features/app-releases/android-release.json').sha256")
+actual_hash=$(sha256sum < "$apk_path")
+[[ ${actual_hash%% *} == "$expected_hash" ]] || { echo "Public APK digest mismatch." >&2; exit 1; }
 npx --no-install playwright install --with-deps chromium
 for trial in 1 2; do
   for viewport in desktop mobile; do
@@ -94,8 +105,8 @@ for trial in 1 2; do
     local_node scripts/wait-for-local-edge.mjs
     node scripts/check-staging-bindings.mjs
     local_node scripts/seed-demo.mjs
-    local_node node_modules/@playwright/test/cli.js test tests/e2e/workflows.spec.ts \
-      --project="$viewport" --grep-invert 'an actual test APK' --reporter=line --retries=0 --trace=off \
+    TEST_APK_PATH="$apk_path" local_node node_modules/@playwright/test/cli.js test tests/e2e/workflows.spec.ts \
+      --project="$viewport" --reporter=line --retries=0 --trace=off \
       | tee ".cache/workflows-$tag.log"
     stop_edge
   done

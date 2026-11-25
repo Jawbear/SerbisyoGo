@@ -1,9 +1,12 @@
+import { useState } from 'react';
+import { appointment } from '../domain';
+import { useLiveRows } from '../useLiveRows';
 import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { useAction, useData } from '../hooks';
 import { homeCover, serviceCover } from '../data/covers';
 import { colors as c, roleLabels } from '../theme';
-import { Badge, Button, Card, Icon, Label, Muted, Notice, ProviderGrid, Query, Screen, Section, s } from '../components/ui';
+import { Badge, Button, Card, Field, Icon, Label, Muted, Notice, ProviderGrid, Query, Screen, Section, s } from '../components/ui';
 
 import {informationLinks} from './InformationScreen';
 
@@ -15,23 +18,29 @@ export default function HomeScreen({ navigation }) {
   const wide = width >= 760;
   const query = useData('home-catalog', app.api.catalog);
   const action = useAction();
+  const [search, setSearch] = useState('');
+  const [city, setCity] = useState('');
+  const customer = app.identity?.role === 'customer' ? app.identity.user.id : null;
+  const next = useData('next-appointment', () => app.api.nextAppointment(customer), Boolean(customer));
+  useLiveRows('bookings', customer ? 'customer_id=eq.' + customer : null, next.retry, Boolean(customer));
+  const find = () => navigation.navigate('FindProfessionals', { search: search.trim(), city: city.trim(), categoryId: '' });
   return <Screen>
-    <View style={s.between}><View style={[s.inline, { flexShrink: 1 }]}><Icon name="location-outline" size={15} /><Muted style={{ flexShrink: 1 }}>Bunawan, Agusan del Sur</Muted></View>{app.identity ? <Badge>{roleLabels[app.identity.role]}</Badge> : <Button title="Sign in" secondary disabled={app.authLoading || !app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} />}</View>
+    <View style={s.between}><Text style={s.sectionTitle}>{app.identity ? 'Welcome, ' + app.identity.profile.full_name.split(' ')[0] : 'Local home services'}</Text>{app.identity ? <Badge>{roleLabels[app.identity.role]}</Badge> : <Button title="Sign in" secondary disabled={!app.liveAvailable} onPress={() => navigation.navigate('SignIn', { returnTo: 'Home' })} />}</View>
     {!app.liveAvailable && <Notice error>The service connection is not configured. Please contact support.</Notice>}
-    {app.identity?.role==='admin' && <Notice>Administration is available on the SerbisyoGo website.</Notice>}
-    <Button title="App updates" secondary icon="download-outline" onPress={()=>navigation.navigate('AppUpdates')} />
+    {app.identity?.role === 'admin' && <Notice>Administration is available on the SerbisyoGo website.</Notice>}
     <View style={styles.hero}>
-      <View style={[s.stack, wide && { flexDirection: 'row', alignItems: 'center', gap: 28 }]}>
-      <View style={[s.stack, wide && s.flex]}>
-      <Label>Local skills. Everyday care.</Label>
-      <Text accessibilityRole="header" style={styles.heroTitle}>Your home.{"\n"}<Text style={{ color: c.green }}>In good hands.</Text></Text>
-      <Muted>Find a helping hand nearby. Choose a professional and plan your next home service.</Muted>
-      <Button title="Find a professional" icon="search-outline" onPress={() => navigation.navigate('FindProfessionals', { categoryId: '' })} />
+      <View style={[s.stack, wide && { flexDirection:'row', alignItems:'center', gap:28 }]}>
+        <View style={[s.stack, wide && s.flex]}>
+          <Text accessibilityRole="header" style={styles.heroTitle}>Your home.{"\n"}<Text style={{ color:c.green }}>In good hands.</Text></Text>
+          <Field label="Which service do you need?" value={search} onChangeText={setSearch} placeholder="Try plumbing or air conditioning" returnKeyType="search" onSubmitEditing={find} />
+          <Field label="City or municipality" value={city} onChangeText={setCity} placeholder="All service areas" returnKeyType="search" onSubmitEditing={find} />
+          <Button title="Find a professional" icon="search-outline" onPress={find} />
+        </View>
+        {wide && <Image source={homeCover} accessibilityLabel="Carpenter adjusting a cabinet hinge" style={[styles.heroImage,{ width:'42%',height:310 }]} />}
       </View>
-      <Image source={homeCover} accessibilityLabel="Carpenter adjusting a cabinet hinge" style={[styles.heroImage, wide && { width: '42%', height: 310 }]} />
-      </View>
-      <View style={s.row}><Icon name="shield-checkmark-outline" /><Muted style={s.flex}>Profiles, schedules, and service requests in one place.</Muted></View>
     </View>
+    {customer && <Query query={next}>{next.data && <Card style={s.stack}><Label>Your next booking</Label><Text style={s.sectionTitle}>{next.data.service_title}</Text><Muted>{appointment(next.data.starts_at)}</Muted><Button title="View booking" secondary onPress={() => navigation.navigate('BookingRecord', { bookingId:next.data.id })} /></Card>}</Query>}
+    <Button title="App updates" secondary icon="download-outline" onPress={()=>navigation.navigate('AppUpdates')} />
     <Query query={query}>{query.data && <>
       <Section title="What needs attention at home?">
         <ScrollView horizontal style={{ flexGrow: 0, flexShrink: 0, height: 240 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
@@ -45,17 +54,7 @@ export default function HomeScreen({ navigation }) {
     </>}</Query>
     <Card style={s.stack}><Label>Explore SerbisyoGo</Label><Text style={s.sectionTitle}>A clear start, for everyone.</Text><View style={[s.row,{flexWrap:'wrap'}]}>{informationLinks.map(([page,label])=><Button key={page} title={label} secondary onPress={()=>navigation.navigate('Information',{page})}/>)}</View></Card>
     <Card style={s.stack}><Label>Your service records</Label><Text style={s.sectionTitle}>A little less to worry about.</Text><Muted>Review requests you have saved and keep your next appointment close at hand.</Muted><Button title="Open my bookings" secondary icon="calendar-outline" onPress={() => navigation.navigate('MyBookings')} /></Card>
-    {app.identity?.role === 'provider' ? (
-      <Card style={s.stack}>
-        <Label>Provider Workspace</Label>
-        <View style={s.between}>
-          <Text style={s.sectionTitle}>Credentials & Verification</Text>
-          <Badge>Provider</Badge>
-        </View>
-        <Muted>Upload and manage your required verification documents (Government ID, TESDA NC1/NC2, PRC License, and Clearances).</Muted>
-        <Button title="Manage verification credentials" secondary icon="shield-checkmark-outline" onPress={() => navigation.navigate('ProviderVerification')} />
-      </Card>
-    ) : app.identity?.role === 'customer' ? (
+    {app.identity?.role === 'customer' ? (
       <Card style={s.stack}>
         <Label>Offer your skills</Label>
         <Text style={s.sectionTitle}>Become a Service Provider</Text>

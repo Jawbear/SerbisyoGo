@@ -39,7 +39,7 @@ export const demoCategories = [{
   description: 'Everyday home care',
   icon: 'wrench'
 }];
-export const demoProviders: Provider[] = [{
+export const demoProviders: (Provider & { min_rate: number })[] = [{
   id: '20000000-0000-4000-8000-000000000001',
   display_name: 'Art Ecleo',
   headline: 'Electrical service professional',

@@ -47,7 +47,8 @@ test('saved service filters can be restored, edited and deleted across reloads d
   await page.unroute(locationUrl);
   await page.route(locationUrl, route => route.abort('internetdisconnected'));
   await page.reload();
-  await button('Choose municipality').click();
+  await expect(page.getByText('Municipality: Bunawan')).toBeVisible();
+  await button('Change municipality').click();
   await expect(page.getByText(locationError)).toBeVisible();
   await button('Saved searches').click();
   await expect(page.getByText('Workshop', { exact: true })).toBeVisible();

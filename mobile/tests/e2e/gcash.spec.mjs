@@ -57,7 +57,7 @@ test('GCash checkout reuses a receipt upload and hides transfers while verificat
   status = 'paid';
   submissions[0].status = 'approved';
   await page.getByRole('button', { name: 'Refresh payment status' }).click();
-  await expect(page.getByText('Payment received and verified by the administrator.', { exact: true })).toBeVisible();
+  await expect(page.getByText('An administrator recorded settlement of this booking.', { exact: true })).toBeVisible();
 });
 
 test('an enabled wallet without recipient verification does not offer payment submission', async ({ page }) => {

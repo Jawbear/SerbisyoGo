@@ -1,5 +1,37 @@
 # Physical Device Testing Plan
 
+## 0.5.6 release acceptance
+
+**Physical handset results are pending for every row below.** The production-configured candidate is package `com.serbisyogo.mobile`, version code 14. Its SHA-256 is `d87cf99d70a5e3d8a1322a9bd81a5428a0c91e309b0efd7c083e417f6409c1c4`. The signed emulator and local browser checks are recorded in the [0.5.6 release report](release-056-staging.md).
+
+Use an authorized lab phone and a second, independently signed-in staging client. For the preserved candidate, verify the file hash and perform the offline in-place upgrade from a lower version with the same package and certificate. Use a phone with test-only app data and block all network access before opening either version. Do not uninstall, clear app data or use a personal handset with a live customer session. A same-version reinstall does not establish upgrade compatibility.
+
+For connected tests, build a separate QA artifact from the reviewed source with explicit staging `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `EXPO_PUBLIC_SITE_URL`. Verify the built bundle's effective endpoints, Auth callback allowlist and the staging website's backend. Restrict device network access to the test endpoints on both Wi-Fi and cellular (including the local mail sink through a private VPN if necessary). Block the production Worker, Supabase project and production updater/feed downloads. Use matching staging baseline/candidate builds on a dedicated phone or work profile for a signed-in upgrade. Record each artifact hash separately. A QA build cannot establish network acceptance for the preserved production-bound APK.
+
+```powershell
+Get-FileHash mobile/builds/local-test/SerbisyoGo-0.5.6.apk -Algorithm SHA256
+adb devices -l
+$serial = Read-Host 'Authorized test handset serial'
+adb -s $serial shell dumpsys package com.serbisyogo.mobile | Select-String 'versionName|versionCode'
+# Only on the isolated offline upgrade phone, with the older signed app installed:
+adb -s $serial install -r mobile/builds/local-test/SerbisyoGo-0.5.6.apk
+adb -s $serial shell dumpsys package com.serbisyogo.mobile | Select-String 'versionName|versionCode'
+```
+
+| Scenario | Steps and pass condition |
+| --- | --- |
+| Branding and sign-in | Compare the launcher icon, themed icon, black splash and SerbisyoGo wordmark with the approved artwork. Sign in separately with staging customer and provider accounts. Check the expected role, dashboard, sign-out and private-screen access after sign-out. |
+| Offline recovery | Open a test booking, disconnect before a second client changes its status, then reopen the app offline. Verify it handles the lost connection without losing the session. Reconnect, retry, and compare the final booking and message IDs with the other client. |
+| In-place upgrade | On the baseline, establish a test preference or saved item. On the staging pair, also sign in. Install with `-r`, relaunch, verify code 14, retained state and correct role. Capture the prior and new version. |
+| Wi-Fi → cellular → Wi-Fi | Open a staging booking on both clients. Disable Wi-Fi on the phone while the peer sends one uniquely marked message. Confirm recovery on cellular, exactly one message and the same booking status on both devices. Repeat in the opposite direction and inspect persisted rows. |
+| Background/session restoration | Sign in on staging, open a booking, press Home and lock the screen. Let the peer update the booking. Resume, then background and force-stop/relaunch. Verify identity, current booking status and message history without signing in again. Sign out and confirm private screens require login. |
+| Deep links and reset | With the app cold and warm, open `serbisyogo://bookings/<staging-booking-id>` for an authorized booking. Exercise the native sign-in callback with a designated test identity if staging OAuth is configured. From Forgot password, open the staging sink's email, follow the website callback to `/reset-password/`, save a new password and return to the app to sign in. Verify the old password fails. Exclude tokens and reset links from evidence. |
+| Photo uploads | Use a non-personal image. Exercise camera/gallery selection, cancellation and retry after interrupted connectivity. Confirm the authorized profile shows the photo after relaunch and the private object follows its access rules. |
+| GCash receipt | Use a watermarked TEST image, synthetic reference and authorized staging manual review. Submit against one test booking. Confirm the payment stays pending until administrator review. Exercise rejection/resubmission and acceptance, then verify one resulting settlement and consistent status across clients. No wallet transfer or real QR payment. |
+| Booking, messaging and notifications | Customer creates one request. Provider accepts it on the other device. Keep both views open and verify the live IDs, status, message and recipient notification without a refresh. Test reconnect/catch-up separately. An unrelated test customer/provider must see no private booking, message, receipt or notification. Record in-app delivery separately from OS push. |
+
+Record handset/model, Android/API, baseline and candidate SHA-256, signing certificate, reviewed source SHA, staging ref, role pair, network, UTC time, test booking ID, expected/observed outcome and redacted evidence per row. Mark each **pass**, **fail** or **unverified**. The smoke helper now reads the package from `mobile/app.json`. For 0.5.6 it targets `com.serbisyogo.mobile`. Its launch and navigation results cover only part of this matrix.
+
 SerbisyoGo alpha/beta testing guide for physical Android phones and mobile browsers. Covers the device matrix, test scenarios, network conditions and performance benchmarks relevant to Bunawan, Agusan del Sur users.
 
 ## Target device matrix

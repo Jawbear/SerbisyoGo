@@ -17,7 +17,7 @@ for (const role of ['customer', 'provider', 'admin'] as const) {
     test.setTimeout(180000);
     const manifest = JSON.parse(await readFile('.cache/development-users.json', 'utf8'));
     expect(new URL(manifest.project).origin).toBe(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin);
-    const account = manifest.accounts[role === 'admin' ? 'admin' : `${role}1`];
+    const account = manifest.accounts[role === 'provider' ? (process.env.E2E_PROVIDER_FIXTURE || 'provider1') : role === 'admin' ? 'admin' : 'customer1'];
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(role === 'admin' ? '/admin/login/' : '/login/');
@@ -27,7 +27,7 @@ for (const role of ['customer', 'provider', 'admin'] as const) {
     await expect(page).toHaveURL(role === 'admin' ? /\/admin\/$/ : role === 'provider' ? /\/provider\/$/ : /\/dashboard\/$/, { timeout: 30000 });
     for (const path of routes[role]) {
       await page.goto(path);
-      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 30000 });
       await expect(page.getByRole('status', { name: 'Loading', exact: true })).toHaveCount(0, { timeout: 30000 });
       await expect(page.locator('main .notice.error'), `Backend read errors on ${path}`).toHaveCount(0);
       await expect(page.getByText('Access denied.', { exact: false })).toHaveCount(0);

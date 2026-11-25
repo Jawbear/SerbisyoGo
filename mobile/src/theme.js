@@ -1,7 +1,7 @@
 export const colors = {
-  background: '#0b0f0e', panel: '#171e1b', raised: '#1d2923', border: '#33443b',
-  text: '#f2f5f3', muted: '#a5b3ab', green: '#48d597', soft: '#203d30',
-  input: '#101713', buttonText: '#0b2016', error: '#f1aeac', warning: '#ddc388'
+  background: '#080f0b', panel: '#111c16', raised: '#17261d', border: '#294033',
+  text: '#f7faf7', muted: '#b1bdb3', green: '#86e46b', soft: '#203d30',
+  input: '#101713', buttonText: '#0b2016', error: '#f87171', warning: '#ddc388'
 };
 
 export const roleLabels = { customer: 'Customer', provider: 'Provider', admin: 'Admin' };

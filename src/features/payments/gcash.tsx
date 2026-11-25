@@ -1,10 +1,11 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { AlertCircle, CheckCircle2, Clock3, Copy, LockKeyhole, Paperclip, ReceiptText, RefreshCw, Smartphone, Wallet } from 'lucide-react';
 import { ActionButton, Badge, Card, Field, MutationForm, Notice, QueryState, Textarea, useQuery } from '@/components/ui';
-import { edge, rpc } from '@/lib/backend';
+import { db, edge, rpc } from '@/lib/backend';
+import { watchReceiptReviews } from '../../../mobile/src/data/receiptReviews.js';
 import { list } from '@/lib/data';
 import { money, validateUpload } from '@/lib/domain';
 import { useSession } from '@/components/session';
@@ -126,6 +127,8 @@ export function GCashPayment({ bookingId, bookingStatus }: { bookingId: string; 
   });
 
   const { payment, settings, submissions = [] } = q.data ?? {};
+  const paymentId = payment?.id;
+  useEffect(() => watchReceiptReviews(db, paymentId, refresh), [paymentId, refresh]);
   const pending = submissions.find(row => row.status === 'pending');
   const rejected = submissions[0]?.status === 'rejected';
 
@@ -144,7 +147,7 @@ export function GCashPayment({ bookingId, bookingStatus }: { bookingId: string; 
 
   function paymentContent() {
     if (payment?.status === 'paid') {
-      return <PaymentStatus title="Paid" tone="success">Payment received and verified by the administrator.</PaymentStatus>;
+      return <PaymentStatus title="Paid" tone="success">An administrator recorded settlement of this booking.</PaymentStatus>;
     }
     if (payment?.status === 'refunded') {
       return <PaymentStatus title="Refunded" tone="success">Refund recorded.</PaymentStatus>;
@@ -156,7 +159,7 @@ export function GCashPayment({ bookingId, bookingStatus }: { bookingId: string; 
       return <PaymentStatus title="Payment closed">GCash payment is closed for this booking.</PaymentStatus>;
     }
     if (bookingStatus !== 'completed') {
-      return <PaymentStatus title="Pay after service">GCash payment opens when your provider completes the service.</PaymentStatus>;
+      return <PaymentStatus title="Pay after service">Check your settlement instructions after the provider completes the service.</PaymentStatus>;
     }
     if (!payment || payment.status !== 'pending') {
       return <PaymentStatus title="Payment unavailable" tone="error">Contact support with your booking reference.</PaymentStatus>;

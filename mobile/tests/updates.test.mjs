@@ -2,6 +2,17 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {CERTIFICATE,validateRelease,mayPrompt} from '../src/updates/policy.js';
 import {loadAvailableRelease} from '../src/updates/release.js';
+test('isolated builds make no requests to public release services', async (t) => {
+  const previous = process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED;
+  t.after(() => {
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED;
+    else process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED = previous;
+  });
+  process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED = '1';
+  const request = t.mock.fn();
+  await assert.rejects(loadAvailableRelease(14, 35, undefined, request), /disabled for this test build/);
+  assert.equal(request.mock.callCount(), 0);
+});
 
 const release={package_name:'com.serbisyogo.mobile',certificate_sha256:CERTIFICATE,version_name:'0.3.0',version_code:3,min_sdk:24,min_android:'7.0',byte_size:53255608,sha256:'a'.repeat(64),download_url:'https://github.com/Jawbear/SerbisyoGo/releases/download/android-v0.3.0/SerbisyoGo-0.3.0.apk'};
 test('only a newer Android version is offered, using version codes rather than string order',()=>{

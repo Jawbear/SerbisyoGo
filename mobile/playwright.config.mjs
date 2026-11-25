@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 try { process.loadEnvFile('.env.local'); } catch { /* Controlled checks use intercepted HTTP requests. */ }
+// Live sign-in failures can leave credentials in Playwright's automatic page snapshot.
+if (process.env.E2E_MOBILE_LIVE_READONLY === '1') process.env.PLAYWRIGHT_NO_COPY_PROMPT = '1';
 const port=Number(process.env.E2E_MOBILE_PORT||8081);
 const externalBaseUrl = process.env.E2E_MOBILE_BASE_URL;
 const testConnection = process.env.E2E_MOBILE_LIVE_READONLY === '1' ? {} : {

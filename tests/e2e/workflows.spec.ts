@@ -4,6 +4,7 @@ import {createClient} from '@supabase/supabase-js';
 import {unzipSync} from 'fflate';
 import {readAndroidManifest,androidVersions} from '../../src/lib/apk';
 import {verificationEmailLink} from '../local-inbox';
+import {postgresFeedReady} from '../../mobile/src/data/receiptReviews.js';
 type Credentials={id:string;email:string;password:string};
 type Fixtures={accounts:Record<string,Credentials>;bookings:{id:string;status:string}[];services:string[];caseId:string};
 const url=process.env.TEST_SUPABASE_URL,key=process.env.TEST_SUPABASE_PUBLISHABLE_KEY,secret=process.env.TEST_SUPABASE_SECRET_KEY;
@@ -11,6 +12,11 @@ const configured=Boolean(url&&key&&secret&&['127.0.0.1','localhost'].includes(ne
 let fixtures:Fixtures;
 test.beforeAll(async()=>{if(configured)fixtures=JSON.parse(await readFile('.cache/demo-users.json','utf8')) as Fixtures;});
 test.skip(!configured,'Requires an isolated local Supabase project, local demo seed, Edge Functions and test credentials; never run against production.');
+test.beforeEach(async({context,baseURL})=>{
+ const loopback=(value:string)=>['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname);
+ if(!baseURL || !loopback(baseURL))throw new Error('Persisted staging workflows require a loopback website.');
+ await context.route(/^https?:/,route=>loopback(route.request().url())?route.continue():route.abort('blockedbyclient'));
+});
 async function signIn(page:Page,who:string){await page.goto('/login/');await page.getByLabel('Email address',{exact:true}).fill(fixtures.accounts[who].email);await page.getByLabel('Password',{exact:true}).fill(fixtures.accounts[who].password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/dashboard|provider|admin/);}
 function client(who?:string){const c=createClient(url!,who?key!:secret!,{auth:{persistSession:false}});return c;}
 async function signed(who:string){const c=client(who);const {error}=await c.auth.signInWithPassword(fixtures.accounts[who]);if(error)throw error;return c;}
@@ -28,7 +34,82 @@ test('recipient verification is enforced through the real API before enabling GC
  const disabled=await admin.from('gcash_settings').select('enabled,recipient_verified_at').single();expect(disabled.data?.enabled).toBe(false);expect(disabled.data?.recipient_verified_at).toBeNull();
 });
 
-test('one real credential upload permits admin review without requiring other groups',async()=>{
+test('staging manual receipt review reaches customer and provider over Realtime', async ({page}) => {
+  test.setTimeout(90000);
+  const customer = await signed('customerA');
+  const provider = await signed('providerB');
+  const admin = await signed('admin');
+  const booking = fixtures.bookings.find(row => row.status === 'confirmed')!.id;
+  for (const status of ['en_route', 'in_progress', 'completed']) {
+    await provider.rpc('transition_booking', { p_booking: booking, p_status: status, p_reason: '' }).throwOnError();
+  }
+  const { data: payment } = await customer.from('payments').select('id,amount_centavos,status')
+    .eq('booking_id', booking).single().throwOnError();
+  expect(payment!.status).toBe('pending');
+  const phone = '09170000001';
+  await admin.rpc('save_gcash_settings', {
+    p_name: 'Isolated Test Wallet', p_phone: phone, p_instructions: 'Staging simulation only',
+    p_enabled: true, p_qr_url: null, p_recipient_verified: true
+  }).throwOnError();
+
+  let providerReady = false, customerReady = false, providerSawPaid = false;
+  const observedReviews = new Map<string, string>();
+  const subscribedAt = Date.now();
+  function feedStatus(role: string, message: { extension: string; status: string }) {
+    const ready = postgresFeedReady(message);
+    if (ready) console.info(`${role} PostgreSQL feed ready after ${Date.now() - subscribedAt} ms`);
+    return ready;
+  }
+  const providerChannel = provider.channel('payment-' + payment!.id)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'payments', filter: 'id=eq.' + payment!.id },
+      change => { if (change.new.status === 'paid') providerSawPaid = true; });
+  const customerChannel = customer.channel('review-' + payment!.id)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'gcash_submissions', filter: 'payment_id=eq.' + payment!.id },
+      change => { observedReviews.set(change.new.id, change.new.status); });
+  try {
+    providerChannel.on('system', {}, message => { if (message.extension === 'postgres_changes') providerReady = feedStatus('Provider', message); }).subscribe();
+    customerChannel.on('system', {}, message => { if (message.extension === 'postgres_changes') customerReady = feedStatus('Customer', message); }).subscribe();
+    await expect.poll(() => providerReady && customerReady, {timeout: 20000}).toBe(true);
+    await signIn(page, 'customerA');
+    await page.goto('/bookings/detail/?id=' + booking);
+    await expect(page.getByRole('heading', { name: 'Submit your receipt' })).toBeVisible();
+    for (const approve of [false, true]) {
+      const pixels = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=', 'base64'));
+      const form = new FormData();
+      form.set('file', new File([pixels], 'staging-test-pixels.png', { type: 'image/png' }));
+      form.set('kind', 'payment');
+      form.set('booking_id', booking);
+      const upload = await customer.functions.invoke('files', { body: form });
+      expect(upload.error).toBeNull();
+      const { data: submission } = await customer.rpc('submit_gcash_receipt', {
+        p_booking: booking, p_reference: Date.now().toString(), p_receipt: upload.data.id,
+        p_expected_amount: payment!.amount_centavos, p_recipient_phone: phone
+      }).throwOnError();
+      const pending = await customer.from('payments').select('status').eq('id', payment!.id).single().throwOnError();
+      expect(pending.data!.status).toBe('pending');
+      await expect(page.getByText('Awaiting verification', {exact:true})).toBeVisible();
+      const review = { p_submission: submission, p_approve: approve, p_reason: 'Disposable staging manual review simulation' };
+      expect((await customer.rpc('review_gcash_receipt', review)).error).toBeTruthy();
+      const privateReceipt = await provider.from('gcash_submissions').select('id').eq('id', submission).throwOnError();
+      expect(privateReceipt.data).toEqual([]);
+      await admin.rpc('review_gcash_receipt', review).throwOnError();
+      await expect.poll(() => observedReviews.get(submission), {timeout: 15000}).toBe(approve ? 'approved' : 'rejected');
+      const status = page.getByRole('status').filter({hasText: approve ? 'An administrator recorded settlement' : 'Receipt needs updating'});
+      await expect(status).toBeVisible();
+      if (!approve) {
+        const rejectedPayment = await customer.from('payments').select('status').eq('id', payment!.id).single().throwOnError();
+        expect(rejectedPayment.data!.status).toBe('pending');
+      }
+    }
+    await expect.poll(() => providerSawPaid, {timeout: 15000}).toBe(true);
+    const events = await customer.from('payment_events').select('id').eq('payment_id', payment!.id).eq('status', 'paid').throwOnError();
+    expect(events.data).toHaveLength(1);
+  } finally {
+    await Promise.all([customer.removeChannel(customerChannel), provider.removeChannel(providerChannel)]);
+  }
+});
+
+test('one real credential upload permits admin review without requiring other groups',async({page})=>{
  const applicant=await signed('pendingProvider'),admin=await signed('admin');
  const {data:{session}}=await applicant.auth.getSession();
  const headers={apikey:key!,Authorization:`Bearer ${session!.access_token}`};
@@ -44,6 +125,16 @@ test('one real credential upload permits admin review without requiring other gr
  const context=await applicant.rpc('user_context');expect(context.data?.role).toBe('provider');
  // Badge reviews are explicit and independent from application approval.
  const providerId=fixtures.accounts.pendingProvider.id;
+ expect((await applicant.rpc('set_service_area_pin',{p_latitude:14.5547,p_longitude:121.0244})).error).toBeNull();
+ const directory=await createClient(url!,key!).from('public_providers').select('display_name,min_rate,service_latitude,service_longitude').eq('id',providerId).single();
+ expect(directory.error).toBeNull();
+ expect(directory.data).toMatchObject({service_latitude:14.555,service_longitude:121.024});
+ expect(directory.data!.min_rate).toBeGreaterThan(0);
+ const name=directory.data!.display_name;
+ await page.goto('/find/?view=map&q='+encodeURIComponent(name));
+ await expect(page.locator('.provider-card')).toContainText(name);
+ await page.getByTitle(name,{exact:true}).click();
+ await expect(page.getByRole('link',{name:'View '+name,exact:true})).toHaveAttribute('href','/providers/profile/?id='+providerId);
  const badges=async()=>{const r=await client().from('public_providers').select('trust_badges').eq('id',providerId).single();expect(r.error).toBeNull();return r.data!.trust_badges;};
  expect((await badges()).identity_reviewed).toBe(false);
  expect((await applicant.rpc('review_provider_credential',{p_provider:providerId,p_file:uploaded.id,p_kind:'identity',p_verified:true,p_reason:'Self review must be denied'})).error).toBeTruthy();
@@ -91,12 +182,27 @@ test('administrator creates, edits and permanently erases a disposable account t
 });
 test('customer signs in and persists account changes',async({page})=>{await signIn(page,'customerA');await page.goto('/account/');await page.getByLabel('Full name',{exact:true}).fill('Alex Demo Updated');await page.getByRole('button',{name:'Save profile'}).click();await expect(page.getByText('Saved successfully',{exact:true})).toBeVisible();await page.reload();await expect(page.getByLabel('Full name',{exact:true})).toHaveValue('Alex Demo Updated');});
 test('customer finds a professional, schedules a persisted booking and provider follows the state machine',async({page})=>{
+ test.setTimeout(120000);
  const c=await signed('customerA');const {data:service,error}=await c.from('provider_services').select('*').eq('id',fixtures.services[1]).single();if(error)throw error;
  await signIn(page,'customerA');await page.goto(`/providers/profile/?id=${service.provider_id}`);await page.getByRole('link',{name:'Request service'}).first().click();
  await page.getByLabel('Describe the task').fill('Integration test kitchen plumbing diagnostics.');await page.getByLabel('City / municipality').fill('Makati City');await page.getByLabel('Complete service address').fill('Fictional integration test residence, Example Street');await page.getByLabel('Postal code').fill('1200');await page.getByRole('button',{name:'Save & choose a schedule'}).click();
  const day=new Date(Date.now()+5*86400000).toISOString().slice(0,10);await page.getByLabel('Service date').fill(day);await page.locator('input[name="starts_at"]').first().check();await page.getByRole('button',{name:'Save & review request'}).click();await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Submit booking request'}).click();await expect(page.getByRole('heading',{name:'Booking request received.'})).toBeVisible();
  const bookingId=new URL(page.url()).searchParams.get('id')!;const p=await signed('providerB');
- for(const status of ['confirmed','en_route','in_progress','completed']){const {error}=await p.rpc('transition_booking',{p_booking:bookingId,p_status:status,p_reason:''});expect(error).toBeNull();}
+ const observedStatuses = new Set<string>();
+ let subscribed = false;
+ const channel = c.channel('customer-booking-' + bookingId)
+   .on('postgres_changes', {event:'UPDATE', schema:'public', table:'bookings', filter:'id=eq.'+bookingId},
+     change => { if (change.new.id === bookingId) observedStatuses.add(change.new.status); });
+ try {
+   channel.subscribe(state => { subscribed = state === 'SUBSCRIBED'; });
+   await expect.poll(() => subscribed, {timeout:20000}).toBe(true);
+   for (const status of ['confirmed', 'en_route', 'in_progress', 'completed']) {
+     await p.rpc('transition_booking', {p_booking:bookingId, p_status:status, p_reason:''}).throwOnError();
+     await expect.poll(() => observedStatuses.has(status), {timeout:15000}).toBe(true);
+   }
+ } finally {
+   await c.removeChannel(channel);
+ }
  await page.goto(`/bookings/invoice/?id=${bookingId}`);await expect(page.getByRole('heading',{name:'Service invoice',exact:true})).toBeVisible();
  await page.goto(`/bookings/review/?id=${bookingId}`);await page.locator('input[name="rating"][value="5"]').check();await page.getByLabel('Your review').fill('A useful fictional test service with clear communication.');await page.getByRole('button',{name:'Publish review'}).click();await expect(page.getByRole('heading',{name:'Thank you for sharing your experience.'})).toBeVisible();
 });
@@ -105,6 +211,35 @@ test('members exchange messages; second customer and provider are denied',async(
  await signIn(page,'customerA');await page.goto(`/messages/?booking=${b}`);await page.getByLabel('Your message').fill('Authorized customer integration message');await page.getByRole('button',{name:'Send message'}).click();await expect(page.getByText('Authorized customer integration message',{exact:true})).toBeVisible();
  const p=await signed('providerA');const reply=await p.rpc('send_message',{p_conversation:conversation!.id,p_body:'Authorized provider response',p_nonce:crypto.randomUUID()});expect(reply.error).toBeNull();await expect(page.getByText('Authorized provider response',{exact:true})).toBeVisible({timeout:35000});
  for(const who of ['customerB','providerB']){const outsider=await signed(who);const {data}=await outsider.from('messages').select('*').eq('conversation_id',conversation!.id);expect(data).toEqual([]);const response=await outsider.rpc('send_message',{p_conversation:conversation!.id,p_body:'Unauthorized message',p_nonce:crypto.randomUUID()});expect(response.error).toBeTruthy();}
+});
+
+test('recipient receives the committed message and notification over Realtime',async()=>{
+ const customer=await signed('customerA'), provider=await signed('providerA');
+ const booking=fixtures.bookings[0].id;
+ const thread=await customer.from('conversations').select('id').eq('booking_id',booking).single();
+ expect(thread.error).toBeNull();
+ const nonce=crypto.randomUUID();
+ let receivedMessageId:string|undefined;
+ let receivedNotification=false;
+ let subscriptionStatus='';
+ const channel=provider.channel('staging-inbox-'+nonce)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'conversation_id=eq.'+thread.data!.id},event=>{
+     if(event.new.client_nonce===nonce) receivedMessageId=event.new.id;
+   })
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+fixtures.accounts.providerA.id},event=>{
+     if(event.new.title==='New booking message' && event.new.href==='/messages/?booking='+booking) receivedNotification=true;
+   });
+ try {
+   channel.subscribe(status=>{subscriptionStatus=status;});
+   await expect.poll(()=>subscriptionStatus,{timeout:20000}).toBe('SUBSCRIBED');
+   const sent=await customer.rpc('send_message',{p_conversation:thread.data!.id,p_body:'Local staging delivery check',p_nonce:nonce});
+   expect(sent.error).toBeNull();
+   await expect.poll(()=>receivedMessageId,{timeout:15000}).toBe(sent.data);
+   await expect.poll(()=>receivedNotification,{timeout:10000}).toBe(true);
+   expect((await provider.rpc('read_through_message',{p_message:receivedMessageId})).error).toBeNull();
+ } finally {
+   await provider.removeChannel(channel);
+ }
 });
 test('complaint has a visible reply and private administrative notes',async({page})=>{
  await signIn(page,'customerA');await page.goto('/support/');await page.getByLabel('Subject',{exact:true}).fill('Integration test service concern');await page.getByLabel('Tell us what happened').fill('A fictional complaint to validate separate customer and internal threads.');await page.getByRole('button',{name:'Submit support case'}).click();await expect(page).toHaveURL(current=>current.searchParams.has('case'));const caseId=new URL(page.url()).searchParams.get('case')!;
@@ -173,5 +308,5 @@ test('an actual test APK can be verified, published locally, downloaded and arch
  const draft=await admin.rpc('create_release_draft',{p_version_name:manifest.version_name,p_version_code:manifest.version_code,p_min_android:androidVersions[manifest.min_sdk],p_notes:'Local test release supplied by the developer. No public deployment.'});expect(draft.error).toBeNull();
  const response=await fetch(`${url}/functions/v1/releases?id=${draft.data.id}`,{method:'POST',headers:{Authorization:`Bearer ${session!.access_token}`,apikey:key!,'Content-Type':'application/vnd.android.package-archive'},body:new Blob([bytes],{type:'application/vnd.android.package-archive'})});const release=await response.json();expect(response.ok,JSON.stringify(release)).toBe(true);expect(release.sha256).toMatch(/^[a-f0-9]{64}$/);
  expect((await admin.rpc('publish_release',{p_release:release.id,p_archive:false})).error).toBeNull();
- try{await page.goto('/download/');await expect(page.getByRole('button',{name:'Download APK',exact:true})).toBeVisible();const download=await fetch(`${url}/functions/v1/releases?id=${release.id}`,{headers:{apikey:key!}});expect(download.ok).toBe(true);const signedUrl=await download.json();const binary=await fetch(signedUrl.url);expect(binary.ok).toBe(true);expect((await binary.arrayBuffer()).byteLength).toBe(bytes.length);}finally{await admin.rpc('publish_release',{p_release:release.id,p_archive:true});}
+ try{await page.goto('/download/');await expect(page.getByRole('link',{name:'Download for Android',exact:true})).toHaveAttribute('href',/github[.]com\/Jawbear\/SerbisyoGo\/releases\/download\//);const download=await fetch(`${url}/functions/v1/releases?id=${release.id}`,{headers:{apikey:key!}});expect(download.ok).toBe(true);const signedUrl=await download.json();const binary=await fetch(signedUrl.url);expect(binary.ok).toBe(true);expect((await binary.arrayBuffer()).byteLength).toBe(bytes.length);}finally{await admin.rpc('publish_release',{p_release:release.id,p_archive:true});}
 });

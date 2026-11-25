@@ -31,7 +31,8 @@ test('sign-in returns a customer to their selected booking service', async ({ pa
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await loginFixture(page, 'customer');
-  const destination = '/book/?provider=20000000-0000-4000-8000-000000000002&service=30000000-0000-4000-8000-000000000002';
+  const day = new Date(Date.now() + 32 * 3600000).toISOString().slice(0, 10);
+  const destination = '/book/?provider=20000000-0000-4000-8000-000000000002&service=30000000-0000-4000-8000-000000000002&day=' + day;
   await page.goto(destination);
   await page.getByRole('main').getByRole('link', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(url => url.searchParams.get('next') === destination);
@@ -40,6 +41,17 @@ test('sign-in returns a customer to their selected booking service', async ({ pa
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(new RegExp('/book/\\?provider='));
   await expect(page.getByRole('combobox', { name: 'Select service', exact: true })).toHaveValue('30000000-0000-4000-8000-000000000002');
+  const draftId = '40000000-0000-4000-8000-000000000019';
+  await page.route('**/rest/v1/rpc/save_booking_draft', route => route.fulfill({ json: draftId }));
+  await page.route('**/rest/v1/booking_drafts?**', route => route.fulfill({ json: [{
+    id: draftId, provider_service_id: '30000000-0000-4000-8000-000000000002', starts_at: null
+  }] }));
+  await page.getByLabel('Describe the task').fill('Repair the leaking kitchen faucet.');
+  await page.getByLabel('City / municipality').fill('Bunawan');
+  await page.getByLabel('Complete service address').fill('22 Test Street');
+  await page.getByLabel('Postal code').fill('8506');
+  await page.getByRole('button', {name:/Save & choose a schedule/}).click();
+  await expect(page.getByLabel('Service date · Asia/Manila')).toHaveValue(day);
   expect(errors).toEqual([]);
 });
 

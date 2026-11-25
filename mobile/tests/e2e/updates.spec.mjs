@@ -11,7 +11,7 @@ test('manual update check shows the newer version while discovery remains access
  await expect(page.getByRole('heading',{name:'Version 0.4.0 is available',exact:true})).toBeVisible();
  await expect(page.getByText(`Installed version: ${installed.version} (build ${installed.android.versionCode})`,{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download Android APK',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Navigate to Find help',exact:true}).click();await expect(page.getByRole('button',{name:'View Art Ecleo',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Navigate to Explore',exact:true}).click();await expect(page.getByRole('button',{name:'View Art Ecleo',exact:true})).toBeVisible();
 });
 test('an unavailable update service has a retry without blocking the app',async({page})=>{
  await installBackend(page);let offline=true;

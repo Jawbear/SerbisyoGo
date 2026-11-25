@@ -3,6 +3,9 @@ import {UPDATE_URL, validateRelease} from './policy.js';
 // The site is the fast path. The public release feed also discovers a newly
 // published APK before the site's next deployment; no GitHub token is shipped.
 export async function loadAvailableRelease(installedCode, sdkInt, signal, request = fetch) {
+  if (process.env.EXPO_PUBLIC_DISABLE_RELEASE_FEED === '1') {
+    throw new Error('Public app updates are disabled for this test build.');
+  }
   const options = {signal,headers:{Accept:'application/json'}};
   let siteChecked = false;
   try {

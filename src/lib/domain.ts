@@ -226,3 +226,5 @@ export function checkVerificationCompleteness(files: { original_name: string; ve
   };
 }
 
+
+export const todayManila = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000 + 8 * 3600000).toISOString().slice(0, 10);

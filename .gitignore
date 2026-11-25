@@ -24,3 +24,14 @@ mobile/builds/
 mobile/modules/**/android/build/
 mobile/modules/**/android/.cxx/
 mobile/modules/**/android/.gradle/
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+backups/
+*.dump
+*.backup

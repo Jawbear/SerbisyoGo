@@ -7,7 +7,7 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 [db]
 port = 54322
-major_version = 15
+major_version = 17
 [db.seed]
 enabled = true
 sql_paths = ["./seed.sql"]
@@ -51,8 +51,11 @@ content_path = "./supabase/templates/email_change.html"
 enabled = true
 file_size_limit = "64MiB"
 [functions.files]
+import_map = "./functions/deno.json"
 verify_jwt = false
 [functions.releases]
+import_map = "./functions/deno.json"
 verify_jwt = false
 [functions.admin-accounts]
+import_map = "./functions/deno.json"
 verify_jwt = false

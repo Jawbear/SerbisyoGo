@@ -1,0 +1,23 @@
+beforeProject { project ->
+    if (project.path == ':app') {
+        project.plugins.withId('com.android.application') {
+            project.androidComponents.finalizeDsl { android ->
+                android.buildTypes.debug.applicationIdSuffix = '.introdebug'
+                // The standalone test app bundles JavaScript and uses adb reverse.
+                android.buildTypes.debug.resValue 'string', 'react_native_dev_server_ip', '127.0.0.1'
+            }
+        }
+        project.plugins.withId('com.facebook.react') {
+            def react = project.extensions.getByName('react')
+            react.debuggableVariants.set([])
+            react.extraPackagerArgs.set(['--max-workers', '2'])
+        }
+        // Metro embeds the current staging configuration into this standalone APK.
+        project.tasks.configureEach { task ->
+            if (task.name == 'createBundleDebugJsAndAssets') {
+                task.outputs.upToDateWhen { false }
+                task.outputs.cacheIf { false }
+            }
+        }
+    }
+}

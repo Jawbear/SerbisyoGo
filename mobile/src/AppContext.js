@@ -96,8 +96,8 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     identity, authError, authLoading, liveAvailable, signIn, signOut,
-    api: liveApi, revision, refresh
-  }), [identity, authError, authLoading, signIn, signOut, revision, refresh]);
+    api: liveApi, revision, refresh, reloadIdentity: loadIdentity
+  }), [identity, authError, authLoading, signIn, signOut, revision, refresh, loadIdentity]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

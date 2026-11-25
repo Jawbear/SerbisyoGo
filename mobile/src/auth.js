@@ -17,7 +17,7 @@ export function validatePassword(password) {
   }
 }
 
-const signInDestinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Messages', 'ProviderVerification']);
+const signInDestinations = new Set(['Home', 'BookingForm', 'BookingReview', 'BookingRecord', 'MyBookings', 'Profile', 'SupportCases', 'Messages', 'ProviderVerification']);
 
 export function signInDestination(role, params) {
   const requested = params?.returnTo;

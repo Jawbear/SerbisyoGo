@@ -24,6 +24,7 @@ $query$, schemaname || '.' || tablename,
        else 'to_jsonb(row_data)' end, schemaname, tablename)
 from pg_catalog.pg_tables
 where schemaname = 'public'
+   or (not :'upgrade'::boolean and schemaname in ('admin_private', 'supabase_migrations', 'auth'))
    or (schemaname = 'auth' and tablename in ('users', 'identities'))
    or (schemaname = 'storage' and tablename in ('buckets', 'objects'))
 order by schemaname collate "C", tablename collate "C"

@@ -43,8 +43,18 @@ $endpoint = "https://$prodRef.storage.supabase.co/storage/v1/s3"
 $s3 = @('--profile','sg056-source','--endpoint-url',$endpoint,'--region','ap-south-1')
 $bucketList = aws @s3 s3api list-buckets --query 'Buckets[].Name' --output json | ConvertFrom-Json
 foreach ($bucket in $bucketList) {
+  [void][IO.Directory]::CreateDirectory("$archive/objects/$bucket")
   aws @s3 s3 sync "s3://$bucket/" "$archive/objects/$bucket/" --only-show-errors
 }
+$objectInventory = @'
+select coalesce(json_agg(b order by b.bucket),'[]'::json)
+from (select b.id as bucket, coalesce((
+  select json_agg(json_build_object('key',o.name,'bytes',(o.metadata->>'size')::bigint) order by o.name)
+  from storage.objects o where o.bucket_id=b.id
+),'[]'::json) as objects from storage.buckets b) b;
+'@
+psql -XAtq -v ON_ERROR_STOP=1 -d 'service=sg056_source' -c $objectInventory -o "$archive/object-inventory.json"
+node scripts/verify-storage-recovery.mjs "$archive/object-inventory.json" "$archive/objects"
 psql -XAtq -d 'service=sg056_source' -f scripts/recovery-manifest.sql -o "$archive/source-end.tsv"
 if (Compare-Object (Get-Content "$archive/source.tsv") (Get-Content "$archive/source-end.tsv")) { throw 'Source changed during capture' }
 $checksums = Get-ChildItem -LiteralPath $archive -File -Recurse | Get-FileHash -Algorithm SHA256
@@ -79,3 +89,12 @@ if (Compare-Object (Get-Content source.tsv) (Get-Content restored.tsv)) { throw 
 4. Compare migration history through 023, schema, grant/policy definitions, publication membership, FK relationships and sequences. Check Auth users and identities, payment and booking totals, and sender memberships. The manifest compares row counts and content hashes without returning records. Investigate any table or relationship mismatch. A failed import needs a fresh private destination.
 5. Recover Storage bytes into isolated storage using its supported object API or storage migration process. Preserve bucket privacy, object names, owners and file metadata. Account for API-generated metadata differences against the preserved baseline. Download representative private documents, avatars and receipts through authorized test access and compare byte hashes. Verify that an unrelated session cannot obtain the private objects. Exercise Auth read and login with a designated recovery test identity and an isolated mail sink. Keep production SMTP, payments and customer-facing traffic disconnected.
 6. Record archive reference, source point, restore ID, elapsed time, actual data-loss window, manifest comparisons, object checks, permissions and operator sign-off. Keep recovery **unverified** until these checks succeed against the production-derived archive.
+
+For step 5, download each isolated bucket into a second empty encrypted directory, including a directory for each empty bucket. Use credentials scoped to the isolated service. Run the following after checking the custodian's archive digest. The verifier checks exact bucket and object names, byte sizes, and every restored file's SHA-256 against the authenticated archive. It reports only aggregate results. Keep the private object inventory inside the encrypted archive. If a key cannot be represented on the recovery filesystem, use a lossless object archive and verify through the object APIs before sign-off.
+
+```powershell
+if ([string]::IsNullOrWhiteSpace($env:SG056_RESTORED_DOWNLOAD)) { throw 'Specify the independent restored bucket download' }
+node "$env:SG056_TOOLS/scripts/verify-storage-recovery.mjs" ./object-inventory.json ./objects $env:SG056_RESTORED_DOWNLOAD
+```
+
+The full restore manifest checks all public application tables, both private administration tables, the Auth tables and the application migration history. Managed Auth versions must match. Reconcile any intentionally expired sessions or regenerated service state separately. Capture the manifest before enabling Auth, jobs or external traffic. The historical upgrade comparison retains its narrower scope for comparing revisions 023 and 025.

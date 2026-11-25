@@ -2,25 +2,30 @@
 
 ## 0.5.6 release acceptance
 
-**Physical handset results are pending for every row below.** The production-configured candidate is package `com.serbisyogo.mobile`, version code 14. Its SHA-256 is `d87cf99d70a5e3d8a1322a9bd81a5428a0c91e309b0efd7c083e417f6409c1c4`. The signed emulator and local browser checks are recorded in the [0.5.6 release report](release-056-staging.md).
+**Every physical test is pending.** For the reviewed 0.5.6 source at `301eeea2766de8b843dd370622d00ae68cd642fb`, the official package is `com.serbisyogo.mobile`, code 14. QA needs the private, signer-verified artifact and its signed-file digest from release custody. The old local-test APK belongs to an earlier build. [Official release report](release-056-official-android.md)
 
-Use an authorized lab phone and a second, independently signed-in staging client. For the preserved candidate, verify the file hash and perform the offline in-place upgrade from a lower version with the same package and certificate. Use a phone with test-only app data and block all network access before opening either version. Do not uninstall, clear app data or use a personal handset with a live customer session. A same-version reinstall does not establish upgrade compatibility.
+Use two physical Android phones with test-only data. On phone A, start with the verified production 0.5.4 (code 12) APK, establish a saved item, and preserve the installed app data for the in-place upgrade. On phone B, test a fresh install of the same candidate. Use the restricted production read-only test account only if authorized for that phone. Offline upgrade checks establish data retention. Verify authenticated session restoration while connected under the applicable account and endpoint authorization.
 
 For connected tests, build a separate QA artifact from the reviewed source with explicit staging `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `EXPO_PUBLIC_SITE_URL`. Verify the built bundle's effective endpoints, Auth callback allowlist and the staging website's backend. Restrict device network access to the test endpoints on both Wi-Fi and cellular (including the local mail sink through a private VPN if necessary). Block the production Worker, Supabase project and production updater/feed downloads. Use matching staging baseline/candidate builds on a dedicated phone or work profile for a signed-in upgrade. Record each artifact hash separately. A QA build cannot establish network acceptance for the preserved production-bound APK.
 
 ```powershell
-Get-FileHash mobile/builds/local-test/SerbisyoGo-0.5.6.apk -Algorithm SHA256
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+$candidate = (Get-Item -LiteralPath $env:SG056_SIGNED_APK).FullName
+if ($env:SG056_APPROVED_SHA256 -notmatch '^[a-fA-F0-9]{64}$' -or
+    (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash -ne $env:SG056_APPROVED_SHA256) { throw 'Candidate differs from the independent signed artifact record' }
 adb devices -l
 $serial = Read-Host 'Authorized test handset serial'
 adb -s $serial shell dumpsys package com.serbisyogo.mobile | Select-String 'versionName|versionCode'
 # Only on the isolated offline upgrade phone, with the older signed app installed:
-adb -s $serial install -r mobile/builds/local-test/SerbisyoGo-0.5.6.apk
+adb -s $serial install -r $candidate
 adb -s $serial shell dumpsys package com.serbisyogo.mobile | Select-String 'versionName|versionCode'
 ```
 
 | Scenario | Steps and pass condition |
 | --- | --- |
 | Branding and sign-in | Compare the launcher icon, themed icon, black splash and SerbisyoGo wordmark with the approved artwork. Sign in separately with staging customer and provider accounts. Check the expected role, dashboard, sign-out and private-screen access after sign-out. |
+| Cold opening and media | On both screens, cold-start with media volume audible, then muted. Record completion time and any visible stalls. Confirm the 5.87-second movie shows the entire green logo and wordmark centered on black. Verify signed-out Login, restored Home, interruption with Back or Home, and no replay during navigation or warm resume. |
 | Offline recovery | Open a test booking, disconnect before a second client changes its status, then reopen the app offline. Verify it handles the lost connection without losing the session. Reconnect, retry, and compare the final booking and message IDs with the other client. |
 | In-place upgrade | On the baseline, establish a test preference or saved item. On the staging pair, also sign in. Install with `-r`, relaunch, verify code 14, retained state and correct role. Capture the prior and new version. |
 | Wi-Fi → cellular → Wi-Fi | Open a staging booking on both clients. Disable Wi-Fi on the phone while the peer sends one uniquely marked message. Confirm recovery on cellular, exactly one message and the same booking status on both devices. Repeat in the opposite direction and inspect persisted rows. |

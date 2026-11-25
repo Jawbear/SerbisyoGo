@@ -3,7 +3,7 @@ import {publicFixtures} from './public-fixtures';
 test.beforeEach(async({page})=>{await publicFixtures(page);});
 test('public navigation and the published download page are usable',async({page})=>{
  await page.goto('/');await expect(page.getByRole('heading',{name:'Your home. In good hands.'})).toBeVisible();
- await page.goto('/download/');await expect(page.getByRole('heading',{name:'Take SerbisyoGo with you.'})).toBeVisible();await expect(page.getByRole('link',{name:'Download APK',exact:true})).toHaveAttribute('href',/SerbisyoGo-\d+\.\d+\.\d+\.apk$/);
+ await page.goto('/download/');await expect(page.getByRole('heading',{name:'Official Android app'})).toBeVisible();await expect(page.getByRole('link',{name:'Download for Android',exact:true})).toHaveAttribute('href',/SerbisyoGo-\d+\.\d+\.\d+\.apk$/);
 });
 test('private and admin routes do not expose records without authentication',async({page})=>{
  await page.goto('/admin/providers/');await expect(page.getByText(/Administrator sign in required|Connect your Supabase backend/)).toBeVisible();

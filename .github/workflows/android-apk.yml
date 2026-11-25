@@ -88,6 +88,8 @@ jobs:
         run: node scripts/verify-apk.mjs
         env:
           ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+      - name: Verify packaged production configuration and startup movie
+        run: python3 scripts/verify-production-payload.py android/app/build/outputs/apk/release/app-release.apk
       - name: Build an isolated lower-version updater fixture
         run: node scripts/build-update-baseline.mjs
         env:

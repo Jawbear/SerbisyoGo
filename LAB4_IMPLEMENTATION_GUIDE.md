@@ -1,6 +1,25 @@
 # SerbisyoGo · Laboratory Exercise 4
 ## F2 Networking and Data Storage
 
+## Classroom demonstration on the signed 0.5.6 APK
+
+Use the **Explore** tab in the installed SerbisyoGo app. A guest can complete the exercise. The screenshots below were captured with a disposable saved search on an Android 15 emulator. The loading screenshot uses the exported mobile client in a phone browser with a deliberately delayed request.
+
+| Capture | What to do and what to point out |
+| --- | --- |
+| 1. [Request in progress](docs/lab4-evidence/056-loading-controlled.png) | Tap **Explore → Choose municipality**. Point to the spinner and **Loading available locations...**. It can disappear quickly on a fast connection. |
+| 2. [Actual retrieved locations](docs/lab4-evidence/056-live-locations.png) | Keep the picker open. Show **Bunawan**, other returned places and the PSGC Cloud attribution. Tap **Refresh locations**, then select **Bunawan**. The live adapter returned 14 places during verification. |
+| 3. [Create](docs/lab4-evidence/056-created.png) | Choose an available service category. The test used **Air-conditioning**. Open **Saved searches → Save search**. Show the saved service and municipality. Give your own row a unique label if the device already has entries. |
+| 4. [Read after restarting](docs/lab4-evidence/056-reopened.png) | Force-stop SerbisyoGo using Android App info, reopen it, and go to **Explore → Saved searches**. Show the same row and tap **Apply** to restore its filters. Leave the app installed throughout the exercise. |
+| 5. [Network failure](docs/lab4-evidence/056-offline-error.png) | Turn on airplane mode and turn off Wi-Fi if it stays connected. Reopen the location picker. Show its connection error and **Retry**. |
+| 6. [Update offline](docs/lab4-evidence/056-offline-edit.png) | Close the picker. Under **Saved searches**, tap **Edit** on your own row, set its label to **LabOffline**, and tap **Update saved search**. Force-stop and reopen the app. Capture the renamed row. |
+| 7. [Delete after restarting](docs/lab4-evidence/056-deleted-after-restart.png) | Tap **Delete → Confirm delete** on your test row. Force-stop and reopen. Its label should be absent. The verification device had no other rows and displayed the empty state. |
+| 8. [Reconnect](docs/lab4-evidence/056-reconnected.png) | With the picker showing its error, restore connectivity and tap **Retry**. Show the returned list again. |
+
+Explain the two kinds of data during the demo. Fetch retrieves municipality names and PSGC codes from a directory. AsyncStorage saves a chosen service, municipality and label on this installation. Saving, editing and deleting this preference leave shared Supabase bookings alone. Current Android sign-in sessions use SecureStore.
+
+The 0.5.6 emulator run verified create, read and apply after a cold start, update while offline, and deletion surviving another cold start. A focused second run verified Retry after connectivity returned. Two controlled browser cases verified loading, HTTP failure, empty results, refresh and CRUD. Six Lab 4 unit cases passed. The original 0.5.5 build record below remains the history of the first implementation.
+
 ### A. Project and audit
 
 A customer can now open **Find a professional**, choose a municipality served by a professional and keep the service/municipality combination for later. Three data sources answer different questions.
